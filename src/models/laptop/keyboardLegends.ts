@@ -73,32 +73,32 @@ export function drawLegends(keys: KeyRect[], width: number, depth: number, layou
     const cy = (depth / 2 - k.y) * S;
     const hw = (k.w / 2) * S;
     const hd = (k.d / 2) * S;
-    const pad = 0.17 * S;
+    const pad = 0.15 * S;
 
     if (typeof legend === 'string') {
-      g.font = `400 ${0.34 * S}px ${FONT}`;
+      g.font = `400 ${0.42 * S}px ${FONT}`;
       g.textAlign = 'center';
       g.fillText(legend, cx, cy + 0.01 * S);
     } else if (Array.isArray(legend)) {
-      g.font = `400 ${0.27 * S}px ${FONT}`;
+      g.font = `400 ${0.34 * S}px ${FONT}`;
       g.textAlign = 'center';
-      g.fillText(legend[0], cx, cy - 0.2 * S);
-      g.fillText(legend[1], cx, cy + 0.22 * S);
+      g.fillText(legend[0], cx, cy - 0.24 * S);
+      g.fillText(legend[1], cx, cy + 0.26 * S);
     } else if (legend.size === 'fn') {
-      g.font = `400 ${(legend.label.length > 1 && !/^F\d/.test(legend.label) ? 0.2 : 0.19) * S}px ${FONT}`;
+      g.font = `400 ${(legend.label.length === 1 ? 0.3 : 0.27) * S}px ${FONT}`;
       g.textAlign = 'center';
       g.fillText(legend.label, cx, cy);
     } else {
       const big = /^[⇧⇥⇪↩⌫]$/.test(legend.label);
-      g.font = `400 ${(big ? 0.3 : 0.19) * S}px ${FONT}`;
+      g.font = `400 ${(big ? 0.4 : 0.27) * S}px ${FONT}`;
       g.textAlign = legend.align === 'right' ? 'right' : 'left';
       const x = legend.align === 'right' ? cx + hw - pad : cx - hw + pad;
-      g.fillText(legend.label, x, cy + hd - pad - (big ? 0.08 * S : 0.02 * S));
+      g.fillText(legend.label, x, cy + hd - pad - (big ? 0.12 * S : 0.06 * S));
       if (legend.symbol) {
-        g.font = `400 ${0.22 * S}px ${FONT}`;
+        g.font = `400 ${0.3 * S}px ${FONT}`;
         g.textAlign = legend.align === 'right' ? 'left' : 'right';
         const sx = legend.align === 'right' ? cx - hw + pad : cx + hw - pad;
-        g.fillText(legend.symbol, sx, cy - hd + pad + 0.06 * S);
+        g.fillText(legend.symbol, sx, cy - hd + pad + 0.12 * S);
       }
     }
   });
