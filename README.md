@@ -13,7 +13,7 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 |---|---|
 | Téléphones : Phone Pro (îlot), Phone (encoche), Phone Neo (style Android, poinçon) — portrait / paysage | ✅ |
 | Tablettes : Tablet Pro 11 & 13 — portrait / paysage | ✅ |
-| Portables : Laptop 14 & Laptop Air 13 — angle d'ouverture réglable, encoche optionnelle, clavier complet | ✅ |
+| Portables : Laptop 14 & Laptop Air 13 — angle d'ouverture réglable, encoche optionnelle, clavier complet QWERTY / AZERTY | ✅ |
 | Écrans : Desktop 24 (tout-en-un coloré), Display 27, Monitor 27 | ✅ |
 | Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |

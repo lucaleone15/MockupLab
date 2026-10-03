@@ -1,10 +1,14 @@
 import { useEffect, useMemo } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { prepareTexture } from '@/store/assets';
 import type { I18nString } from '@/i18n';
 import { roundedPlane, roundedSlab, type EdgeRadius } from '@/lib/geometry/sweep';
 import { brushedMetal, cavity, coverGlass, islandBlack, lensGlass, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
+import { useFontsReady } from '../shared/useFontsReady';
 import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
+import { drawLegends, type KeyboardLayoutId } from './keyboardLegends';
 
 /*
  * Laptop: aluminium base with keyboard, trackpad, speaker grilles and ports,
@@ -105,6 +109,39 @@ function useKeycaps(spec: LaptopSpec) {
   return meshes;
 }
 
+/** Legend overlay laid on the keycap tops. */
+function KeyLegends({ spec, layout }: { spec: LaptopSpec; layout: KeyboardLayoutId }) {
+  const fontsReady = useFontsReady();
+  const invalidate = useThree((s) => s.invalidate);
+  const kb = useMemo(() => keyboardLayout(spec.keyboard.pitch, spec.keyboard.fnPitch), [spec]);
+  const material = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#d4d4d8',
+        emissive: '#ffffff',
+        emissiveIntensity: 0.12,
+        roughness: 0.6,
+        transparent: true,
+        depthWrite: false,
+      }),
+    [],
+  );
+  useEffect(() => {
+    const tex = prepareTexture(new THREE.CanvasTexture(drawLegends(kb.keys, kb.width, kb.depth, layout)));
+    material.map = tex;
+    material.emissiveMap = tex;
+    material.needsUpdate = true;
+    invalidate();
+    return () => tex.dispose();
+  }, [kb, layout, fontsReady, material, invalidate]);
+  useEffect(() => () => material.dispose(), [material]);
+  return (
+    <mesh material={material} position={[0, 0, 0.063]}>
+      <planeGeometry args={[kb.width, kb.depth]} />
+    </mesh>
+  );
+}
+
 /** Perforated speaker grille: instanced holes on a grid. */
 function useGrille(cols: number, rows: number, pitch: number) {
   const mesh = useMemo(() => {
@@ -136,8 +173,8 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
       height: lidH,
       radius: s.radius,
       thickness: s.lidThickness,
-      front: { d: 0.05, z: 0.05 },
-      back: { d: 0.14, z: 0.16 },
+      front: { d: 0.08, z: 0.08 },
+      back: { d: 0.2, z: 0.22 },
       smooth: 0.5,
       segments: 28,
       edgeSegments: 8,
@@ -200,6 +237,7 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
           {keycaps.map((m, i) => (
             <primitive key={i} object={m} />
           ))}
+          <KeyLegends spec={s} layout={params.keyboard === 'azerty' ? 'azerty' : 'qwerty'} />
         </group>
         <mesh geometry={g.trackpadGap} material={mattePlastic('#5c5d61', 0.6)} position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.0005]} />
         <mesh
@@ -272,6 +310,16 @@ function defineLaptop(spec: LaptopSpec, view: DeviceModule['view']): DeviceModul
     params: [
       { id: 'angle', kind: 'slider', label: { fr: 'Ouverture', en: 'Opening' }, min: 0, max: 135, step: 1, default: 108, unit: '°' },
       { id: 'notch', kind: 'toggle', label: { fr: 'Encoche caméra', en: 'Camera notch' }, default: false },
+      {
+        id: 'keyboard',
+        kind: 'choice',
+        label: { fr: 'Clavier', en: 'Keyboard' },
+        options: [
+          { value: 'qwerty', label: { fr: 'QWERTY', en: 'QWERTY' } },
+          { value: 'azerty', label: { fr: 'AZERTY', en: 'AZERTY' } },
+        ],
+        default: 'qwerty',
+      },
     ],
     view,
     yaw: -0.38,
@@ -288,7 +336,7 @@ export const laptop14 = defineLaptop(
     baseThickness: 0.98,
     lidThickness: 0.52,
     radius: 0.85,
-    baseEdge: { top: { d: 0.07, z: 0.07 }, bottom: { d: 0.32, z: 0.34 } },
+    baseEdge: { top: { d: 0.13, z: 0.13 }, bottom: { d: 0.36, z: 0.4 } },
     display: { width: 30.24, height: 19.64, top: 0.62, radius: 0.85 },
     nativeSize: [3024, 1964],
     keyboard: { back: 1.55, pitch: 1.9, fnPitch: 1.3 },
@@ -308,7 +356,7 @@ export const laptopAir = defineLaptop(
     baseThickness: 0.62,
     lidThickness: 0.48,
     radius: 0.8,
-    baseEdge: { top: { d: 0.05, z: 0.05 }, bottom: { d: 0.14, z: 0.16 } },
+    baseEdge: { top: { d: 0.1, z: 0.1 }, bottom: { d: 0.2, z: 0.22 } },
     display: { width: 29.0, height: 18.86, top: 0.6, radius: 0.8 },
     nativeSize: [2560, 1664],
     keyboard: { back: 1.25, pitch: 1.86, fnPitch: 1.5 },
