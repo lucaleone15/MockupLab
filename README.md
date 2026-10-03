@@ -11,13 +11,16 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 
 | | Statut |
 |---|---|
-| Téléphone « Phone Pro » procédural (titane, verre, îlot caméra, boutons, antennes) | ✅ |
+| Téléphones : Phone Pro (îlot), Phone (encoche), Phone Neo (style Android, poinçon) — portrait / paysage | ✅ |
+| Tablettes : Tablet Pro 11 & 13 — portrait / paysage | ✅ |
+| Portables : Laptop 14 & Laptop Air 13 — angle d'ouverture réglable, encoche optionnelle, clavier complet | ✅ |
+| Écrans : Desktop 24 (tout-en-un coloré), Display 27, Monitor 27 | ✅ |
+| Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
 | Environnement studio HDRI procédural, ombre portée douce + ombre de contact | ✅ |
 | Fonds : uni, dégradé linéaire/radial, transparent | ✅ |
 | Export PNG / JPG / WebP, 1080p · 2K · 4K, 7 ratios, supersampling ×2, rendu par tuiles | ✅ |
 | Glisser-déposer, coller (⌘V), undo/redo, thème clair/sombre, FR/EN | ✅ |
-| Ordinateurs portables, tablettes, écrans, navigateur | 🔜 jalon b |
 | Presets d'éclairage, caméra, profondeur de champ | 🔜 jalon c |
 | Compositions multi-appareils, sauvegarde auto, projets JSON | 🔜 jalon d |
 | Print & objets (cartes, affiches, packaging, mug…) | 🔜 jalon e |
@@ -44,7 +47,7 @@ npm run preview    # sert le build sur http://localhost:4173/MockupLab/
 3. Règle la finition, la luminosité de l'écran, les reflets et le fond dans le panneau de droite.
 4. Choisis format, résolution et ratio, puis **Exporter** (**⌘E / Ctrl+E**).
 
-Astuce : pour un téléphone, exporte ton design en **1179 × 2556 px** (ratio natif de l'écran). Les captures plus longues sont cadrées par le haut ; le curseur *Position* fait défiler le cadrage.
+Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de l'image, par ex. **1179 × 2556** pour Phone Pro, **3024 × 1964** pour Laptop 14, **1440 × 900** pour le navigateur). Les captures plus longues sont cadrées par le haut ; le curseur *Position* fait défiler le cadrage. Les réglages propres à chaque appareil (orientation, ouverture, encoche, thème du navigateur…) apparaissent dans la section *Appareil*.
 
 ### Raccourcis
 
@@ -110,7 +113,10 @@ export const tabletAir: DeviceModule = {
 
 Puis ajoute-le à `MODELS` dans `src/models/registry.ts`. Conventions :
 
-- l'origine est au centre de l'appareil, l'écran regarde vers **+Z** et la hauteur suit **+Y** ;
+- l'écran regarde vers **+Z** et la hauteur suit **+Y** ; avec `anchor: 'center'` (défaut) l'appareil est centré sur son origine et posé au sol automatiquement, avec `anchor: 'bottom'` (laptops, écrans) il repose déjà sur y = 0 ;
+- `params` déclare des réglages (`slider`, `toggle`, `choice`, `text`) que le panneau de propriétés affiche tout seul ; `ORIENTATION_PARAM` ajoute portrait/paysage ;
+- `view` donne le point visé et la direction de la caméra ; la distance est calculée automatiquement ;
+- les pièces communes (objectifs, flash, perçages) sont dans `src/models/shared/parts.tsx`, les familles paramétrables dans `phone/Phone.tsx`, `tablet/Tablet.tsx`, `laptop/Laptop.tsx` ;
 - les surfaces imprimables/écrans utilisent `useScreenMaterial`, qui gère le cadrage, la fidélité des couleurs et les reflets ;
 - les géométries sont construites une seule fois et partagées entre instances.
 
@@ -119,6 +125,8 @@ Puis ajoute-le à `MODELS` dans `src/models/registry.ts`. Conventions :
 ```bash
 npm run dev
 node scripts/shoot.mjs                         # captures UI + export 1080p dans out/
+node scripts/gallery.mjs                       # rend chaque modèle dans out/models/
+node scripts/check-swap.mjs                    # non-régression : changement d'image
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```

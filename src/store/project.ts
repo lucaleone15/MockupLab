@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import type { Fit } from '@/scene/screenMaterial';
+import { getModel } from '@/models/registry';
+import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 
 /* ------------------------------------------------------------------ types */
 
@@ -24,9 +26,10 @@ export interface SceneItem {
   id: string;
   modelId: string;
   finishId: string;
-  params: Record<string, number | string | boolean>;
+  params: Record<string, ParamValue>;
   surfaces: Record<string, SurfaceBinding>;
   screen: ScreenSettings;
+  /** Point on the floor under the device. */
   position: Vec3;
   rotation: Vec3;
   scale: number;
@@ -71,22 +74,22 @@ export const DEFAULT_SCREEN: ScreenSettings = { brightness: 1, reflection: 0.5 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export function makeItem(modelId: string, finishId: string, size: Vec3): SceneItem {
+export function makeItem(model: DeviceModule): SceneItem {
   return {
     id: uid(),
-    modelId,
-    finishId,
-    params: {},
-    surfaces: { screen: { ...DEFAULT_SURFACE } },
+    modelId: model.id,
+    finishId: model.defaultFinish,
+    params: defaultParams(model),
+    surfaces: Object.fromEntries(model.surfaces.map((s) => [s.id, { ...DEFAULT_SURFACE }])),
     screen: { ...DEFAULT_SCREEN },
-    position: [0, size[1] / 2, 0],
-    rotation: [0, -0.32, 0],
+    position: [0, 0, 0],
+    rotation: [0, model.yaw ?? -0.32, 0],
     scale: 1,
   };
 }
 
 function initialProject(): Project {
-  const item = makeItem('phone-pro', 'natural', [7.06, 14.66, 0.83]);
+  const item = makeItem(getModel('phone-pro'));
   return {
     version: 1,
     name: 'Untitled',
@@ -112,7 +115,9 @@ interface ProjectActions {
   setSurface: (itemId: string, slot: string, patch: Partial<SurfaceBinding>) => void;
   setBackground: (bg: Background) => void;
   setExport: (patch: Partial<ExportSettings>) => void;
-  replaceModel: (itemId: string, modelId: string, finishId: string, size: Vec3) => void;
+  setParam: (itemId: string, id: string, value: ParamValue) => void;
+  /** Swaps the device of an item, keeping its images and placement. */
+  replaceModel: (itemId: string, modelId: string) => void;
 }
 
 export type ProjectState = Project & ProjectActions;
@@ -157,13 +162,27 @@ export const useProject = create<ProjectState>()(
         })),
       setBackground: (background) => set({ background }),
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
-      replaceModel: (itemId, modelId, finishId, size) =>
+      setParam: (itemId, id, value) =>
+        set((s) => ({ items: s.items.map((it) => (it.id === itemId ? { ...it, params: { ...it.params, [id]: value } } : it)) })),
+      replaceModel: (itemId, modelId) =>
         set((s) => ({
-          items: s.items.map((it) =>
-            it.id === itemId
-              ? { ...it, modelId, finishId, params: {}, position: [it.position[0], size[1] / 2, it.position[2]] }
-              : it,
-          ),
+          items: s.items.map((it) => {
+            if (it.id !== itemId) return it;
+            const model = getModel(modelId);
+            // Keep the first image across devices (screen → screen).
+            const firstImage = Object.values(it.surfaces).find((b) => b.assetId);
+            const surfaces = Object.fromEntries(
+              model.surfaces.map((slot, i) => [slot.id, it.surfaces[slot.id] ?? (i === 0 && firstImage ? { ...firstImage } : { ...DEFAULT_SURFACE })]),
+            );
+            return {
+              ...it,
+              modelId,
+              finishId: model.finishes.some((f) => f.id === it.finishId) ? it.finishId : model.defaultFinish,
+              params: defaultParams(model),
+              surfaces,
+              rotation: [0, model.yaw ?? -0.32, 0],
+            };
+          }),
         })),
     }),
     {

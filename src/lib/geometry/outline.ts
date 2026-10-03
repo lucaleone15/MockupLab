@@ -68,26 +68,29 @@ function resample(pts: [number, number][], count: number): [number, number][] {
   return out;
 }
 
+/** Corner radii: one value for all corners, or [top-right, top-left, bottom-left, bottom-right]. */
+export type CornerRadii = number | [number, number, number, number];
+
 /** Closed CCW outline of a rectangle with continuous corners, centred on the origin. */
 export function roundedRectOutline(
   width: number,
   height: number,
-  radius: number,
+  radius: CornerRadii,
   { smooth = 0.6, segments = 28 }: RoundedRectOptions = {},
 ): OutlinePoint[] {
-  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  const radii = (typeof radius === 'number' ? [radius, radius, radius, radius] : radius).map((r) =>
+    Math.max(0, Math.min(r, width / 2, height / 2)),
+  );
   const n = 2 + 2.4 * smooth;
-  const hx = width / 2 - r;
-  const hy = height / 2 - r;
-  const corners: [number, number, number][] = [
-    [hx, hy, 0],
-    [-hx, hy, Math.PI / 2],
-    [-hx, -hy, Math.PI],
-    [hx, -hy, (3 * Math.PI) / 2],
+  const corners: [number, number, number, number][] = [
+    [width / 2 - radii[0], height / 2 - radii[0], 0, radii[0]],
+    [-width / 2 + radii[1], height / 2 - radii[1], Math.PI / 2, radii[1]],
+    [-width / 2 + radii[2], -height / 2 + radii[2], Math.PI, radii[2]],
+    [width / 2 - radii[3], -height / 2 + radii[3], (3 * Math.PI) / 2, radii[3]],
   ];
 
   const raw: [number, number][] = [];
-  for (const [cx, cy, start] of corners) {
+  for (const [cx, cy, start, r] of corners) {
     const corner = r > EPS ? resample(superellipseCorner(cx, cy, r, start, n, 256), segments) : [[cx, cy] as [number, number]];
     for (const p of corner) {
       const last = raw[raw.length - 1];

@@ -54,10 +54,41 @@ h1 em{font-family:Georgia,serif;font-weight:400;font-style:italic}
 <div class="home"></div>
 </body></html>`;
 
+const web = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;font-family:-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif;background:#f4f1ea;color:#17161a;overflow:hidden}
+nav{display:flex;align-items:center;justify-content:space-between;padding:30px 64px}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.6px}.logo i{font-family:Georgia,serif;font-weight:400;color:#ff5c35}
+.links{display:flex;gap:36px;font-size:15px;color:#55525c}.cta{background:#17161a;color:#f4f1ea;padding:12px 22px;border-radius:99px;font-size:14px;font-weight:600}
+.hero{display:grid;grid-template-columns:1.15fr 1fr;gap:48px;padding:40px 64px 0}
+.tag{display:inline-flex;gap:8px;align-items:center;background:#fff;border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600;box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.tag b{width:8px;height:8px;border-radius:50%;background:#3ddc97;display:inline-block}
+h1{font-size:92px;line-height:.95;letter-spacing:-4px;margin-top:26px;font-weight:800}
+h1 em{font-family:Georgia,serif;font-weight:400;font-style:italic;color:#ff5c35;letter-spacing:-2px}
+p.lead{font-size:20px;line-height:1.5;color:#55525c;margin-top:26px;max-width:540px}
+.btns{display:flex;gap:12px;margin-top:34px}.b1{background:#ff5c35;color:#fff;padding:16px 26px;border-radius:14px;font-weight:700}.b2{padding:16px 26px;border-radius:14px;font-weight:700;border:1.5px solid #17161a}
+.grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:250px 250px;gap:16px}
+.c{border-radius:26px;position:relative;overflow:hidden;padding:20px;color:#fff;font-weight:700;font-size:18px}
+.c small{display:block;font-weight:500;font-size:13px;opacity:.8;margin-top:4px}
+.c1{background:linear-gradient(150deg,#ff8a5c,#c2304a);grid-row:span 2}
+.c1:after{content:"";position:absolute;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.18);right:-80px;bottom:-60px}
+.c2{background:#17161a}.c2:after{content:"";position:absolute;left:20px;right:20px;bottom:20px;height:90px;border-radius:14px;background:repeating-linear-gradient(90deg,#ff5c35 0 18px,transparent 18px 30px);opacity:.9}
+.c3{background:linear-gradient(160deg,#a5b4fc,#4338ca)}
+.logos{display:flex;gap:56px;padding:46px 64px;color:#9b97a3;font-weight:800;font-size:20px;letter-spacing:-.4px}
+</style></head><body>
+<nav><div class="logo">nora<i>studio</i></div><div class="links"><span>Projets</span><span>Services</span><span>À propos</span><span>Journal</span></div><div class="cta">Démarrer un projet</div></nav>
+<section class="hero"><div><span class="tag"><b></b> Disponible en novembre</span><h1>Design that <em>moves</em> people.</h1><p class="lead">Studio indépendant de design produit et d’identité visuelle. Nous aidons les marques ambitieuses à raconter leur histoire, du premier croquis au lancement.</p><div class="btns"><span class="b1">Voir les projets</span><span class="b2">Nous écrire</span></div></div>
+<div class="grid"><div class="c c1">Halo Bank<small>Identité · App mobile</small></div><div class="c c2">Pulse<small>Dashboard</small></div><div class="c c3">Atlas<small>Site e-commerce</small></div></div></section>
+<div class="logos"><span>NORTHWIND</span><span>Lumen</span><span>KOTO</span><span>fieldnotes</span><span>ORBITAL</span><span>Maple&Co</span></div>
+</body></html>`;
+
 mkdirSync('public/samples', { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
 await page.setContent(phone);
 await page.screenshot({ path: 'public/samples/sample-app.png' });
+const wide = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+await wide.setContent(web);
+await wide.screenshot({ path: 'public/samples/sample-web.png' });
 await browser.close();
-console.log('wrote public/samples/sample-app.png');
+console.log('wrote public/samples/sample-app.png, sample-web.png');

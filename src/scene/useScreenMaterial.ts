@@ -46,7 +46,12 @@ export function placeholderTexture(): THREE.Texture {
  * Screen material bound to a surface: resolves the asset's texture, fits it to
  * the surface aspect and applies the screen settings.
  */
-export function useScreenMaterial(binding: SurfaceBinding | undefined, surfaceAspect: number, screen: ScreenSettings) {
+export function useScreenMaterial(
+  binding: SurfaceBinding | undefined,
+  surfaceAspect: number,
+  screen: ScreenSettings,
+  { rotated = false }: { rotated?: boolean } = {},
+) {
   const invalidate = useThree((s) => s.invalidate);
   const material = useMemo(() => createScreenMaterial(), []);
   useEffect(() => () => material.dispose(), [material]);
@@ -75,14 +80,14 @@ export function useScreenMaterial(binding: SurfaceBinding | undefined, surfaceAs
     const base = ready ? assetTexture(asset, image) : placeholderTexture();
     const tex = base.clone();
     tex.needsUpdate = true;
-    const imageAspect = ready ? asset.width / asset.height : surfaceAspect;
-    fitTexture(tex, imageAspect, surfaceAspect, fit, align);
+    const imageAspect = ready ? asset.width / asset.height : rotated ? 1 / surfaceAspect : surfaceAspect;
+    fitTexture(tex, imageAspect, surfaceAspect, fit, align, rotated);
     const hadMap = !!material.emissiveMap;
     material.emissiveMap = tex;
     if (!hadMap) material.needsUpdate = true;
     invalidate();
     return () => tex.dispose();
-  }, [asset, image, fit, align, surfaceAspect, material, invalidate]);
+  }, [asset, image, fit, align, surfaceAspect, rotated, material, invalidate]);
 
   useEffect(() => {
     material.emissiveIntensity = screen.brightness;

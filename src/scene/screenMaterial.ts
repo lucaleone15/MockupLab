@@ -82,31 +82,47 @@ export type Fit = 'cover' | 'contain';
  * Positions a texture on a surface of the given aspect (width / height).
  * `align` moves the crop window (0 = top/left, 0.5 = centre, 1 = bottom/right)
  * when the image overflows in cover mode; tall screenshots default to the top.
+ *
+ * `rotated` is for devices turned 90° counter-clockwise (landscape): the image
+ * is mapped upright in world space, i.e. image u follows the surface's -v and
+ * image v follows the surface's u.
  */
-export function fitTexture(texture: THREE.Texture, imageAspect: number, surfaceAspect: number, fit: Fit, align = 0) {
+export function fitTexture(
+  texture: THREE.Texture,
+  imageAspect: number,
+  surfaceAspect: number,
+  fit: Fit,
+  align = 0,
+  rotated = false,
+) {
   texture.wrapS = THREE.ClampToEdgeWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
-  texture.center.set(0, 0);
-  texture.rotation = 0;
-  const imageTaller = imageAspect < surfaceAspect;
+  const aspect = rotated ? 1 / surfaceAspect : surfaceAspect;
+  let rx = 1;
+  let ry = 1;
+  let ox = 0;
+  let oy = 0;
+  const imageTaller = imageAspect < aspect;
   if (fit === 'cover') {
     if (imageTaller) {
-      const ry = imageAspect / surfaceAspect;
-      texture.repeat.set(1, ry);
-      texture.offset.set(0, (1 - ry) * (1 - align));
+      ry = imageAspect / aspect;
+      oy = (1 - ry) * (1 - align);
     } else {
-      const rx = surfaceAspect / imageAspect;
-      texture.repeat.set(rx, 1);
-      texture.offset.set((1 - rx) * align, 0);
+      rx = aspect / imageAspect;
+      ox = (1 - rx) * align;
     }
   } else if (imageTaller) {
-    const rx = surfaceAspect / imageAspect;
-    texture.repeat.set(rx, 1);
-    texture.offset.set((1 - rx) / 2, 0);
+    rx = aspect / imageAspect;
+    ox = (1 - rx) / 2;
   } else {
-    const ry = imageAspect / surfaceAspect;
-    texture.repeat.set(1, ry);
-    texture.offset.set(0, (1 - ry) / 2);
+    ry = imageAspect / aspect;
+    oy = (1 - ry) / 2;
   }
-  texture.updateMatrix();
+  texture.matrixAutoUpdate = false;
+  if (rotated) {
+    // image.u = rx * (1 - v) + ox ; image.v = ry * u + oy
+    texture.matrix.set(0, -rx, rx + ox, ry, 0, oy, 0, 0, 1);
+  } else {
+    texture.matrix.set(rx, 0, ox, 0, ry, oy, 0, 0, 1);
+  }
 }

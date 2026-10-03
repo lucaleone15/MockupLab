@@ -9,8 +9,13 @@ export const fr = {
 
   'library.title': 'Bibliothèque',
   'library.phones': 'Téléphones',
-  'library.more': 'Ordinateurs, tablettes et print arrivent dans les prochaines versions.',
 
+  'library.tablets': 'Tablettes',
+  'library.laptops': 'Ordinateurs portables',
+  'library.desktops': 'Écrans & desktops',
+  'library.browser': 'Navigateur',
+  'library.more': 'Le print, les objets et la montre arrivent dans les prochaines versions.',
+  'props.model': 'Réglages du modèle',
   'stage.dropTitle': 'Dépose ton image',
   'stage.dropHint': 'PNG, JPG, WebP ou GIF, elle reste sur ton appareil.',
   'stage.emptyTitle': 'Ajoute ton design',
