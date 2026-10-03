@@ -3,21 +3,24 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
+const place = (id, material, rotation) => ({ kind: 'place', place: id, material, rotation, blur: 0.45 });
 const SCENARIOS = [
   { name: 'studio-default', model: 'phone-pro' },
-  { name: 'mat-wood', model: 'phone', decor: { kind: 'surface', material: 'wood' }, camera: { preset: 'top' }, pose: 'flat' },
-  { name: 'mat-marble', model: 'phone', decor: { kind: 'surface', material: 'marble' }, camera: { preset: 'top' }, pose: 'flat' },
-  { name: 'dof-4k', model: 'phone-pro', camera: { preset: 'threeQuarter', dof: true, aperture: 0.5, focus: 0 }, decor: { kind: 'surface', material: 'concrete' }, export: { resolution: '4k' } },
-  { name: 'reflect-debug', model: 'phone-pro', bg: { kind: 'solid', color: '#202024' }, ground: { reflection: true, reflectivity: 1, shadow: 'none' }, camera: { preset: 'front' } },
-  { name: 'aurora-reflection', model: 'phone-pro', bg: { kind: 'pattern', pattern: 'aurora', colors: ['#0c0a1d', '#4b2ad8', '#ff6a3d'], scale: 1, grain: 0.35, seed: 4 }, ground: { reflection: true, reflectivity: 0.45 } },
-  { name: 'podium-arch', model: 'phone-pro', decor: { kind: 'podium', color: '#e8d9c8', shape: 'cylinder', arch: true }, light: 'highkey', bg: { kind: 'solid', color: '#efe3d6' } },
-  { name: 'sweep-dramatic', model: 'laptop-14', decor: { kind: 'sweep', color: '#2b2b30' }, light: 'dramatic' },
-  { name: 'marble-top', model: 'phone-pro', decor: { kind: 'surface', material: 'marble' }, camera: { preset: 'top' }, pose: 'flat', bg: { kind: 'solid', color: '#f1efe9' }, light: 'daylight' },
-  { name: 'desk-golden', model: 'laptop-air-13', decor: { kind: 'desk', material: 'wood', color: '#e9e2d6' }, light: 'golden' },
-  { name: 'neon-iso', model: 'tablet-pro-11', light: 'neon', camera: { preset: 'isometric', focal: 600 }, bg: { kind: 'solid', color: '#07060d' }, ground: { reflection: true, reflectivity: 0.5 } },
-  { name: 'noir-dof', model: 'phone', light: 'noir', camera: { preset: 'front', dof: true, aperture: 0.6, focus: -0.4 }, bg: { kind: 'solid', color: '#000000' } },
-  { name: 'terrazzo-low', model: 'desktop-24', decor: { kind: 'surface', material: 'terrazzo' }, camera: { preset: 'low' }, bg: { kind: 'pattern', pattern: 'grain', colors: ['#fde7d9', '#f6b9a1', '#fff2e6'], scale: 1, grain: 0.5, seed: 2 } },
+  { name: 'place-loft', model: 'phone-pro', decor: place('loft', 'oak', 72) },
+  { name: 'place-cafe', model: 'laptop-14', decor: place('cafe', 'walnut', 90) },
+  { name: 'rot-47', model: 'phone', decor: place('lounge', 'marble-white', 47), lighting: { exposure: 0.8 } },
+  { name: 'rot-180', model: 'phone', decor: place('lounge', 'marble-white', 180), lighting: { exposure: 0.8 } },
+  { name: 'place-lounge', model: 'phone', decor: place('lounge', 'marble-white', 133), lighting: { exposure: 0.8 } },
+  { name: 'place-veranda', model: 'tablet-pro-11', decor: place('veranda', 'travertine', 108) },
+  { name: 'place-evening', model: 'laptop-air-13', decor: place('evening', 'marble-black', 90) },
+  { name: 'place-atelier', model: 'desktop-24', decor: place('atelier', 'concrete', 119) },
+  { name: 'podium-terrazzo', model: 'phone-pro', decor: { kind: 'podium', podiumFinish: 'material', material: 'terrazzo' }, light: 'highkey', bg: { kind: 'solid', color: '#e9e4dc' } },
+  { name: 'flatlay-marble', model: 'phone-pro', decor: { kind: 'surface', material: 'marble-white' }, camera: { preset: 'top' }, pose: 'flat', bg: { kind: 'solid', color: '#f1efe9' }, light: 'highkey' },
+  { name: 'flatlay-linen', model: 'phone', decor: { kind: 'surface', material: 'linen' }, camera: { preset: 'top' }, pose: 'flat', bg: { kind: 'solid', color: '#e4e0d8' }, light: 'highkey' },
+  { name: 'surface-walnut', model: 'laptop-14', decor: { kind: 'surface', material: 'walnut' }, bg: { kind: 'solid', color: '#efeae3' }, light: 'highkey' },
+  { name: 'dof-4k', model: 'phone-pro', camera: { preset: 'threeQuarter', dof: true, aperture: 0.5, focus: 0 }, decor: place('loft', 'oak', 72), export: { resolution: '4k' } },
 ];
+
 
 const only = process.argv[2]?.split(',');
 const url = process.env.URL ?? 'http://localhost:5173/';
@@ -40,8 +43,11 @@ for (const sc of SCENARIOS.filter((s) => !only || only.includes(s.name))) {
     if (sc.pose) st().setPose(sc.pose);
     if (sc.bg) st().setBackground(sc.bg);
     if (sc.decor) st().setDecor(sc.decor);
+    // Let lazily loaded assets (HDRI, textures) arrive.
+    await new Promise((res) => setTimeout(res, sc.decor ? 1500 : 0));
     if (sc.light) st().applyLightPreset(sc.light);
     if (sc.ground) st().setGround(sc.ground);
+    if (sc.lighting) st().setLighting(sc.lighting);
     if (sc.camera) st().setCamera(sc.camera);
     st().setExport({ resolution: '1080', ratio: '16:9', format: 'png', ...(sc.export ?? {}) });
     const m = api.models.find((x) => x.id === sc.model);

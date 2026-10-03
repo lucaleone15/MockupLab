@@ -4,23 +4,11 @@ import type { PatternId } from '@/store/project';
  * Procedural patterns rendered by fragment shaders in a small dedicated WebGL2
  * context. Resolution independent: features are expressed in units of the
  * output height, so a 4K export shows the same pattern as the preview, only
- * sharper. Used for 2D backgrounds and for the textures of 3D décor surfaces.
+ * sharper. Used for graphic 2D backgrounds (real materials use photographed
+ * PBR textures, see scene/realMaterials.ts).
  */
 
-export const PATTERN_IDS: PatternId[] = [
-  'grain',
-  'aurora',
-  'topo',
-  'paper',
-  'concrete',
-  'marble',
-  'terrazzo',
-  'linen',
-  'wood',
-  'dots',
-  'grid',
-  'blueprint',
-];
+export const PATTERN_IDS: PatternId[] = ['grain', 'aurora', 'topo', 'dots', 'grid', 'blueprint'];
 
 const INDEX: Record<PatternId, number> = Object.fromEntries(PATTERN_IDS.map((id, i) => [id, i])) as Record<PatternId, number>;
 
@@ -103,64 +91,14 @@ void main() {
     float l = n * 16.0;
     float d = abs(fract(l) - 0.5) / max(fwidth(l), 1e-5);
     col = mix(col, uC2, (1.0 - min(d / 1.1, 1.0)) * 0.85);
-  } else if (uPattern == 3) {     // paper
-    col = uC1 * (0.965 + 0.06 * fbm(p * 7.0));
-    float fibre = fbm(vec2(p.x * 2.0, p.y * 40.0) + fbm(p * 3.0) * 4.0);
-    col -= (uC1 - uC2) * smoothstep(0.62, 0.9, fibre) * 0.22;
-    float speck = step(0.9975, hash12(floor(frag * 0.5)));
-    col = mix(col, uC3, speck * 0.6);
-  } else if (uPattern == 4) {     // concrete
-    float m = fbm(p * 2.2);
-    col = mix(uC1, uC2, smoothstep(0.3, 0.85, m) * 0.7);
-    col *= 0.9 + 0.18 * fbm(p * 22.0);
-    vec2 v = voronoi(p * 22.0);
-    float pore = smoothstep(0.08, 0.03, v.x) * step(0.86, v.y);
-    col = mix(col, uC3, pore * 0.5);
-  } else if (uPattern == 5) {     // marble: warped ridged noise → thin branching veins
-    vec2 q = p * 2.0;
-    vec2 w = vec2(fbm(q + vec2(1.7, 9.2)), fbm(q + vec2(8.3, 2.8)));
-    float f = fbm(q + 2.2 * w);
-    float r = 1.0 - abs(f * 2.0 - 1.0);
-    float vein = pow(r, 90.0) * 0.85 + pow(r, 14.0) * 0.12;
-    float r2 = 1.0 - abs(fbm(q * 3.1 + 3.0 * w) * 2.0 - 1.0);
-    float vein2 = pow(r2, 160.0);
-    col = mix(uC1, uC1 * 0.94, smoothstep(0.35, 0.8, fbm(q * 2.0 + w)) * 0.6);
-    col = mix(col, uC2, clamp(vein, 0.0, 1.0));
-    col = mix(col, uC3, vein2 * 0.65);
-  } else if (uPattern == 6) {     // terrazzo
-    col = uC1 * (0.97 + 0.05 * fbm(p * 9.0));
-    for (int k = 0; k < 2; k++) {
-      float s = k == 0 ? 7.0 : 15.0;
-      vec2 v = voronoi(p * s + float(k) * 13.0);
-      float r = fract(v.y * 7.13);
-      float size = (k == 0 ? 0.22 : 0.17) + 0.12 * fract(v.y * 3.7);
-      float aa = fwidth(v.x) * 1.2;
-      float chip = (1.0 - smoothstep(size - aa, size + aa, v.x)) * step(r, 0.42);
-      vec3 cc = r < 0.18 ? uC2 : (r < 0.32 ? uC3 : mix(uC1, uC2, 0.35));
-      col = mix(col, cc, chip);
-    }
-  } else if (uPattern == 7) {     // linen weave
-    vec2 g = p * vec2(70.0, 70.0);
-    float fade = 1.0 - smoothstep(0.35, 0.7, max(fwidth(g.x), fwidth(g.y)));
-    float warp = 0.5 + 0.5 * sin(g.x * 6.2832);
-    float weft = 0.5 + 0.5 * sin(g.y * 6.2832);
-    float slub = fbm(vec2(p.x * 2.0, p.y * 90.0)) * 0.6 + fbm(vec2(p.x * 90.0, p.y * 2.0)) * 0.4;
-    col = mix(uC1, uC2, (warp * weft * 0.35) * fade + slub * 0.28);
-  } else if (uPattern == 8) {     // wood: straight grain along X, growth rings, fine pores
-    float n = fbm(vec2(p.x * 0.9, p.y * 7.0));
-    float ring = fract(p.y * 26.0 + n * 3.0);
-    float figure = smoothstep(0.0, 0.35, ring) * smoothstep(1.0, 0.75, ring);
-    float fine = noise(vec2(p.x * 3.0, p.y * 420.0)) * 0.55 + noise(vec2(p.x * 1.5, p.y * 140.0)) * 0.45;
-    col = mix(uC1, uC2, figure * 0.22 + fine * 0.3);
-    col = mix(col, uC3, smoothstep(0.72, 0.95, fbm(p * vec2(1.2, 9.0))) * 0.22);
-  } else if (uPattern == 9) {     // halftone dots
+  } else if (uPattern == 3) {     // halftone dots
     vec2 g = p * 14.0;
     vec2 cell = fract(g) - 0.5;
     float r = mix(0.06, 0.42, clamp(1.0 - uv.y * 0.9 - uv.x * 0.25, 0.0, 1.0));
     float d = length(cell);
     float aa = fwidth(d);
     col = mix(uC1, uC2, 1.0 - smoothstep(r - aa, r + aa, d));
-  } else if (uPattern == 10) {    // grid
+  } else if (uPattern == 4) {     // grid
     col = mix(uC1, uC2, gridLine(p * 12.0, 1.0) * 0.5);
     col = mix(col, uC3, gridLine(p * 12.0 / 5.0, 1.3) * 0.7);
   } else {                        // blueprint

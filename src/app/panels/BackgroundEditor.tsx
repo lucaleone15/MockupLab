@@ -140,7 +140,8 @@ function GradientEditor({ stops, onChange }: { stops: GradientStop[]; onChange: 
 
 /* ------------------------------------------------------------ editor */
 
-export function BackgroundEditor() {
+/** `basic`: the curated moods only; `details`: kind switch and the full editors. */
+export function BackgroundEditor({ part }: { part: 'basic' | 'details' }) {
   const { t } = useT();
   const bg = useProject((s) => s.background);
   const setBackground = useProject((s) => s.setBackground);
@@ -164,15 +165,18 @@ export function BackgroundEditor() {
     else setBackground({ kind: 'transparent' });
   };
 
+  if (part === 'basic') {
+    return (
+      <div className="grid grid-cols-6 gap-1.5">
+        {BG_PRESETS.map((p, i) => (
+          <Thumb key={i} bg={p} label={`${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
-      <Field label={t('bg.presets')}>
-        <div className="grid grid-cols-6 gap-1.5">
-          {BG_PRESETS.map((p, i) => (
-            <Thumb key={i} bg={p} label={`${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
-          ))}
-        </div>
-      </Field>
       <Segmented
         size="sm"
         value={bg.kind}

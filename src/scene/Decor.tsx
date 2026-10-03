@@ -1,58 +1,45 @@
 import { useEffect, useMemo } from 'react';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { patternCanvas, type PatternSpec } from '@/lib/patterns';
 import { roundedSlab } from '@/lib/geometry/sweep';
 import { getModel } from '@/models/registry';
-import { prepareTexture } from '@/store/assets';
-import type { Decor, SceneItem, SurfaceMaterialId } from '@/store/project';
+import type { Decor, SceneItem } from '@/store/project';
+import { PlaceBackground, type LoadedPlace } from './places';
+import { useRealMaterial } from './realMaterials';
 
 /*
- * 3D set dressing: a seamless studio sweep, a podium (with an optional arch
- * backdrop), a textured surface fading into the background, or a desk against
- * a wall. Surfaces use the procedural pattern engine for their textures.
+ * 3D set dressing: a seamless studio sweep, a podium (painted or in a real
+ * material, optional arch), a real-material surface fading into the
+ * background, or a real place (photographed room + table).
  */
 
-export const SURFACES: Record<SurfaceMaterialId, { spec: PatternSpec; roughness: number; tile: number }> = {
-  marble: { spec: { pattern: 'marble', colors: ['#f2f0ec', '#8d8a86', '#c9a96e'], scale: 1, grain: 0, seed: 3 }, roughness: 0.22, tile: 70 },
-  wood: { spec: { pattern: 'wood', colors: ['#c99d70', '#8a5f3c', '#5a3a22'], scale: 1, grain: 0, seed: 1 }, roughness: 0.5, tile: 70 },
-  concrete: { spec: { pattern: 'concrete', colors: ['#bdbab4', '#8f8b85', '#4d4a46'], scale: 1.2, grain: 0, seed: 2 }, roughness: 0.85, tile: 80 },
-  terrazzo: { spec: { pattern: 'terrazzo', colors: ['#ece7df', '#d9764a', '#4b6e8c'], scale: 1.4, grain: 0, seed: 5 }, roughness: 0.38, tile: 28 },
-  linen: { spec: { pattern: 'linen', colors: ['#e7e0d3', '#c3b8a5', '#000000'], scale: 1, grain: 0, seed: 4 }, roughness: 0.95, tile: 30 },
-  paper: { spec: { pattern: 'paper', colors: ['#f3efe6', '#d9d2c3', '#7d7468'], scale: 1, grain: 0, seed: 6 }, roughness: 0.9, tile: 60 },
-};
+/* ------------------------------------------------------------ helpers */
 
-const textures = new Map<SurfaceMaterialId, THREE.Texture>();
-
-function surfaceTexture(id: SurfaceMaterialId) {
-  let t = textures.get(id);
-  if (!t) {
-    t = prepareTexture(new THREE.CanvasTexture(patternCanvas(SURFACES[id].spec, 2048, 2048)));
-    t.wrapS = t.wrapT = THREE.MirroredRepeatWrapping;
-    textures.set(id, t);
+/** Radius of the floor area the devices occupy (for podium sizing). */
+export function itemsRadius(items: SceneItem[]) {
+  let r = 6;
+  for (const it of items) {
+    const model = getModel(it.modelId);
+    const [w, h, d] = model.size;
+    const flat = it.pose === 'flat' && model.anchor !== 'bottom';
+    r = Math.max(r, Math.hypot(it.position[0], it.position[2]) + Math.hypot(w / 2, flat ? h / 2 : d / 2));
   }
-  return t;
+  return r;
 }
 
-/** Material for a surface of `size` cm (texture tiled at the material's physical scale). */
-function useSurfaceMaterial(id: SurfaceMaterialId, sizeX: number, sizeY: number, fade = false) {
-  const material = useMemo(() => {
-    const base = surfaceTexture(id);
-    const map = base.clone();
-    map.needsUpdate = true;
-    map.repeat.set(sizeX / SURFACES[id].tile, sizeY / SURFACES[id].tile);
-    const m = new THREE.MeshStandardMaterial({ map, roughness: SURFACES[id].roughness, metalness: 0 });
-    if (fade) {
-      m.alphaMap = radialFade();
-      m.transparent = true;
-      m.depthWrite = false;
-    }
-    return m;
-  }, [id, sizeX, sizeY, fade]);
-  useEffect(() => () => {
-    material.map?.dispose();
-    material.dispose();
-  }, [material]);
-  return material;
+export interface DecorLayout {
+  /** Height of the surface the devices stand on. */
+  floorY: number;
+  /** Reflective surface under the devices (null → large floor). */
+  top: THREE.BufferGeometry | null;
+}
+
+export function decorLayout(decor: Decor, items: SceneItem[]): DecorLayout {
+  if (decor.kind !== 'podium') return { floorY: 0, top: null };
+  const r = itemsRadius(items) + 3;
+  const h = Math.max(4, r * 0.38);
+  const top = decor.shape === 'cylinder' ? new THREE.CircleGeometry(r, 96) : new THREE.PlaneGeometry(r * 2, r * 2);
+  return { floorY: h, top };
 }
 
 let fadeTex: THREE.Texture | null = null;
@@ -64,48 +51,13 @@ function radialFade() {
   const g = c.getContext('2d')!;
   const grd = g.createRadialGradient(256, 256, 40, 256, 256, 256);
   grd.addColorStop(0, '#fff');
-  grd.addColorStop(0.55, '#fff');
+  grd.addColorStop(0.5, '#fff');
   grd.addColorStop(1, '#000');
   g.fillStyle = grd;
   g.fillRect(0, 0, 512, 512);
   fadeTex = new THREE.CanvasTexture(c);
   return fadeTex;
 }
-
-/* ------------------------------------------------------------ helpers */
-
-/** Radius of the floor area the devices occupy (for podium sizing). */
-export function itemsRadius(items: SceneItem[]) {
-  let r = 6;
-  for (const it of items) {
-    const [w, h, d] = getModel(it.modelId).size;
-    const flat = it.pose === 'flat' && getModel(it.modelId).anchor !== 'bottom';
-    const fx = w / 2;
-    const fz = flat ? h / 2 : d / 2;
-    r = Math.max(r, Math.hypot(it.position[0], it.position[2]) + Math.hypot(fx, fz));
-  }
-  return r;
-}
-
-export interface DecorLayout {
-  /** Height of the surface the devices stand on. */
-  floorY: number;
-  /** Reflective / shadow surface under the devices (null → infinite floor). */
-  top: THREE.BufferGeometry | null;
-}
-
-export function decorLayout(decor: Decor, items: SceneItem[]): DecorLayout {
-  if (decor.kind !== 'podium') return { floorY: 0, top: null };
-  const r = itemsRadius(items) + 3;
-  const h = Math.max(4, r * 0.38);
-  const top =
-    decor.shape === 'cylinder'
-      ? new THREE.CircleGeometry(r, 96)
-      : new THREE.PlaneGeometry(r * 2, r * 2);
-  return { floorY: h, top };
-}
-
-/* ------------------------------------------------------------ sweep */
 
 /** Profile (z, y) of a cyclorama: floor, cove, wall; swept along X. */
 function sweepGeometry(width: number) {
@@ -139,16 +91,16 @@ function sweepGeometry(width: number) {
 
 /* ------------------------------------------------------------ component */
 
-export function DecorScene({ decor, items }: { decor: Decor; items: SceneItem[] }) {
+export function DecorScene({ decor, items, place }: { decor: Decor; items: SceneItem[]; place: LoadedPlace | null }) {
   switch (decor.kind) {
     case 'sweep':
       return <Sweep color={decor.color} />;
     case 'podium':
       return <Podium decor={decor} items={items} />;
     case 'surface':
-      return <Surface material={decor.material} />;
-    case 'desk':
-      return <Desk decor={decor} />;
+      return <Surface decor={decor} />;
+    case 'place':
+      return <Place decor={decor} place={place} />;
     default:
       return null;
   }
@@ -173,19 +125,23 @@ function Podium({ decor, items }: { decor: Decor; items: SceneItem[] }) {
     }),
     [r, h],
   );
-  const base = new THREE.Color(decor.color);
-  const darker = '#' + base.clone().multiplyScalar(0.82).getHexString();
+  const real = useRealMaterial(decor.material, r * 2, r * 2);
+  const paint = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.78 }), []);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    paint.color.set(decor.color);
+    invalidate();
+  }, [paint, decor.color, invalidate]);
+  const material = decor.podiumFinish === 'material' ? real : paint;
+  const darker = '#' + new THREE.Color(decor.color).multiplyScalar(0.82).getHexString();
   return (
     <group>
       {decor.shape === 'cylinder' ? (
-        <mesh position={[0, h / 2, 0]} castShadow receiveShadow>
+        <mesh position={[0, h / 2, 0]} material={material} castShadow receiveShadow>
           <cylinderGeometry args={[r, r, h, 128, 1]} />
-          <meshStandardMaterial color={decor.color} roughness={0.78} />
         </mesh>
       ) : (
-        <mesh geometry={g.block} position={[0, h / 2, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-          <meshStandardMaterial color={decor.color} roughness={0.78} />
-        </mesh>
+        <mesh geometry={g.block} material={material} position={[0, h / 2, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow />
       )}
       {decor.arch && (
         <mesh geometry={g.arch} position={[0, r * 1.6, -r - 6]} castShadow receiveShadow>
@@ -196,27 +152,28 @@ function Podium({ decor, items }: { decor: Decor; items: SceneItem[] }) {
   );
 }
 
-function Surface({ material }: { material: SurfaceMaterialId }) {
-  const size = 320;
-  const mat = useSurfaceMaterial(material, size, size, true);
+function Surface({ decor }: { decor: Decor }) {
+  const size = 300;
+  const material = useRealMaterial(decor.material, size, size, radialFade());
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} material={mat} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} material={material} receiveShadow>
       <planeGeometry args={[size, size]} />
     </mesh>
   );
 }
 
-function Desk({ decor }: { decor: Decor }) {
-  const top = useSurfaceMaterial(decor.material, 260, 120);
+/** A table top in a real room: the panorama is behind, the HDRI lights the scene. */
+function Place({ decor, place }: { decor: Decor; place: LoadedPlace | null }) {
+  const table = useMemo(
+    () =>
+      roundedSlab({ width: 320, height: 150, radius: 3, thickness: 4, front: { d: 0.6, z: 0.6 }, back: 0.3, smooth: 0.4, segments: 8, edgeSegments: 6 }),
+    [],
+  );
+  const material = useRealMaterial(decor.material, 320, 150);
   return (
     <group>
-      <mesh position={[0, -2.2, 10]} material={top} receiveShadow castShadow>
-        <boxGeometry args={[260, 4.4, 120]} />
-      </mesh>
-      <mesh position={[0, 120, -50]} receiveShadow>
-        <planeGeometry args={[700, 400]} />
-        <meshStandardMaterial color={decor.color} roughness={0.95} />
-      </mesh>
+      {place && <PlaceBackground texture={place.background} blur={decor.blur} rotation={decor.rotation} />}
+      <mesh geometry={table} material={material} position={[0, -2, 15]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow />
     </group>
   );
 }

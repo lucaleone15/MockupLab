@@ -11,6 +11,7 @@ import { DecorScene, decorLayout } from './Decor';
 import { setExportBridge } from './exporter';
 import { Lighting } from './lighting/Lighting';
 import { ReflectiveFloor } from './ReflectiveFloor';
+import { usePlace } from './places';
 
 /** Resting height of a device lying on its back (camera bumps included). */
 const FLAT_CLEARANCE = 0.12;
@@ -87,10 +88,11 @@ function Scene() {
   const decor = useProject((s) => s.decor);
   const dof = useProject((s) => s.camera.dof);
   const layout = useMemo(() => decorLayout(decor, items), [decor, items]);
+  const place = usePlace(decor.kind === 'place' ? decor.place : null);
   return (
     <>
-      <Lighting />
-      <DecorScene decor={decor} items={items} />
+      <Lighting place={place} />
+      <DecorScene decor={decor} items={items} place={place} />
       <group position={[0, layout.floorY, 0]}>
         {items.map((item) => (
           <Device key={item.id} item={item} />

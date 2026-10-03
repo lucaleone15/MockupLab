@@ -285,3 +285,24 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
     </button>
   );
 }
+
+/* ------------------------------------------------------------ Advanced */
+
+/** "More options" disclosure: keeps sections short, details one click away. */
+export function Advanced({ children, more, less }: { children: ReactNode; more: string; less: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center gap-1 self-start rounded-md text-[11.5px] font-medium text-fg-muted transition-colors hover:text-fg"
+      >
+        <ChevronDown size={13} className={cx('transition-transform duration-200', !open && '-rotate-90')} />
+        {open ? less : more}
+      </button>
+      {open && <div className="flex flex-col gap-3.5 border-l border-line pl-3 animate-[fade-in_160ms_ease-out]">{children}</div>}
+    </div>
+  );
+}
