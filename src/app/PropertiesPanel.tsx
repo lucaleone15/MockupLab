@@ -5,10 +5,12 @@ import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import type { ParamDef, ParamValue } from '@/models/types';
 import { pickImages } from '@/lib/importImage';
+import { useState } from 'react';
 import { useAssets } from '@/store/assets';
-import { selectSelectedItem, useProject, type Background } from '@/store/project';
+import { selectSelectedItem, useProject } from '@/store/project';
+import { ScenePanel } from './panels/ScenePanel';
 import { useUi } from '@/store/ui';
-import { Button, ColorField, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
+import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
 function ImageSection() {
   const { t } = useT();
@@ -127,12 +129,25 @@ function DeviceSection() {
   const item = useProject(selectSelectedItem);
   const updateItem = useProject((s) => s.updateItem);
   const setParam = useProject((s) => s.setParam);
+  const setPose = useProject((s) => s.setPose);
   if (!item) return null;
   const model = getModel(item.modelId);
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
 
   return (
     <Section title={t('props.device')} aside={<span className="text-[12px] text-fg-subtle">{tr(model.name)}</span>}>
+      {model.anchor !== 'bottom' && (
+        <Field label={t('props.pose')}>
+          <Segmented
+            value={item.pose}
+            onChange={(pose) => setPose(pose)}
+            options={[
+              { value: 'standing', label: t('props.pose.standing') },
+              { value: 'flat', label: t('props.pose.flat') },
+            ]}
+          />
+        </Field>
+      )}
       {model.params?.map((def) => (
         <ParamControl key={def.id} def={def} value={item.params[def.id]} onChange={(v) => setParam(item.id, def.id, v)} />
       ))}
@@ -178,118 +193,12 @@ function DeviceSection() {
   );
 }
 
-const BG_PRESETS: Background[] = [
-  { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#2a2a31', at: 0 }, { color: '#0d0d10', at: 1 }] },
-  { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#ffffff', at: 0 }, { color: '#e4e2dd', at: 1 }] },
-  { kind: 'gradient', type: 'linear', angle: 160, stops: [{ color: '#ff8a5c', at: 0 }, { color: '#c2304a', at: 1 }] },
-  { kind: 'gradient', type: 'linear', angle: 135, stops: [{ color: '#a5b4fc', at: 0 }, { color: '#4338ca', at: 1 }] },
-  { kind: 'gradient', type: 'linear', angle: 180, stops: [{ color: '#d9f99d', at: 0 }, { color: '#4d7c0f', at: 1 }] },
-  { kind: 'solid', color: '#f1efe9' },
-  { kind: 'solid', color: '#0b0b0c' },
-];
-
-const bgCss = (b: Background) =>
-  b.kind === 'solid'
-    ? b.color
-    : b.kind === 'gradient'
-      ? b.type === 'linear'
-        ? `linear-gradient(${b.angle}deg, ${b.stops.map((s) => `${s.color} ${s.at * 100}%`).join(',')})`
-        : `radial-gradient(circle at 50% 42%, ${b.stops.map((s) => `${s.color} ${s.at * 100}%`).join(',')})`
-      : 'transparent';
-
-function BackgroundSection() {
-  const { t } = useT();
-  const bg = useProject((s) => s.background);
-  const setBackground = useProject((s) => s.setBackground);
-  const kind = bg.kind;
-
-  const switchKind = (k: Background['kind']) => {
-    if (k === kind) return;
-    if (k === 'solid') setBackground({ kind: 'solid', color: bg.kind === 'gradient' ? bg.stops[bg.stops.length - 1].color : '#111114' });
-    else if (k === 'gradient')
-      setBackground({
-        kind: 'gradient',
-        type: 'linear',
-        angle: 160,
-        stops: [
-          { color: bg.kind === 'solid' ? bg.color : '#2a2a31', at: 0 },
-          { color: '#0d0d10', at: 1 },
-        ],
-      });
-    else setBackground({ kind: 'transparent' });
-  };
-
-  return (
-    <Section title={t('props.background')}>
-      <div className="grid grid-cols-7 gap-1.5">
-        {BG_PRESETS.map((p, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-label={`Preset ${i + 1}`}
-            onClick={() => setBackground(p)}
-            className={cx(
-              'aspect-square rounded-md transition-transform duration-150 hover:scale-110 active:scale-95',
-              JSON.stringify(p) === JSON.stringify(bg)
-                ? 'shadow-[0_0_0_2px_var(--surface),0_0_0_3.5px_var(--accent)]'
-                : 'shadow-[0_0_0_1px_var(--line-strong)_inset]',
-            )}
-            style={{ background: bgCss(p) }}
-          />
-        ))}
-      </div>
-      <Segmented
-        value={kind}
-        onChange={switchKind}
-        options={[
-          { value: 'solid', label: t('props.bg.solid') },
-          { value: 'gradient', label: t('props.bg.gradient') },
-          { value: 'transparent', label: t('props.bg.transparent') },
-        ]}
-      />
-      {bg.kind === 'solid' && (
-        <Field label={t('props.bg.color')}>
-          <ColorField label={t('props.bg.color')} value={bg.color} onChange={(color) => setBackground({ ...bg, color })} />
-        </Field>
-      )}
-      {bg.kind === 'gradient' && (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            {bg.stops.slice(0, 2).map((s, i) => (
-              <Field key={i} label={i === 0 ? t('props.bg.from') : t('props.bg.to')}>
-                <ColorField
-                  label={i === 0 ? t('props.bg.from') : t('props.bg.to')}
-                  value={s.color}
-                  onChange={(color) => setBackground({ ...bg, stops: bg.stops.map((x, j) => (j === i ? { ...x, color } : x)) })}
-                />
-              </Field>
-            ))}
-          </div>
-          <Segmented
-            size="sm"
-            value={bg.type}
-            onChange={(type) => setBackground({ ...bg, type })}
-            options={[
-              { value: 'linear', label: t('props.bg.linear') },
-              { value: 'radial', label: t('props.bg.radial') },
-            ]}
-          />
-          {bg.type === 'linear' && (
-            <Field label={t('props.bg.angle')} value={`${Math.round(bg.angle)}°`}>
-              <Slider label={t('props.bg.angle')} min={0} max={360} step={1} value={bg.angle} onChange={(angle) => setBackground({ ...bg, angle })} />
-            </Field>
-          )}
-        </>
-      )}
-    </Section>
-  );
-}
-
 function ExportSection() {
   const { t } = useT();
   const settings = useProject((s) => s.export);
   const setExport = useProject((s) => s.setExport);
   const transparent = useProject((s) => s.background.kind === 'transparent');
+  const dof = useProject((s) => s.camera.dof);
   const exporting = useUi((s) => s.exporting);
   const { width, height } = outputSize(settings);
 
@@ -338,6 +247,7 @@ function ExportSection() {
           <span className="text-fg-subtle"> · {FORMATS.find((f) => f.id === settings.format)?.label}</span>
         </span>
       </div>
+      {dof && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('export.dofNote')}</p>}
       <Button variant="primary" size="lg" onClick={exportImage} disabled={!!exporting}>
         <Download size={16} strokeWidth={2.2} />
         {t('export.cta')}
@@ -346,13 +256,49 @@ function ExportSection() {
   );
 }
 
+type Tab = 'device' | 'scene' | 'export';
+
 export function PropertiesPanel() {
+  const { t } = useT();
+  const [tab, setTab] = useState<Tab>(() => {
+    try {
+      const v = localStorage.getItem('mockuplab:tab');
+      return v === 'scene' || v === 'export' ? v : 'device';
+    } catch {
+      return 'device';
+    }
+  });
+  const choose = (v: Tab) => {
+    setTab(v);
+    try {
+      localStorage.setItem('mockuplab:tab', v);
+    } catch {
+      /* storage unavailable */
+    }
+  };
   return (
-    <aside className="scroll-thin flex w-[288px] shrink-0 flex-col overflow-y-auto border-l border-line bg-surface">
-      <ImageSection />
-      <DeviceSection />
-      <BackgroundSection />
-      <ExportSection />
+    <aside className="flex w-[300px] shrink-0 flex-col border-l border-line bg-surface">
+      <div className="shrink-0 border-b border-line p-2">
+        <Segmented
+          value={tab}
+          onChange={choose}
+          options={[
+            { value: 'device', label: t('tab.device') },
+            { value: 'scene', label: t('tab.scene') },
+            { value: 'export', label: t('tab.export') },
+          ]}
+        />
+      </div>
+      <div className="scroll-thin flex-1 overflow-y-auto" key={tab}>
+        {tab === 'device' && (
+          <>
+            <ImageSection />
+            <DeviceSection />
+          </>
+        )}
+        {tab === 'scene' && <ScenePanel />}
+        {tab === 'export' && <ExportSection />}
+      </div>
     </aside>
   );
 }

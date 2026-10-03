@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImagePlus, Scan, Sparkles } from 'lucide-react';
 import { useT } from '@/i18n';
 import { outputSize, ratioValue } from '@/export/settings';
-import { paintBackground } from '@/lib/background';
+import { paintBackground, prepareBackground } from '@/lib/background';
+import { useAssets } from '@/store/assets';
 import { importFromUrl, pickImages } from '@/lib/importImage';
 import { getModel } from '@/models/registry';
 import { isLandscape } from '@/models/types';
@@ -42,14 +43,22 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
   const ref = useRef<HTMLCanvasElement>(null);
   const background = useProject((s) => s.background);
   const theme = useUi((s) => s.theme);
+  const assets = useAssets((s) => s.assets);
   useEffect(() => {
     const c = ref.current;
     if (!c || !width || !height) return;
+    let alive = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    c.width = Math.round(width * dpr);
-    c.height = Math.round(height * dpr);
-    paintBackground(c.getContext('2d')!, background, c.width, c.height, { checker: 10 * dpr });
-  }, [background, width, height, theme]);
+    prepareBackground(background).then(() => {
+      if (!alive) return;
+      c.width = Math.round(width * dpr);
+      c.height = Math.round(height * dpr);
+      paintBackground(c.getContext('2d')!, background, c.width, c.height, { checker: 10 * dpr });
+    });
+    return () => {
+      alive = false;
+    };
+  }, [background, width, height, theme, assets]);
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" />;
 }
 
