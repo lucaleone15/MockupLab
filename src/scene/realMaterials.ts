@@ -26,10 +26,10 @@ export const REAL_MATERIALS: Record<MaterialId, RealMaterialSpec> = {
   'marble-white': { name: { fr: 'Marbre blanc', en: 'White marble' }, size: 170, roughness: 0.55, normalScale: 0.4, clearcoat: 1, clearcoatRoughness: 0.05 },
   'marble-black': { name: { fr: 'Marbre noir', en: 'Black marble' }, size: 180, roughness: 0.55, normalScale: 0.4, clearcoat: 1, clearcoatRoughness: 0.05 },
   travertine: { name: { fr: 'Travertin', en: 'Travertine' }, size: 110, roughness: 0.85, normalScale: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.4 },
-  terrazzo: { name: { fr: 'Terrazzo', en: 'Terrazzo' }, size: 45, roughness: 0.7, normalScale: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.12 },
+  terrazzo: { name: { fr: 'Terrazzo', en: 'Terrazzo' }, size: 20, roughness: 0.7, normalScale: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.12 },
   concrete: { name: { fr: 'Béton ciré', en: 'Polished concrete' }, size: 160, roughness: 1, normalScale: 0.8, clearcoat: 0.15, clearcoatRoughness: 0.5 },
   linen: { name: { fr: 'Lin', en: 'Linen' }, size: 32, roughness: 1, normalScale: 1, clearcoat: 0, clearcoatRoughness: 0, sheen: 0.6 },
-  oak: { name: { fr: 'Chêne', en: 'Oak' }, size: 180, roughness: 0.85, normalScale: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.3 },
+  oak: { name: { fr: 'Chêne', en: 'Oak' }, size: 100, roughness: 0.85, normalScale: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.3 },
   walnut: { name: { fr: 'Noyer', en: 'Walnut' }, size: 180, roughness: 0.85, normalScale: 0.5, clearcoat: 0.4, clearcoatRoughness: 0.28 },
 };
 

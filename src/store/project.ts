@@ -169,11 +169,11 @@ export const DEFAULT_DECOR: Decor = {
   shape: 'cylinder',
   arch: false,
   place: 'loft',
-  blur: 0.45,
+  blur: 0.55,
   rotation: 72,
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
-export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.35, focus: 0 };
+export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0 };
 
 function initialProject(): Project {
   const item = makeItem(getModel('phone-pro'));

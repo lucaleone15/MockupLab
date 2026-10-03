@@ -27,7 +27,7 @@ export interface PlaceSpec {
 export const PLACES: Record<PlaceId, PlaceSpec> = {
   loft: { name: { fr: 'Loft', en: 'Loft' }, table: 'oak', rotation: 72, exposure: 1 },
   cafe: { name: { fr: 'Café', en: 'Café' }, table: 'walnut', rotation: 90, exposure: 1.05 },
-  lounge: { name: { fr: 'Salon', en: 'Lounge' }, table: 'marble-white', rotation: 133, exposure: 0.8 },
+  lounge: { name: { fr: 'Salon', en: 'Lounge' }, table: 'marble-white', rotation: 162, exposure: 0.95 },
   veranda: { name: { fr: 'Véranda', en: 'Veranda' }, table: 'travertine', rotation: 108, exposure: 0.85 },
   evening: { name: { fr: 'Soirée', en: 'Evening' }, table: 'marble-black', rotation: 90, exposure: 0.95 },
   atelier: { name: { fr: 'Atelier', en: 'Atelier' }, table: 'concrete', rotation: 119, exposure: 0.95 },

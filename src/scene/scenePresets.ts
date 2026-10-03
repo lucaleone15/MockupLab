@@ -34,9 +34,11 @@ const place = (id: PlaceId, fr: string, en: string, material: MaterialId = PLACE
   id: `place-${id}`,
   name: { fr, en },
   thumb: { place: id, material },
-  decor: { kind: 'place', place: id, material, rotation: PLACES[id].rotation, blur: 0.45 },
+  decor: { kind: 'place', place: id, material, rotation: PLACES[id].rotation, blur: 0.55 },
   light: 'studio',
   exposure: PLACES[id].exposure,
+  // Real photos of objects on a table have a shallow depth of field.
+  camera: { dof: true, aperture: 0.6 },
 });
 
 export const SCENE_PRESETS: ScenePreset[] = [

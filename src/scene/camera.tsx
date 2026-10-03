@@ -16,16 +16,42 @@ const SENSOR_HEIGHT = 24; // full-frame, mm
 
 export const focalToFov = (mm: number) => THREE.MathUtils.radToDeg(2 * Math.atan(SENSOR_HEIGHT / 2 / mm));
 
-/** Shared with the exporter: what the camera looks at, and how big the subject is. */
-export const cameraState = { target: new THREE.Vector3(0, 7, 0), subject: 15 };
+/** Shared with the exporter: what the camera looks at, the point to keep sharp, and the subject size. */
+export const cameraState = { target: new THREE.Vector3(0, 7, 0), focus: new THREE.Vector3(0, 7, 0), subject: 15 };
 
-/** Lens radius and focus distance for the current camera. */
+/** f-number for the aperture slider: 0 → f/16, 1 → f/1.4 (log scale). */
+export const fNumber = (aperture: number) => 16 * Math.pow(1.4 / 16, aperture);
+
+/**
+ * Physical thin lens: radius = focal length / (2 N). Scene units are real
+ * centimetres, so depth of field behaves like a real camera: a phone shot
+ * from 40 cm gets a shallow focus, a desktop shot from a metre a deeper one.
+ */
 export function lensFor(camera: THREE.PerspectiveCamera, settings: CameraSettings): LensSetup {
-  const toTarget = camera.position.distanceTo(cameraState.target);
-  const focusDistance = Math.max(1, toTarget + settings.focus * cameraState.subject * 0.8);
-  // Aperture expressed relative to the subject so "0.5" looks similar for a phone or a desktop.
-  const radius = settings.dof ? settings.aperture * cameraState.subject * 0.09 : 0;
+  const forward = new THREE.Vector3();
+  camera.getWorldDirection(forward);
+  // Distance to the focus plane along the view axis (thin-lens model).
+  const toFocus = cameraState.focus.clone().sub(camera.position).dot(forward);
+  const focusDistance = Math.max(1, toFocus + settings.focus * cameraState.subject * 0.8);
+  const radius = settings.dof ? settings.focal / 10 / (2 * fNumber(settings.aperture)) : 0;
   return { radius, focusDistance };
+}
+
+/** World position of the point to keep in focus for an item (its screen). */
+export function focusPoint(item: SceneItem, floorY: number): THREE.Vector3 {
+  const model = getModel(item.modelId);
+  let local: THREE.Vector3;
+  if (model.anchor === 'bottom') local = new THREE.Vector3(...(model.focus ?? model.view.target));
+  else {
+    const flat = item.pose === 'flat';
+    const landscape = isLandscape(item.params);
+    const [w, h, d] = model.size;
+    local = new THREE.Vector3(0, flat ? d / 2 : (landscape ? w : h) / 2, 0);
+  }
+  return local
+    .multiplyScalar(item.scale)
+    .applyEuler(new THREE.Euler(...item.rotation))
+    .add(new THREE.Vector3(item.position[0], item.position[1] + floorY, item.position[2]));
 }
 
 /* ------------------------------------------------------------ framing */
@@ -147,11 +173,17 @@ export function CameraRig({ floorY }: { floorY: number }) {
     camera.position.copy(f.position);
     cameraState.target.copy(f.target);
     cameraState.subject = f.subject;
+    if (item) cameraState.focus.copy(focusPoint(item, floorY));
     controls.current?.target.copy(f.target);
     controls.current?.update();
     invalidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frameKey, camera, invalidate]);
+
+  useEffect(() => {
+    if (item) cameraState.focus.copy(focusPoint(item, floorY));
+    invalidate();
+  }, [item, floorY, invalidate]);
 
   // Focal length changes dolly the camera so the framing is kept ("dolly zoom").
   useEffect(() => {

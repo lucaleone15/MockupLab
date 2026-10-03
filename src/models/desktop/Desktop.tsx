@@ -239,6 +239,7 @@ export const desktop24: DeviceModule = {
     },
   ],
   view: { target: [0, 23, -2], offset: [34, 10, 110] },
+  focus: [0, 28, -1.6],
   yaw: -0.3,
   Component: Desktop24,
 };
@@ -276,6 +277,7 @@ export const display27: DeviceModule = {
   finishes: [aio('silver', 'Argent', 'Silver', '#cfd0d3', '#cfd0d3'), aio('space', 'Noir sidéral', 'Space black', '#3a3b3e', '#3a3b3e')],
   defaultFinish: 'silver',
   view: { target: [0, 24, -2], offset: [36, 10, 112] },
+  focus: [0, 30, -1.4],
   yaw: -0.3,
   Component: Display27,
 };
@@ -323,6 +325,7 @@ export const monitor27: DeviceModule = {
   finishes: [aio('graphite', 'Graphite', 'Graphite', '#26272a', '#26272a'), aio('white', 'Blanc', 'White', '#e9e9ea', '#e9e9ea')],
   defaultFinish: 'graphite',
   view: { target: [0, 23.5, -2], offset: [36, 10, 112] },
+  focus: [0, 29.4, 1.2],
   yaw: -0.3,
   Component: Monitor27,
 };

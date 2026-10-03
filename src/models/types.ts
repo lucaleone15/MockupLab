@@ -82,6 +82,11 @@ export interface DeviceModule {
   defaultFinish: string;
   params?: ParamDef[];
   view: ViewSpec;
+  /**
+   * Point kept sharp with depth of field — the screen — relative to the ground
+   * anchor (bottom-anchored models). Upright devices focus on their centre.
+   */
+  focus?: [number, number, number];
   /** Default yaw (radians) when the device is added. */
   yaw?: number;
   Component: FC<DeviceProps>;

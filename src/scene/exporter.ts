@@ -41,6 +41,9 @@ export function setExportBridge(b: Bridge | null) {
   bridge = b;
 }
 
+/** Dev only: renderer internals for debugging scripts. */
+export const debugBridge = () => bridge;
+
 export function hasRenderer() {
   return bridge !== null;
 }

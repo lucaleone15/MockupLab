@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { getModel } from '@/models/registry';
 import { isLandscape } from '@/models/types';
 import { configureTextureLimits } from '@/store/assets';
 import { useProject, type SceneItem } from '@/store/project';
 import { CameraRig, DofPreview, lensFor } from './camera';
+import { ContactShadow } from './ContactShadow';
 import { DecorScene, decorLayout } from './Decor';
 import { setExportBridge } from './exporter';
 import { Lighting } from './lighting/Lighting';
@@ -73,10 +73,11 @@ function Ground({ floorY, top }: { floorY: number; top: THREE.BufferGeometry | n
         </mesh>
       )}
       {ground.shadow !== 'none' && (
-        <ContactShadows position={[0, floorY + 0.002, 0]} scale={decor === 'podium' ? 60 : 80} resolution={1024} blur={1.2} far={3} opacity={Math.min(1, 0.55 * k + (ground.shadow === 'contact' ? 0.15 : 0))} />
-      )}
-      {ground.shadow === 'contact' && (
-        <ContactShadows position={[0, floorY + 0.001, 0]} scale={80} resolution={512} blur={3} far={16} opacity={Math.min(1, 0.35 * k)} />
+        <>
+          {/* tight contact line + broad soft occlusion */}
+          <ContactShadow y={floorY} size={decor === 'podium' ? 60 : 90} far={1.3} blur={0.9} opacity={Math.min(1, 1.1 * k)} />
+          <ContactShadow y={floorY} size={decor === 'podium' ? 60 : 90} far={9} blur={3} resolution={512} opacity={Math.min(1, (ground.shadow === 'contact' ? 0.65 : 0.5) * k)} />
+        </>
       )}
       {ground.reflection && <ReflectiveFloor geometry={top ?? floor} y={floorY} strength={ground.reflectivity} />}
     </>
