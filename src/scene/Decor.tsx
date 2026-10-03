@@ -4,8 +4,7 @@ import * as THREE from 'three';
 import { roundedSlab } from '@/lib/geometry/sweep';
 import { getModel } from '@/models/registry';
 import type { Decor, SceneItem } from '@/store/project';
-import { PlaceBackground, type LoadedPlace } from './places';
-import { useRealMaterial } from './realMaterials';
+import { loadMaterialMap, useRealMaterial } from './realMaterials';
 
 /*
  * 3D set dressing: a seamless studio sweep, a podium (painted or in a real
@@ -91,7 +90,7 @@ function sweepGeometry(width: number) {
 
 /* ------------------------------------------------------------ component */
 
-export function DecorScene({ decor, items, place }: { decor: Decor; items: SceneItem[]; place: LoadedPlace | null }) {
+export function DecorScene({ decor, items }: { decor: Decor; items: SceneItem[] }) {
   switch (decor.kind) {
     case 'sweep':
       return <Sweep color={decor.color} />;
@@ -99,8 +98,8 @@ export function DecorScene({ decor, items, place }: { decor: Decor; items: Scene
       return <Podium decor={decor} items={items} />;
     case 'surface':
       return <Surface decor={decor} />;
-    case 'place':
-      return <Place decor={decor} place={place} />;
+    case 'table':
+      return <TableSet decor={decor} />;
     default:
       return null;
   }
@@ -162,19 +161,57 @@ function Surface({ decor }: { decor: Decor }) {
   );
 }
 
-/** A table top in a real room: the panorama is behind, the HDRI lights the scene. */
-function Place({ decor, place }: { decor: Decor; place: LoadedPlace | null }) {
+/** Plain painted wall: a flat colour with a faint plaster relief. */
+function useWallMaterial(color: string) {
+  const invalidate = useThree((s) => s.invalidate);
+  const material = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 }), []);
+  useEffect(() => {
+    material.color.set(color);
+    invalidate();
+  }, [material, color, invalidate]);
+  useEffect(() => {
+    let alive = true;
+    let tex: THREE.Texture | null = null;
+    loadMaterialMap('concrete', 'normal').then((n) => {
+      if (!alive) return;
+      tex = n.clone();
+      tex.repeat.set(4, 2);
+      tex.needsUpdate = true;
+      material.normalMap = tex;
+      material.normalScale.set(0.25, 0.25);
+      material.needsUpdate = true;
+      invalidate();
+    });
+    return () => {
+      alive = false;
+      tex?.dispose();
+    };
+  }, [material, invalidate]);
+  useEffect(() => () => material.dispose(), [material]);
+  return material;
+}
+
+export const TABLE_BACK = -55;
+
+/**
+ * Product-photography table set: a real-material table top pushed against a
+ * plain wall. Both are real geometry, so depth of field blurs the wall
+ * naturally and the key light's projected shadows land on it.
+ */
+function TableSet({ decor }: { decor: Decor }) {
+  const depth = 200;
   const table = useMemo(
-    () =>
-      roundedSlab({ width: 420, height: 260, radius: 3, thickness: 4, front: { d: 0.6, z: 0.6 }, back: 0.3, smooth: 0.4, segments: 8, edgeSegments: 6 }),
+    () => roundedSlab({ width: 600, height: depth, radius: 2, thickness: 4, front: { d: 0.6, z: 0.6 }, back: 0.3, smooth: 0.4, segments: 8, edgeSegments: 6 }),
     [],
   );
-  const material = useRealMaterial(decor.material, 420, 260);
+  const top = useRealMaterial(decor.material, 600, depth);
+  const wall = useWallMaterial(decor.wall);
   return (
     <group>
-      {place && <PlaceBackground texture={place.background} blur={decor.blur} rotation={decor.rotation} />}
-      {/* Deep table: its far edge recedes into the depth-of-field blur. */}
-      <mesh geometry={table} material={material} position={[0, -2, 35]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow />
+      <mesh geometry={table} material={top} position={[0, -2, TABLE_BACK + depth / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow />
+      <mesh material={wall} position={[0, 150, TABLE_BACK]} receiveShadow>
+        <planeGeometry args={[900, 304]} />
+      </mesh>
     </group>
   );
 }

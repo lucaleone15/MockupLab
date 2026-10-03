@@ -20,17 +20,22 @@ export interface RealMaterialSpec {
   clearcoat: number;
   clearcoatRoughness: number;
   sheen?: number;
+  /** Dielectric reflectance multiplier (1 = default 4 %). */
+  specular?: number;
 }
 
 export const REAL_MATERIALS: Record<MaterialId, RealMaterialSpec> = {
-  'marble-white': { name: { fr: 'Marbre blanc', en: 'White marble' }, size: 170, roughness: 0.55, normalScale: 0.4, clearcoat: 1, clearcoatRoughness: 0.05 },
-  'marble-black': { name: { fr: 'Marbre noir', en: 'Black marble' }, size: 180, roughness: 0.55, normalScale: 0.4, clearcoat: 1, clearcoatRoughness: 0.05 },
-  travertine: { name: { fr: 'Travertin', en: 'Travertine' }, size: 110, roughness: 0.85, normalScale: 0.6, clearcoat: 0.1, clearcoatRoughness: 0.4 },
-  terrazzo: { name: { fr: 'Terrazzo', en: 'Terrazzo' }, size: 20, roughness: 0.7, normalScale: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.12 },
-  concrete: { name: { fr: 'Béton ciré', en: 'Polished concrete' }, size: 160, roughness: 1, normalScale: 0.8, clearcoat: 0.15, clearcoatRoughness: 0.5 },
+  // Polished stone: a light, slightly soft gloss — not a mirror.
+  'marble-white': { name: { fr: 'Marbre blanc', en: 'White marble' }, size: 170, roughness: 0.7, normalScale: 0.3, clearcoat: 0.3, clearcoatRoughness: 0.22 },
+  'marble-black': { name: { fr: 'Marbre noir', en: 'Black marble' }, size: 180, roughness: 0.7, normalScale: 0.3, clearcoat: 0.4, clearcoatRoughness: 0.18 },
+  // Honed / matte surfaces: no varnish layer at all.
+  travertine: { name: { fr: 'Travertin', en: 'Travertine' }, size: 110, roughness: 1, normalScale: 0.6, clearcoat: 0, clearcoatRoughness: 0 },
+  terrazzo: { name: { fr: 'Terrazzo', en: 'Terrazzo' }, size: 20, roughness: 0.9, normalScale: 0.4, clearcoat: 0.12, clearcoatRoughness: 0.35 },
+  concrete: { name: { fr: 'Béton ciré', en: 'Polished concrete' }, size: 160, roughness: 1, normalScale: 0.8, clearcoat: 0, clearcoatRoughness: 0 },
   linen: { name: { fr: 'Lin', en: 'Linen' }, size: 32, roughness: 1, normalScale: 1, clearcoat: 0, clearcoatRoughness: 0, sheen: 0.6 },
-  oak: { name: { fr: 'Chêne', en: 'Oak' }, size: 100, roughness: 0.85, normalScale: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.3 },
-  walnut: { name: { fr: 'Noyer', en: 'Walnut' }, size: 180, roughness: 0.85, normalScale: 0.5, clearcoat: 0.4, clearcoatRoughness: 0.28 },
+  // Oiled wood: matte, a faint sheen only at grazing angles.
+  oak: { name: { fr: 'Chêne', en: 'Oak' }, size: 100, roughness: 1, normalScale: 0.5, clearcoat: 0, clearcoatRoughness: 0, specular: 0.45 },
+  walnut: { name: { fr: 'Noyer', en: 'Walnut' }, size: 180, roughness: 1, normalScale: 0.5, clearcoat: 0, clearcoatRoughness: 0, specular: 0.45 },
 };
 
 export const MATERIAL_ORDER: MaterialId[] = ['oak', 'walnut', 'marble-white', 'marble-black', 'travertine', 'terrazzo', 'concrete', 'linen'];
@@ -40,6 +45,10 @@ export const materialUrl = (id: MaterialId, file: 'color' | 'normal' | 'rough' |
 
 const loader = new THREE.TextureLoader();
 const cache = new Map<string, Promise<THREE.Texture>>();
+
+export function loadMaterialMap(id: MaterialId, file: 'color' | 'normal' | 'rough') {
+  return load(materialUrl(id, file), file === 'color');
+}
 
 function load(url: string, color: boolean): Promise<THREE.Texture> {
   let p = cache.get(url);
@@ -70,6 +79,7 @@ export function useRealMaterial(id: MaterialId, sizeX: number, sizeY: number, al
     material.clearcoat = spec.clearcoat;
     material.clearcoatRoughness = spec.clearcoatRoughness;
     material.sheen = spec.sheen ?? 0;
+    material.specularIntensity = spec.specular ?? 1;
     material.sheenRoughness = 0.8;
     material.sheenColor.set('#ffffff');
     material.normalScale.set(spec.normalScale, spec.normalScale);

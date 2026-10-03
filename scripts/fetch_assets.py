@@ -26,13 +26,9 @@ MATERIALS = {
     'oak': ('ph', 'oak_veneer_04'),
     'walnut': ('ph', 'walnut_veneer'),
 }
-PLACES = {
-    'loft': 'photo_studio_loft_hall',
-    'cafe': 'comfy_cafe',
-    'lounge': 'reading_room',
-    'veranda': 'veranda',
-    'evening': 'warm_restaurant_night',
-    'atelier': 'unfinished_office',
+# HDRI used only for fill light and reflections of the table set (never shown).
+LIGHTS = {
+    'day': 'photo_studio_loft_hall',
 }
 
 
@@ -70,27 +66,20 @@ def material(mid, source, rid):
     print('material', mid)
 
 
-def place(pid, rid):
-    out = os.path.join(ROOT, 'places', pid)
-    if os.path.exists(os.path.join(out, 'bg.jpg')):
+def light(lid, rid):
+    out = os.path.join(ROOT, 'light', lid)
+    if os.path.exists(os.path.join(out, 'env.hdr')):
         return
     os.makedirs(out, exist_ok=True)
     files = json.loads(get(f'https://api.polyhaven.com/files/{rid}'))
     with open(os.path.join(out, 'env.hdr'), 'wb') as f:
         f.write(get(files['hdri']['1k']['hdr']['url']))
-    bg = Image.open(io.BytesIO(get(files['tonemapped']['url'])))
-    Image.MAX_IMAGE_PIXELS = None
-    bg = bg.convert('RGB').resize((4096, 2048), Image.LANCZOS)
-    bg.save(os.path.join(out, 'bg.jpg'), 'JPEG', quality=82, optimize=True, progressive=True)
-    # thumbnail: the horizon band, where the interesting part of a room is
-    thumb = bg.crop((0, 600, 4096, 1450)).resize((480, 100), Image.LANCZOS)
-    thumb.save(os.path.join(out, 'thumb.jpg'), 'JPEG', quality=80)
-    print('place', pid)
+    print('light', lid)
 
 
 if __name__ == '__main__':
     for mid, (src, rid) in MATERIALS.items():
         material(mid, src, rid)
-    for pid, rid in PLACES.items():
-        place(pid, rid)
+    for lid, rid in LIGHTS.items():
+        light(lid, rid)
     print('done')

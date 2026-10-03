@@ -18,7 +18,7 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
 | **Ambiances complètes en un clic** (fond, décor, lumière, caméra, sol) | ✅ |
-| **Lieux réels** : Loft, Café, Salon, Véranda, Soirée, Atelier — vraie pièce photographiée (floutée) + éclairage HDRI + table en vraie matière | ✅ |
+| **Mise en scène « table »** : table en vraie matière contre un mur uni (couleur au choix), lumière du jour / soleil / fin de journée, ombres projetées de fenêtre, stores ou feuillage, profondeur de champ réaliste | ✅ |
 | **Matières photographiées (PBR)** : chêne, noyer, marbre blanc, marbre noir, travertin, terrazzo, béton ciré, lin | ✅ |
 | Décors 3D : studio à fond courbe, podium (peint ou en vraie matière, cylindre / bloc, arche), surface en vraie matière fondue dans le fond | ✅ |
 | Fonds 2D : uni, dégradé multi-couleurs (linéaire / radial / conique, éditeur), motifs graphiques (aurora, grain, topographie, trame, grille, blueprint), image floutée / assombrie, transparent | ✅ |
@@ -69,7 +69,7 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Rendu** : Three.js via react-three-fiber. Matériaux PBR (`MeshPhysicalMaterial` : métal anisotrope, verre, clearcoat, iridescence des objectifs), environnement studio généré à partir de *Lightformers* (aucun fichier HDR), tone mapping *Khronos PBR Neutral*.
 - **Écran** : le shader d'écran sort du tone mapping et compose `image + Neutral(reflets)`. Les pixels de ton design sortent donc exactement avec leurs couleurs d'origine, tandis que les reflets suivent la même courbe que la vitre autour.
 - **Géométrie** : contours en *squircle* (coins continus de type superellipse) balayés le long d'un profil d'arête, avec normales analytiques pour des reflets sans facettes (`src/lib/geometry`).
-- **Lieux et matières réels** : des HDRI et textures PBR sous licence CC0 sont embarqués dans `public/assets/` (≈ 25 Mo, chargés à la demande). Le HDRI éclaire la scène ; la lumière principale de la pièce (une fenêtre, en général) est détectée automatiquement dans l'image pour orienter les ombres. Le panorama de la pièce est affiché derrière les appareils avec un flou de type « faible profondeur de champ ».
+- **Matières réelles et table** : textures PBR et HDRI sous licence CC0 embarqués dans `public/assets/` (≈ 15 Mo, chargés à la demande). Le HDRI ne sert qu'à la lumière d'appoint et aux reflets (il n'est jamais affiché) ; sa fenêtre est détectée et tournée vers l'avant-gauche, d'où vient la lumière principale — un spot qui projette une texture (« gobo ») de fenêtre, de stores ou de feuillage sur le mur et la table.
 - **Motifs graphiques** : générés par des shaders (`src/lib/patterns.ts`) dans un petit contexte WebGL dédié, à n'importe quelle résolution.
 - **Éclairage** : chaque ambiance est un environnement procédural (*Lightformers*) + une lumière clé à ombres douces (VSM) ; l'environnement tourne avec la direction de la lumière pour garder des reflets cohérents.
 - **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.
@@ -153,7 +153,7 @@ Pour un autre hébergeur statique : `BASE_PATH=/ npm run build` puis publie `dis
 
 Tous les environnements et matières fournis sont sous licence **CC0 1.0** (domaine public) ; merci à leurs auteurs :
 
-- **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall`, `comfy_cafe`, `reading_room`, `veranda`, `warm_restaurant_night`, `unfinished_office`.
+- **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall` (lumière et reflets de la mise en scène « table »).
 - **Textures** — [ambientCG](https://ambientcg.com) : `Marble012`, `Marble016`, `Travertine009`, `Terrazzo009`, `Concrete034`, `Fabric036` ; [Poly Haven](https://polyhaven.com) : `oak_veneer_04`, `walnut_veneer`.
 
 Le script `python3 scripts/fetch_assets.py` les télécharge et les optimise à nouveau (redimensionnement, compression).
