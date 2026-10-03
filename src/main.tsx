@@ -25,6 +25,7 @@ if (import.meta.env.DEV) {
       __mockuplab: {
         renderImage: ex.renderImage,
         renderFrame: rf.renderFrame,
+        bridge: rf.debugBridge,
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),

@@ -330,6 +330,8 @@ function defineLaptop(spec: LaptopSpec, view: DeviceModule['view']): DeviceModul
       },
     ],
     view,
+    // centre of the open lid (≈108°)
+    focus: [0, spec.depth * 0.52, -spec.depth / 2 - spec.depth * 0.13],
     yaw: -0.38,
     Component,
   };

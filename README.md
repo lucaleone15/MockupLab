@@ -153,8 +153,8 @@ Pour un autre hébergeur statique : `BASE_PATH=/ npm run build` puis publie `dis
 
 Tous les environnements et matières fournis sont sous licence **CC0 1.0** (domaine public) ; merci à leurs auteurs :
 
-- **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall`, `comfy_cafe`, `lythwood_lounge`, `veranda`, `warm_restaurant_night`, `unfinished_office`.
-- **Textures** — [ambientCG](https://ambientcg.com) : `Marble012`, `Marble016`, `Travertine009`, `Terrazzo009`, `Concrete034`, `Fabric036` ; [Poly Haven](https://polyhaven.com) : `oak_veneer_01`, `walnut_veneer`.
+- **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall`, `comfy_cafe`, `reading_room`, `veranda`, `warm_restaurant_night`, `unfinished_office`.
+- **Textures** — [ambientCG](https://ambientcg.com) : `Marble012`, `Marble016`, `Travertine009`, `Terrazzo009`, `Concrete034`, `Fabric036` ; [Poly Haven](https://polyhaven.com) : `oak_veneer_04`, `walnut_veneer`.
 
 Le script `python3 scripts/fetch_assets.py` les télécharge et les optimise à nouveau (redimensionnement, compression).
 

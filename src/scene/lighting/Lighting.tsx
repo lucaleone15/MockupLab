@@ -74,11 +74,11 @@ export function Lighting({ place }: { place: LoadedPlace | null }) {
       )}
       <directionalLight
         position={position}
-        intensity={inPlace ? lighting.intensity * 0.9 : lighting.intensity}
+        intensity={inPlace ? lighting.intensity * 1.7 : lighting.intensity}
         color={inPlace ? '#fff6ea' : lighting.color}
         castShadow={castShadow}
         shadow-mapSize={[1024, 1024]}
-        shadow-radius={2 + (inPlace ? 0.75 : lighting.softness) * 34}
+        shadow-radius={2 + (inPlace ? 0.55 : lighting.softness) * 34}
         shadow-blurSamples={24}
         shadow-bias={-0.0005}
         shadow-camera-left={-80}

@@ -23,13 +23,13 @@ MATERIALS = {
     'terrazzo': ('acg', 'Terrazzo009'),
     'concrete': ('acg', 'Concrete034'),
     'linen': ('acg', 'Fabric036'),
-    'oak': ('ph', 'oak_veneer_01'),
+    'oak': ('ph', 'oak_veneer_04'),
     'walnut': ('ph', 'walnut_veneer'),
 }
 PLACES = {
     'loft': 'photo_studio_loft_hall',
     'cafe': 'comfy_cafe',
-    'lounge': 'lythwood_lounge',
+    'lounge': 'reading_room',
     'veranda': 'veranda',
     'evening': 'warm_restaurant_night',
     'atelier': 'unfinished_office',

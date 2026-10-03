@@ -3,14 +3,17 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const place = (id, material, rotation) => ({ kind: 'place', place: id, material, rotation, blur: 0.45 });
+const place = (id, material, rotation) => ({ kind: 'place', place: id, material, rotation, blur: 0.55 });
 const SCENARIOS = [
   { name: 'studio-default', model: 'phone-pro' },
+  { name: 'dbg-studio-contact', model: 'phone-pro', bg: { kind: 'solid', color: '#ffffff' }, ground: { shadow: 'contact', shadowOpacity: 1 } },
+  { name: 'dbg-surface-oak', model: 'phone-pro', decor: { kind: 'surface', material: 'oak' }, ground: { shadow: 'contact', shadowOpacity: 1 } },
+  { name: 'dbg-place-contact', model: 'phone-pro', decor: place('loft', 'oak', 72), ground: { shadow: 'contact', shadowOpacity: 1 } },
   { name: 'place-loft', model: 'phone-pro', decor: place('loft', 'oak', 72) },
   { name: 'place-cafe', model: 'laptop-14', decor: place('cafe', 'walnut', 90) },
   { name: 'rot-47', model: 'phone', decor: place('lounge', 'marble-white', 47), lighting: { exposure: 0.8 } },
   { name: 'rot-180', model: 'phone', decor: place('lounge', 'marble-white', 180), lighting: { exposure: 0.8 } },
-  { name: 'place-lounge', model: 'phone', decor: place('lounge', 'marble-white', 133), lighting: { exposure: 0.8 } },
+  { name: 'place-lounge', model: 'phone', decor: place('lounge', 'marble-white', 162) },
   { name: 'place-veranda', model: 'tablet-pro-11', decor: place('veranda', 'travertine', 108) },
   { name: 'place-evening', model: 'laptop-air-13', decor: place('evening', 'marble-black', 90) },
   { name: 'place-atelier', model: 'desktop-24', decor: place('atelier', 'concrete', 119) },
@@ -49,6 +52,7 @@ for (const sc of SCENARIOS.filter((s) => !only || only.includes(s.name))) {
     if (sc.ground) st().setGround(sc.ground);
     if (sc.lighting) st().setLighting(sc.lighting);
     if (sc.camera) st().setCamera(sc.camera);
+    if (sc.decor?.kind === 'place' && !sc.camera) st().setCamera({ dof: true, aperture: 0.6 });
     st().setExport({ resolution: '1080', ratio: '16:9', format: 'png', ...(sc.export ?? {}) });
     const m = api.models.find((x) => x.id === sc.model);
     const landscape = st().items[0].params.orientation === 'landscape';

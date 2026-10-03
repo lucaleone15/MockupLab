@@ -166,14 +166,15 @@ function Surface({ decor }: { decor: Decor }) {
 function Place({ decor, place }: { decor: Decor; place: LoadedPlace | null }) {
   const table = useMemo(
     () =>
-      roundedSlab({ width: 320, height: 150, radius: 3, thickness: 4, front: { d: 0.6, z: 0.6 }, back: 0.3, smooth: 0.4, segments: 8, edgeSegments: 6 }),
+      roundedSlab({ width: 420, height: 260, radius: 3, thickness: 4, front: { d: 0.6, z: 0.6 }, back: 0.3, smooth: 0.4, segments: 8, edgeSegments: 6 }),
     [],
   );
-  const material = useRealMaterial(decor.material, 320, 150);
+  const material = useRealMaterial(decor.material, 420, 260);
   return (
     <group>
       {place && <PlaceBackground texture={place.background} blur={decor.blur} rotation={decor.rotation} />}
-      <mesh geometry={table} material={material} position={[0, -2, 15]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow />
+      {/* Deep table: its far edge recedes into the depth-of-field blur. */}
+      <mesh geometry={table} material={material} position={[0, -2, 35]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow />
     </group>
   );
 }

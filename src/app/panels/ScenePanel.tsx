@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Ban, Box, Cylinder, Home, Layers, Square } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { CAMERA_PRESETS } from '@/scene/camera';
+import { CAMERA_PRESETS, fNumber } from '@/scene/camera';
 import { LIGHT_PRESETS, LIGHT_PRESET_ORDER } from '@/scene/lighting/presets';
 import { PLACES, PLACE_ORDER, placeUrl } from '@/scene/places';
 import { MATERIAL_ORDER, REAL_MATERIALS, materialUrl } from '@/scene/realMaterials';
@@ -113,6 +113,7 @@ function DecorSection() {
   const decor = useProject((s) => s.decor);
   const setDecor = useProject((s) => s.setDecor);
   const setLighting = useProject((s) => s.setLighting);
+  const setCamera = useProject((s) => s.setCamera);
   const more = { more: t('ui.more'), less: t('ui.less') };
   return (
     <Section title={t('decor.title')} defaultOpen={false}>
@@ -121,7 +122,12 @@ function DecorSection() {
           <Chip
             key={k}
             active={decor.kind === k}
-            onClick={() => setDecor(k === 'place' ? { kind: k, material: PLACES[decor.place].table, rotation: PLACES[decor.place].rotation } : { kind: k })}
+            onClick={() => {
+              if (k !== 'place') return setDecor({ kind: k });
+              setDecor({ kind: k, material: PLACES[decor.place].table, rotation: PLACES[decor.place].rotation });
+              setLighting({ exposure: PLACES[decor.place].exposure });
+              setCamera({ dof: true });
+            }}
           >
             {DECOR_ICONS[k]}
             {t(DECOR_LABEL[k])}
@@ -348,7 +354,7 @@ function CameraSection() {
         </Field>
         {cam.dof && (
           <>
-            <Field label={t('camera.aperture')} value={`${Math.round(cam.aperture * 100)} %`}>
+            <Field label={t('camera.aperture')} value={`f/${fNumber(cam.aperture).toFixed(1)}`}>
               <Slider label={t('camera.aperture')} value={cam.aperture} onChange={(aperture) => setCamera({ aperture })} />
             </Field>
             <Field
