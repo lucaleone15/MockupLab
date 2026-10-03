@@ -44,19 +44,7 @@ export interface GradientStop {
   at: number;
 }
 
-export type PatternId =
-  | 'grain'
-  | 'aurora'
-  | 'paper'
-  | 'concrete'
-  | 'marble'
-  | 'terrazzo'
-  | 'linen'
-  | 'dots'
-  | 'grid'
-  | 'blueprint'
-  | 'topo'
-  | 'wood';
+export type PatternId = 'grain' | 'aurora' | 'topo' | 'dots' | 'grid' | 'blueprint';
 
 export type Background =
   | { kind: 'solid'; color: string }
@@ -65,17 +53,26 @@ export type Background =
   | { kind: 'image'; assetId: string | null; blur: number; dim: number }
   | { kind: 'transparent' };
 
-export type SurfaceMaterialId = 'marble' | 'wood' | 'concrete' | 'terrazzo' | 'linen' | 'paper';
+/** Photographed PBR materials bundled in public/assets/materials (CC0). */
+export type MaterialId = 'marble-white' | 'marble-black' | 'travertine' | 'terrazzo' | 'concrete' | 'linen' | 'oak' | 'walnut';
+/** Real interiors (HDRI + background photo) bundled in public/assets/places (CC0). */
+export type PlaceId = 'loft' | 'cafe' | 'lounge' | 'veranda' | 'evening' | 'atelier';
 
 /** 3D set dressing around the devices. */
 export interface Decor {
-  kind: 'none' | 'sweep' | 'podium' | 'surface' | 'desk';
-  /** Main colour (sweep, podium, desk wall). */
+  kind: 'none' | 'sweep' | 'podium' | 'surface' | 'place';
+  /** Paint colour (sweep, painted podium). */
   color: string;
-  /** Surface / desk-top material. */
-  material: SurfaceMaterialId;
+  /** Surface, table top or podium material. */
+  material: MaterialId;
+  podiumFinish: 'paint' | 'material';
   shape: 'cylinder' | 'block';
   arch: boolean;
+  place: PlaceId;
+  /** Background blur of a real place, 0..1. */
+  blur: number;
+  /** Orientation of the place around the devices, degrees. */
+  rotation: number;
 }
 
 export type LightPresetId = 'studio' | 'highkey' | 'dramatic' | 'neon' | 'daylight' | 'golden' | 'noir';
@@ -164,7 +161,17 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
-export const DEFAULT_DECOR: Decor = { kind: 'none', color: '#d9d4cb', material: 'marble', shape: 'cylinder', arch: false };
+export const DEFAULT_DECOR: Decor = {
+  kind: 'none',
+  color: '#d9d4cb',
+  material: 'marble-white',
+  podiumFinish: 'paint',
+  shape: 'cylinder',
+  arch: false,
+  place: 'loft',
+  blur: 0.45,
+  rotation: 72,
+};
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.35, focus: 0 };
 

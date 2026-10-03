@@ -17,8 +17,11 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Écrans : Desktop 24 (tout-en-un coloré), Display 27, Monitor 27 | ✅ |
 | Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
-| Fonds : uni, dégradé multi-couleurs (linéaire / radial / conique, éditeur), motifs procéduraux (aurora, grain, topographie, papier, béton, marbre, terrazzo, lin, bois, trame, grille, blueprint), image floutée / assombrie, transparent | ✅ |
-| Décors 3D : studio à fond courbe, podium (cylindre / bloc, arche), surfaces (marbre, bois, béton, terrazzo, lin, papier) fondues dans le fond, bureau + mur | ✅ |
+| **Ambiances complètes en un clic** (fond, décor, lumière, caméra, sol) | ✅ |
+| **Lieux réels** : Loft, Café, Salon, Véranda, Soirée, Atelier — vraie pièce photographiée (floutée) + éclairage HDRI + table en vraie matière | ✅ |
+| **Matières photographiées (PBR)** : chêne, noyer, marbre blanc, marbre noir, travertin, terrazzo, béton ciré, lin | ✅ |
+| Décors 3D : studio à fond courbe, podium (peint ou en vraie matière, cylindre / bloc, arche), surface en vraie matière fondue dans le fond | ✅ |
+| Fonds 2D : uni, dégradé multi-couleurs (linéaire / radial / conique, éditeur), motifs graphiques (aurora, grain, topographie, trame, grille, blueprint), image floutée / assombrie, transparent | ✅ |
 | Éclairage : 7 ambiances (studio doux, haute clé, dramatique, néon, lumière du jour, heure dorée, sombre premium) + intensité, couleur, direction, hauteur, douceur des ombres, reflets, exposition | ✅ |
 | Caméra : face, 3/4, isométrique, dessus (appareil posé à plat), plongée, contre-plongée, orbite libre, focale 14–600 mm, profondeur de champ physique | ✅ |
 | Sol : ombre douce / contact / aucune, réflexion au sol avec fondu réaliste | ✅ |
@@ -66,7 +69,8 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Rendu** : Three.js via react-three-fiber. Matériaux PBR (`MeshPhysicalMaterial` : métal anisotrope, verre, clearcoat, iridescence des objectifs), environnement studio généré à partir de *Lightformers* (aucun fichier HDR), tone mapping *Khronos PBR Neutral*.
 - **Écran** : le shader d'écran sort du tone mapping et compose `image + Neutral(reflets)`. Les pixels de ton design sortent donc exactement avec leurs couleurs d'origine, tandis que les reflets suivent la même courbe que la vitre autour.
 - **Géométrie** : contours en *squircle* (coins continus de type superellipse) balayés le long d'un profil d'arête, avec normales analytiques pour des reflets sans facettes (`src/lib/geometry`).
-- **Fonds et matières** : motifs générés par des shaders (`src/lib/patterns.ts`) dans un petit contexte WebGL dédié, à n'importe quelle résolution — les mêmes servent de textures aux décors 3D.
+- **Lieux et matières réels** : des HDRI et textures PBR sous licence CC0 sont embarqués dans `public/assets/` (≈ 25 Mo, chargés à la demande). Le HDRI éclaire la scène ; la lumière principale de la pièce (une fenêtre, en général) est détectée automatiquement dans l'image pour orienter les ombres. Le panorama de la pièce est affiché derrière les appareils avec un flou de type « faible profondeur de champ ».
+- **Motifs graphiques** : générés par des shaders (`src/lib/patterns.ts`) dans un petit contexte WebGL dédié, à n'importe quelle résolution.
 - **Éclairage** : chaque ambiance est un environnement procédural (*Lightformers*) + une lumière clé à ombres douces (VSM) ; l'environnement tourne avec la direction de la lumière pour garder des reflets cohérents.
 - **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.
 - **Profondeur de champ** : modèle de lentille mince par accumulation (64 échantillons à l'export, progressif dans l'aperçu) — physiquement juste et compatible avec le rendu fidèle des écrans.
@@ -144,6 +148,15 @@ EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 3. Le workflow `.github/workflows/deploy.yml` construit et publie le site à chaque push sur `main`, à l'adresse `https://<utilisateur>.github.io/<dépôt>/`. Le chemin de base est déduit automatiquement du nom du dépôt.
 
 Pour un autre hébergeur statique : `BASE_PATH=/ npm run build` puis publie `dist/`.
+
+## Assets embarqués (CC0)
+
+Tous les environnements et matières fournis sont sous licence **CC0 1.0** (domaine public) ; merci à leurs auteurs :
+
+- **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall`, `comfy_cafe`, `lythwood_lounge`, `veranda`, `warm_restaurant_night`, `unfinished_office`.
+- **Textures** — [ambientCG](https://ambientcg.com) : `Marble012`, `Marble016`, `Travertine009`, `Terrazzo009`, `Concrete034`, `Fabric036` ; [Poly Haven](https://polyhaven.com) : `oak_veneer_01`, `walnut_veneer`.
+
+Le script `python3 scripts/fetch_assets.py` les télécharge et les optimise à nouveau (redimensionnement, compression).
 
 ## Mentions légales
 

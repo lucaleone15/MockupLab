@@ -59,8 +59,10 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   out.width = width;
   out.height = height;
   const ctx = out.getContext('2d')!;
-  const transparent = project.background.kind === 'transparent';
-  if (!transparent) {
+  // A real place paints its own (opaque) background in 3D.
+  const transparent = project.background.kind === 'transparent' && project.decor.kind !== 'place';
+  const flat2d = project.decor.kind !== 'place';
+  if (!transparent && flat2d) {
     await prepareBackground(project.background);
     paintBackground(ctx, project.background, width, height);
     if (project.background.kind !== 'solid') dither(ctx, width, height);
