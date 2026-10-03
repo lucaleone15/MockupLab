@@ -55,12 +55,14 @@ export type Background =
 
 /** Photographed PBR materials bundled in public/assets/materials (CC0). */
 export type MaterialId = 'marble-white' | 'marble-black' | 'travertine' | 'terrazzo' | 'concrete' | 'linen' | 'oak' | 'walnut';
-/** Real interiors (HDRI + background photo) bundled in public/assets/places (CC0). */
-export type PlaceId = 'loft' | 'cafe' | 'lounge' | 'veranda' | 'evening' | 'atelier';
+/** Light moods of the table set (CC0 HDRIs in public/assets/light). */
+export type AmbienceId = 'day' | 'sun' | 'evening';
+/** Shadows projected on the table set (light through a window, blinds, foliage). */
+export type GoboId = 'none' | 'window' | 'blinds' | 'leaves';
 
 /** 3D set dressing around the devices. */
 export interface Decor {
-  kind: 'none' | 'sweep' | 'podium' | 'surface' | 'place';
+  kind: 'none' | 'sweep' | 'podium' | 'surface' | 'table';
   /** Paint colour (sweep, painted podium). */
   color: string;
   /** Surface, table top or podium material. */
@@ -68,11 +70,10 @@ export interface Decor {
   podiumFinish: 'paint' | 'material';
   shape: 'cylinder' | 'block';
   arch: boolean;
-  place: PlaceId;
-  /** Background blur of a real place, 0..1. */
-  blur: number;
-  /** Orientation of the place around the devices, degrees. */
-  rotation: number;
+  /** Table set: plain wall behind the table. */
+  wall: string;
+  ambience: AmbienceId;
+  gobo: GoboId;
 }
 
 export type LightPresetId = 'studio' | 'highkey' | 'dramatic' | 'neon' | 'daylight' | 'golden' | 'noir';
@@ -168,9 +169,9 @@ export const DEFAULT_DECOR: Decor = {
   podiumFinish: 'paint',
   shape: 'cylinder',
   arch: false,
-  place: 'loft',
-  blur: 0.55,
-  rotation: 72,
+  wall: '#ece6dc',
+  ambience: 'day',
+  gobo: 'window',
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0 };

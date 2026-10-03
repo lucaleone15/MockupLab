@@ -59,9 +59,9 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   out.width = width;
   out.height = height;
   const ctx = out.getContext('2d')!;
-  // A real place paints its own (opaque) background in 3D.
-  const transparent = project.background.kind === 'transparent' && project.decor.kind !== 'place';
-  const flat2d = project.decor.kind !== 'place';
+  // The table set paints its own (opaque) background in 3D.
+  const transparent = project.background.kind === 'transparent' && project.decor.kind !== 'table';
+  const flat2d = project.decor.kind !== 'table';
   if (!transparent && flat2d) {
     await prepareBackground(project.background);
     paintBackground(ctx, project.background, width, height);

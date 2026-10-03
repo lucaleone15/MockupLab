@@ -135,6 +135,7 @@ export function presetDirection(preset: CameraPresetId, item: SceneItem | null):
 /* ------------------------------------------------------------ rig */
 
 export function CameraRig({ floorY }: { floorY: number }) {
+  useAdaptiveNear();
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const invalidate = useThree((s) => s.invalidate);
@@ -235,6 +236,24 @@ export function CameraRig({ floorY }: { floorY: number }) {
       }}
     />
   );
+}
+
+/**
+ * Keeps depth precision high at every distance: the near plane follows the
+ * distance to the subject (z-buffer precision depends on far/near only
+ * through near), so thin layers — cover glass, bezels, cutouts — never fight.
+ */
+export function useAdaptiveNear() {
+  useFrame(({ camera, controls }) => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target ?? cameraState.target;
+    const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.12, 0.5, 60);
+    if (Math.abs(near - cam.near) / cam.near > 0.05) {
+      cam.near = near;
+      cam.far = Math.max(8000, near * 4000);
+      cam.updateProjectionMatrix();
+    }
+  }, -1);
 }
 
 /* ------------------------------------------------------------ depth of field preview */

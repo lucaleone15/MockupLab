@@ -18,6 +18,7 @@ import * as THREE from 'three';
 const NEUTRAL = /* glsl */ `
 uniform vec3 uFill;
 uniform float uExposure;
+uniform float uReflection;
 vec3 mlNeutral(vec3 color) {
   const float S = 0.8 - 0.04;
   const float Dsat = 0.15;
@@ -38,13 +39,22 @@ vec3 mlNeutral(vec3 color) {
 export interface ScreenMaterialUniforms {
   uFill: { value: THREE.Color };
   uExposure: { value: number };
+  uReflection: { value: number };
 }
 
-/** Uniforms shared by every screen material (set by the lighting). */
-export const screenUniforms = { uExposure: { value: 1 } };
+/**
+ * Uniforms shared by every screen material (set by the lighting).
+ * uReflection scales reflected light: bright real-world HDRIs (windows) would
+ * otherwise wash the design out completely.
+ */
+export const screenUniforms = { uExposure: { value: 1 }, uReflection: { value: 1 } };
 
 export function createScreenMaterial(): THREE.MeshPhysicalMaterial {
-  const uniforms: ScreenMaterialUniforms = { uFill: { value: new THREE.Color('#000000') }, uExposure: screenUniforms.uExposure };
+  const uniforms: ScreenMaterialUniforms = {
+    uFill: { value: new THREE.Color('#000000') },
+    uExposure: screenUniforms.uExposure,
+    uReflection: screenUniforms.uReflection,
+  };
   const material = new THREE.MeshPhysicalMaterial({
     color: '#000000',
     emissive: '#ffffff',
@@ -73,9 +83,9 @@ export function createScreenMaterial(): THREE.MeshPhysicalMaterial {
   vec3 mlScreen = totalEmissiveRadiance;
   totalEmissiveRadiance = vec3(0.0);`,
       )
-      .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb = mlNeutral(gl_FragColor.rgb) + mlScreen;');
+      .replace('#include <tonemapping_fragment>', 'gl_FragColor.rgb = mlNeutral(gl_FragColor.rgb * uReflection) + mlScreen;');
   };
-  material.customProgramCacheKey = () => 'mockuplab-screen-v2';
+  material.customProgramCacheKey = () => 'mockuplab-screen-v3';
   return material;
 }
 

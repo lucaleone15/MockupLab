@@ -3,10 +3,10 @@ import { Ban, Box, Cylinder, Home, Layers, Square } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { CAMERA_PRESETS, fNumber } from '@/scene/camera';
 import { LIGHT_PRESETS, LIGHT_PRESET_ORDER } from '@/scene/lighting/presets';
-import { PLACES, PLACE_ORDER, placeUrl } from '@/scene/places';
+import { AMBIENCES, AMBIENCE_ORDER, WALL_COLORS } from '@/scene/ambiences';
 import { MATERIAL_ORDER, REAL_MATERIALS, materialUrl } from '@/scene/realMaterials';
 import { SCENE_PRESETS, applyScenePreset, type ScenePreset } from '@/scene/scenePresets';
-import { useProject, type CameraPresetId, type Decor, type MaterialId } from '@/store/project';
+import { useProject, type AmbienceId, type CameraPresetId, type Decor, type GoboId, type MaterialId } from '@/store/project';
 import { Advanced, ColorField, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 import { BackgroundEditor } from './BackgroundEditor';
 
@@ -50,7 +50,8 @@ function MaterialPicker({ value, onChange }: { value: MaterialId; onChange: (m: 
 /* ------------------------------------------------------------ looks */
 
 function presetActive(p: ScenePreset, s: ReturnType<typeof useProject.getState>) {
-  if (p.decor.kind === 'place') return s.decor.kind === 'place' && s.decor.place === p.decor.place && s.decor.material === p.decor.material;
+  if (p.decor.kind === 'table')
+    return s.decor.kind === 'table' && s.decor.material === p.decor.material && s.decor.wall === p.decor.wall && s.decor.gobo === p.decor.gobo;
   return (
     s.decor.kind === p.decor.kind &&
     (!p.decor.material || s.decor.material === p.decor.material) &&
@@ -68,10 +69,7 @@ function Looks() {
         {SCENE_PRESETS.map((p) => {
           const active = presetActive(p, state);
           const thumb = p.thumb;
-          const style =
-            'place' in thumb
-              ? { backgroundImage: `url(${placeUrl(thumb.place, 'thumb.jpg')})`, backgroundSize: '260% 100%', backgroundPosition: '50% 50%' }
-              : { background: thumb.css };
+          const style = { background: thumb.css };
           return (
             <button key={p.id} type="button" onClick={() => applyScenePreset(p)} className="group flex flex-col gap-1.5 text-left">
               <span className={cx('relative block aspect-[16/10] w-full overflow-hidden rounded-lg transition-[box-shadow,transform] duration-150 group-hover:scale-[1.02]', ring(active))} style={style}>
@@ -98,14 +96,14 @@ const DECOR_ICONS: Record<Decor['kind'], ReactNode> = {
   sweep: <Layers size={15} />,
   podium: <Cylinder size={15} />,
   surface: <Square size={15} />,
-  place: <Home size={15} />,
+  table: <Home size={15} />,
 };
 const DECOR_LABEL: Record<Decor['kind'], I18nKey> = {
   none: 'decor.none',
   sweep: 'decor.sweep',
   podium: 'decor.podium',
   surface: 'decor.surface',
-  place: 'decor.place',
+  table: 'decor.table',
 };
 
 function DecorSection() {
@@ -115,6 +113,10 @@ function DecorSection() {
   const setLighting = useProject((s) => s.setLighting);
   const setCamera = useProject((s) => s.setCamera);
   const more = { more: t('ui.more'), less: t('ui.less') };
+  const chooseAmbience = (id: AmbienceId) => {
+    setDecor({ ambience: id });
+    setLighting({ exposure: AMBIENCES[id].exposure, environment: AMBIENCES[id].environment });
+  };
   return (
     <Section title={t('decor.title')} defaultOpen={false}>
       <div className="grid grid-cols-5 gap-1.5">
@@ -123,9 +125,9 @@ function DecorSection() {
             key={k}
             active={decor.kind === k}
             onClick={() => {
-              if (k !== 'place') return setDecor({ kind: k });
-              setDecor({ kind: k, material: PLACES[decor.place].table, rotation: PLACES[decor.place].rotation });
-              setLighting({ exposure: PLACES[decor.place].exposure });
+              if (k !== 'table') return setDecor({ kind: k });
+              setDecor({ kind: k });
+              chooseAmbience(decor.ambience);
               setCamera({ dof: true });
             }}
           >
@@ -135,37 +137,38 @@ function DecorSection() {
         ))}
       </div>
 
-      {decor.kind === 'place' && (
+      {decor.kind === 'table' && (
         <>
-          <div className="grid grid-cols-2 gap-1.5">
-            {PLACE_ORDER.map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setDecor({ place: id, material: PLACES[id].table, rotation: PLACES[id].rotation });
-                  setLighting({ exposure: PLACES[id].exposure });
-                }}
-                className="flex flex-col gap-1 text-left"
-              >
-                <span
-                  className={cx('block aspect-[5/2] w-full rounded-md bg-cover transition-shadow', ring(decor.place === id))}
-                  style={{ backgroundImage: `url(${placeUrl(id, 'thumb.jpg')})`, backgroundSize: '240% 100%', backgroundPosition: '50% 50%' }}
-                />
-                <span className={cx('text-[11px]', decor.place === id ? 'text-fg' : 'text-fg-subtle')}>{tr(PLACES[id].name)}</span>
-              </button>
-            ))}
-          </div>
-          <Field label={t('decor.table')} value={<span className="font-sans text-[11.5px]">{tr(REAL_MATERIALS[decor.material].name)}</span>}>
+          <Field label={t('decor.matter')} value={<span className="font-sans text-[11.5px]">{tr(REAL_MATERIALS[decor.material].name)}</span>}>
             <MaterialPicker value={decor.material} onChange={(material) => setDecor({ material })} />
           </Field>
+          <Field label={t('decor.wall')}>
+            <div className="flex gap-1.5">
+              {WALL_COLORS.map((c) => (
+                <button key={c} type="button" aria-label={c} onClick={() => setDecor({ wall: c })} className={cx('size-7 rounded-full transition-[transform,box-shadow] hover:scale-110', ring(decor.wall === c))} style={{ background: c }} />
+              ))}
+            </div>
+          </Field>
+          <Field label={t('decor.shadows')}>
+            <Segmented
+              size="sm"
+              value={decor.gobo}
+              onChange={(gobo: GoboId) => setDecor({ gobo })}
+              options={(['none', 'window', 'blinds', 'leaves'] as GoboId[]).map((g) => ({ value: g, label: t(`gobo.${g}` as I18nKey) }))}
+            />
+          </Field>
+          <Field label={t('decor.ambience')}>
+            <div className="grid grid-cols-3 gap-1.5">
+              {AMBIENCE_ORDER.map((id) => (
+                <button key={id} type="button" onClick={() => chooseAmbience(id)} className="flex flex-col items-center gap-1">
+                  <span className={cx('h-7 w-full rounded-md', ring(decor.ambience === id))} style={{ background: AMBIENCES[id].swatch }} />
+                  <span className={cx('text-[10.5px]', decor.ambience === id ? 'text-fg' : 'text-fg-subtle')}>{tr(AMBIENCES[id].name)}</span>
+                </button>
+              ))}
+            </div>
+          </Field>
           <Advanced {...more}>
-            <Field label={t('decor.blur')} value={`${Math.round(decor.blur * 100)} %`}>
-              <Slider label={t('decor.blur')} value={decor.blur} onChange={(blur) => setDecor({ blur })} />
-            </Field>
-            <Field label={t('decor.rotation')} value={`${Math.round(decor.rotation)}°`}>
-              <Slider label={t('decor.rotation')} min={0} max={360} step={1} value={decor.rotation} onChange={(rotation) => setDecor({ rotation })} />
-            </Field>
+            <ColorField label={t('decor.wall')} value={decor.wall} onChange={(wall) => setDecor({ wall })} />
           </Advanced>
         </>
       )}
@@ -217,7 +220,7 @@ function DecorSection() {
 
 function BackgroundSection() {
   const { t } = useT();
-  const inPlace = useProject((s) => s.decor.kind === 'place');
+  const inPlace = useProject((s) => s.decor.kind === 'table');
   return (
     <Section title={t('props.background')} defaultOpen={false}>
       {inPlace ? (
@@ -239,7 +242,7 @@ function BackgroundSection() {
 function LightSection() {
   const { t, tr } = useT();
   const light = useProject((s) => s.lighting);
-  const inPlace = useProject((s) => s.decor.kind === 'place');
+  const inPlace = useProject((s) => s.decor.kind === 'table');
   const setLighting = useProject((s) => s.setLighting);
   const applyLightPreset = useProject((s) => s.applyLightPreset);
   const intensity = (

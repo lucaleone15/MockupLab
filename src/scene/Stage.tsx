@@ -11,7 +11,7 @@ import { DecorScene, decorLayout } from './Decor';
 import { setExportBridge } from './exporter';
 import { Lighting } from './lighting/Lighting';
 import { ReflectiveFloor } from './ReflectiveFloor';
-import { usePlace } from './places';
+import { useAmbience } from './ambiences';
 
 /** Resting height of a device lying on its back (camera bumps included). */
 const FLAT_CLEARANCE = 0.12;
@@ -89,11 +89,11 @@ function Scene() {
   const decor = useProject((s) => s.decor);
   const dof = useProject((s) => s.camera.dof);
   const layout = useMemo(() => decorLayout(decor, items), [decor, items]);
-  const place = usePlace(decor.kind === 'place' ? decor.place : null);
+  const ambience = useAmbience(decor.kind === 'table' ? decor.ambience : null);
   return (
     <>
-      <Lighting place={place} />
-      <DecorScene decor={decor} items={items} place={place} />
+      <Lighting ambience={ambience} />
+      <DecorScene decor={decor} items={items} />
       <group position={[0, layout.floorY, 0]}>
         {items.map((item) => (
           <Device key={item.id} item={item} />
@@ -114,7 +114,7 @@ export function Stage() {
       frameloop="demand"
       shadows="variance"
       dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', logarithmicDepthBuffer: true }}
+      gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', logarithmicDepthBuffer: false }}
       camera={{ fov: 26, near: 1, far: 50000, position: [10, 13, 41] }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.NeutralToneMapping;

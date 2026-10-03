@@ -3,25 +3,22 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const place = (id, material, rotation) => ({ kind: 'place', place: id, material, rotation, blur: 0.55 });
+const table = (material, wall, ambience, gobo) => ({ kind: 'table', material, wall, ambience, gobo });
 const SCENARIOS = [
   { name: 'studio-default', model: 'phone-pro' },
-  { name: 'dbg-studio-contact', model: 'phone-pro', bg: { kind: 'solid', color: '#ffffff' }, ground: { shadow: 'contact', shadowOpacity: 1 } },
-  { name: 'dbg-surface-oak', model: 'phone-pro', decor: { kind: 'surface', material: 'oak' }, ground: { shadow: 'contact', shadowOpacity: 1 } },
-  { name: 'dbg-place-contact', model: 'phone-pro', decor: place('loft', 'oak', 72), ground: { shadow: 'contact', shadowOpacity: 1 } },
-  { name: 'place-loft', model: 'phone-pro', decor: place('loft', 'oak', 72) },
-  { name: 'place-cafe', model: 'laptop-14', decor: place('cafe', 'walnut', 90) },
-  { name: 'rot-47', model: 'phone', decor: place('lounge', 'marble-white', 47), lighting: { exposure: 0.8 } },
-  { name: 'rot-180', model: 'phone', decor: place('lounge', 'marble-white', 180), lighting: { exposure: 0.8 } },
-  { name: 'place-lounge', model: 'phone', decor: place('lounge', 'marble-white', 162) },
-  { name: 'place-veranda', model: 'tablet-pro-11', decor: place('veranda', 'travertine', 108) },
-  { name: 'place-evening', model: 'laptop-air-13', decor: place('evening', 'marble-black', 90) },
-  { name: 'place-atelier', model: 'desktop-24', decor: place('atelier', 'concrete', 119) },
+  { name: 'table-oak', model: 'phone-pro', decor: table('oak', '#ece6dc', 'day', 'window') },
+  { name: 'table-walnut', model: 'laptop-14', decor: table('walnut', '#b9c2ae', 'day', 'leaves') },
+  { name: 'table-marble', model: 'phone', decor: table('marble-white', '#d9c8b0', 'sun', 'blinds') },
+  { name: 'table-travertine', model: 'tablet-pro-11', decor: table('travertine', '#c98a6b', 'evening', 'leaves') },
+  { name: 'table-concrete', model: 'desktop-24', decor: table('concrete', '#aebccb', 'day', 'window') },
+  { name: 'table-black', model: 'laptop-air-13', decor: table('marble-black', '#3a3a3d', 'evening', 'none') },
+  { name: 'dbg-gobo', model: 'phone', decor: table('marble-white', '#d9c8b0', 'sun', 'blinds'), lighting: { environment: 0 } },
+  { name: 'aurora-refl', model: 'phone-pro', bg: { kind: 'pattern', pattern: 'aurora', colors: ['#0c0a1d', '#4b2ad8', '#ff6a3d'], scale: 1, grain: 0.35, seed: 4 }, ground: { reflection: true, reflectivity: 0.45 } },
   { name: 'podium-terrazzo', model: 'phone-pro', decor: { kind: 'podium', podiumFinish: 'material', material: 'terrazzo' }, light: 'highkey', bg: { kind: 'solid', color: '#e9e4dc' } },
   { name: 'flatlay-marble', model: 'phone-pro', decor: { kind: 'surface', material: 'marble-white' }, camera: { preset: 'top' }, pose: 'flat', bg: { kind: 'solid', color: '#f1efe9' }, light: 'highkey' },
   { name: 'flatlay-linen', model: 'phone', decor: { kind: 'surface', material: 'linen' }, camera: { preset: 'top' }, pose: 'flat', bg: { kind: 'solid', color: '#e4e0d8' }, light: 'highkey' },
   { name: 'surface-walnut', model: 'laptop-14', decor: { kind: 'surface', material: 'walnut' }, bg: { kind: 'solid', color: '#efeae3' }, light: 'highkey' },
-  { name: 'dof-4k', model: 'phone-pro', camera: { preset: 'threeQuarter', dof: true, aperture: 0.5, focus: 0 }, decor: place('loft', 'oak', 72), export: { resolution: '4k' } },
+  { name: 'dof-4k', model: 'phone-pro', camera: { preset: 'threeQuarter', dof: true, aperture: 0.5, focus: 0 }, decor: table('oak', '#ece6dc', 'day', 'window'), export: { resolution: '4k' } },
 ];
 
 
@@ -50,15 +47,20 @@ for (const sc of SCENARIOS.filter((s) => !only || only.includes(s.name))) {
     await new Promise((res) => setTimeout(res, sc.decor ? 1500 : 0));
     if (sc.light) st().applyLightPreset(sc.light);
     if (sc.ground) st().setGround(sc.ground);
-    if (sc.lighting) st().setLighting(sc.lighting);
+
     if (sc.camera) st().setCamera(sc.camera);
-    if (sc.decor?.kind === 'place' && !sc.camera) st().setCamera({ dof: true, aperture: 0.6 });
+    if (sc.decor?.kind === 'table' && !sc.camera) st().setCamera({ dof: true, aperture: 0.6 });
+    if (sc.decor?.kind === 'table') {
+      const amb = { day: [0.95, 0.32], sun: [0.92, 0.26], evening: [0.95, 0.22] }[sc.decor.ambience];
+      st().setLighting({ exposure: amb[0], environment: amb[1] });
+    }
+    if (sc.lighting) st().setLighting(sc.lighting);
     st().setExport({ resolution: '1080', ratio: '16:9', format: 'png', ...(sc.export ?? {}) });
     const m = api.models.find((x) => x.id === sc.model);
     const landscape = st().items[0].params.orientation === 'landscape';
     const tall = landscape ? 1 / m.aspect < 1 : m.aspect < 1;
     await api.importFromUrl(tall ? '/samples/sample-app.png' : '/samples/sample-web.png', 'sample');
-    await new Promise((res) => setTimeout(res, 1500));
+    await new Promise((res) => setTimeout(res, 2200));
     const t0 = performance.now();
     const img = await api.renderImage();
     const buf = new Uint8Array(await img.blob.arrayBuffer());

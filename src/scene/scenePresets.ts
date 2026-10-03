@@ -8,11 +8,12 @@ import {
   type CameraSettings,
   type Decor,
   type Ground,
+  type AmbienceId,
+  type GoboId,
   type LightPresetId,
   type MaterialId,
-  type PlaceId,
 } from '@/store/project';
-import { PLACES } from './places';
+import { AMBIENCES } from './ambiences';
 
 /**
  * Complete looks applied in one click: background, set, light, camera and
@@ -21,22 +22,24 @@ import { PLACES } from './places';
 export interface ScenePreset {
   id: string;
   name: I18nString;
-  thumb: { place: PlaceId; material: MaterialId } | { css: string; material?: MaterialId };
+  thumb: { css: string; material?: MaterialId };
   background?: Background;
   decor: Partial<Decor>;
   light?: LightPresetId;
   exposure?: number;
+  environment?: number;
   camera?: Partial<CameraSettings>;
   ground?: Partial<Ground>;
 }
 
-const place = (id: PlaceId, fr: string, en: string, material: MaterialId = PLACES[id].table): ScenePreset => ({
-  id: `place-${id}`,
+const table = (id: string, fr: string, en: string, material: MaterialId, wall: string, ambience: AmbienceId, gobo: GoboId): ScenePreset => ({
+  id: `table-${id}`,
   name: { fr, en },
-  thumb: { place: id, material },
-  decor: { kind: 'place', place: id, material, rotation: PLACES[id].rotation, blur: 0.55 },
+  thumb: { css: wall, material },
+  decor: { kind: 'table', material, wall, ambience, gobo },
   light: 'studio',
-  exposure: PLACES[id].exposure,
+  exposure: AMBIENCES[ambience].exposure,
+  environment: AMBIENCES[ambience].environment,
   // Real photos of objects on a table have a shallow depth of field.
   camera: { dof: true, aperture: 0.6 },
 });
@@ -58,12 +61,12 @@ export const SCENE_PRESETS: ScenePreset[] = [
     decor: { kind: 'none' },
     light: 'highkey',
   },
-  place('loft', 'Loft · chêne', 'Loft · oak'),
-  place('cafe', 'Café · noyer', 'Café · walnut'),
-  place('lounge', 'Salon · marbre', 'Lounge · marble'),
-  place('veranda', 'Véranda · travertin', 'Veranda · travertine'),
-  place('evening', 'Soirée · marbre noir', 'Evening · black marble'),
-  place('atelier', 'Atelier · béton', 'Atelier · concrete'),
+  table('oak-white', 'Chêne · mur blanc', 'Oak · white wall', 'oak', '#ece6dc', 'day', 'window'),
+  table('walnut-sage', 'Noyer · mur sauge', 'Walnut · sage wall', 'walnut', '#b9c2ae', 'day', 'leaves'),
+  table('marble-sand', 'Marbre · mur sable', 'Marble · sand wall', 'marble-white', '#d9c8b0', 'sun', 'blinds'),
+  table('travertine-terracotta', 'Travertin · terracotta', 'Travertine · terracotta', 'travertine', '#c98a6b', 'evening', 'leaves'),
+  table('concrete-blue', 'Béton · bleu poudré', 'Concrete · powder blue', 'concrete', '#aebccb', 'day', 'window'),
+  table('black-marble', 'Marbre noir · anthracite', 'Black marble · charcoal', 'marble-black', '#3a3a3d', 'evening', 'none'),
   {
     id: 'podium-terrazzo',
     name: { fr: 'Podium terrazzo', en: 'Terrazzo podium' },
@@ -133,6 +136,7 @@ export function applyScenePreset(p: ScenePreset) {
   s.setDecor({ ...DEFAULT_DECOR, ...p.decor });
   if (p.light) s.applyLightPreset(p.light);
   if (p.exposure) s.setLighting({ exposure: p.exposure });
+  if (p.environment) s.setLighting({ environment: p.environment });
   s.setGround({ ...DEFAULT_GROUND, ...p.ground });
   const camera = { ...DEFAULT_CAMERA, preset: 'threeQuarter' as const, ...p.camera };
   s.setPose(camera.preset === 'top' ? 'flat' : 'standing');
