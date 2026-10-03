@@ -11,8 +11,13 @@ export const en: Record<keyof typeof fr, string> = {
 
   'library.title': 'Library',
   'library.phones': 'Phones',
-  'library.more': 'Laptops, tablets and print are coming in the next releases.',
 
+  'library.tablets': 'Tablets',
+  'library.laptops': 'Laptops',
+  'library.desktops': 'Displays & desktops',
+  'library.browser': 'Browser',
+  'library.more': 'Print, objects and the watch are coming in the next releases.',
+  'props.model': 'Model settings',
   'stage.dropTitle': 'Drop your image',
   'stage.dropHint': 'PNG, JPG, WebP or GIF, it never leaves your device.',
   'stage.emptyTitle': 'Add your design',

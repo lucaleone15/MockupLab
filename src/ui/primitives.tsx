@@ -260,3 +260,28 @@ export function Spinner({ size = 16 }: { size?: number }) {
     />
   );
 }
+
+/* -------------------------------------------------------------- Switch */
+
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={() => onChange(!checked)}
+      className={cx(
+        'relative h-[18px] w-[30px] shrink-0 rounded-full transition-colors duration-200',
+        checked ? 'bg-accent' : 'bg-surface-4 shadow-[0_0_0_1px_var(--line-strong)_inset]',
+      )}
+    >
+      <span
+        className={cx(
+          'absolute top-[2px] left-[2px] size-[14px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-[var(--ease-spring)]',
+          checked && 'translate-x-[12px]',
+        )}
+      />
+    </button>
+  );
+}

@@ -22,8 +22,9 @@ await page.waitForFunction(() => window.__mockuplab, null, { timeout: 30000 });
 await page.waitForTimeout(2500);
 await page.screenshot({ path: `${out}/ui-empty.png` });
 
+if (process.env.MODEL) await page.evaluate((m) => { const s = window.__mockuplab.project.getState(); s.replaceModel(s.selectedId, m); }, process.env.MODEL);
 if (process.env.BG) await page.evaluate((bg) => window.__mockuplab.project.getState().setBackground(bg), JSON.parse(process.env.BG));
-await page.evaluate(() => window.__mockuplab.importFromUrl('/samples/sample-app.png', 'sample-app.png'));
+await page.evaluate((f) => window.__mockuplab.importFromUrl('/samples/' + f, f), process.env.SAMPLE ?? 'sample-app.png');
 await page.waitForTimeout(2000);
 await page.screenshot({ path: `${out}/ui-sample.png` });
 

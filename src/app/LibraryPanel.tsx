@@ -1,22 +1,73 @@
-import { useT } from '@/i18n';
+import type { ReactNode } from 'react';
+import { useT, type I18nKey } from '@/i18n';
 import { modelsByCategory } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
 import { selectSelectedItem, useProject } from '@/store/project';
+import { useUi } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 
-const CATEGORY_KEYS: Partial<Record<DeviceCategory, 'library.phones'>> = { phone: 'library.phones' };
+const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
+  phone: 'library.phones',
+  tablet: 'library.tablets',
+  laptop: 'library.laptops',
+  desktop: 'library.desktops',
+  browser: 'library.browser',
+};
 
-/** Line-art silhouette, generated from the model's real proportions. */
+const SHELL = 'fill-surface-4 stroke-fg-subtle';
+const SCREEN = 'fill-surface-2';
+
+/** Line-art silhouette drawn from the model's real proportions. */
 function Silhouette({ model }: { model: DeviceModule }) {
   const [w, h] = model.size;
-  const k = 64 / Math.max(w, h);
-  const sw = w * k;
-  const sh = h * k;
+  let art: ReactNode;
+  if (model.category === 'phone' || model.category === 'tablet') {
+    const k = 60 / Math.max(w, h);
+    const sw = w * k;
+    const sh = h * k;
+    const x = 40 - sw / 2;
+    const y = 40 - sh / 2;
+    const r = model.category === 'phone' ? sw * 0.19 : sw * 0.08;
+    art = (
+      <>
+        <rect x={x} y={y} width={sw} height={sh} rx={r} className={SHELL} strokeWidth={1.2} />
+        <rect x={x + 2.2} y={y + 2.2} width={sw - 4.4} height={sh - 4.4} rx={r * 0.75} className={SCREEN} />
+        {model.category === 'phone' && <rect x={40 - 4} y={y + 4.4} width={8} height={2.4} rx={1.2} className="fill-fg-subtle" />}
+      </>
+    );
+  } else if (model.category === 'laptop') {
+    art = (
+      <>
+        <rect x={14} y={18} width={52} height={34} rx={2.5} className={SHELL} strokeWidth={1.2} />
+        <rect x={16.5} y={20.5} width={47} height={29} rx={1} className={SCREEN} />
+        <path d="M8 55 h64 l-3 5 h-58 z" className={SHELL} strokeWidth={1.2} strokeLinejoin="round" />
+      </>
+    );
+  } else if (model.category === 'desktop') {
+    const chin = model.id.startsWith('desktop');
+    art = (
+      <>
+        <rect x={10} y={14} width={60} height={chin ? 40 : 35} rx={2.5} className={SHELL} strokeWidth={1.2} />
+        <rect x={12.5} y={16.5} width={55} height={31} rx={0.8} className={SCREEN} />
+        <path d={chin ? 'M34 54 l-2 10 h16 l-2 -10' : 'M36 49 v13 M28 64 h24'} className="fill-surface-4 stroke-fg-subtle" strokeWidth={1.2} strokeLinecap="round" />
+      </>
+    );
+  } else {
+    art = (
+      <>
+        <rect x={10} y={18} width={60} height={42} rx={3} className={SHELL} strokeWidth={1.2} />
+        <path d="M10 26 h60" className="stroke-fg-subtle" strokeWidth={1} />
+        {[15, 19.5, 24].map((cx) => (
+          <circle key={cx} cx={cx} cy={22} r={1.4} className="fill-fg-subtle" />
+        ))}
+        <rect x={30} y={20.2} width={24} height={3.6} rx={1.8} className={SCREEN} />
+        <rect x={12} y={28} width={56} height={30} rx={1} className={SCREEN} />
+      </>
+    );
+  }
   return (
-    <svg viewBox="0 0 80 80" className="h-16 w-16" aria-hidden>
-      <rect x={40 - sw / 2} y={40 - sh / 2} width={sw} height={sh} rx={sw * 0.19} className="fill-surface-4 stroke-fg-subtle" strokeWidth={1.2} />
-      <rect x={40 - sw / 2 + 2.2} y={40 - sh / 2 + 2.2} width={sw - 4.4} height={sh - 4.4} rx={sw * 0.15} className="fill-surface-2" />
-      <rect x={40 - 4.5} y={40 - sh / 2 + 4.6} width={9} height={2.6} rx={1.3} className="fill-fg-subtle" />
+    <svg viewBox="0 0 80 80" className="h-14 w-14" aria-hidden>
+      {art}
     </svg>
   );
 }
@@ -25,10 +76,11 @@ export function LibraryPanel() {
   const { t, tr } = useT();
   const selected = useProject(selectSelectedItem);
   const replaceModel = useProject((s) => s.replaceModel);
+  const resetView = useUi((s) => s.resetView);
 
   return (
     <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
-      <div className="flex h-10 items-center px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
+      <div className="flex h-10 shrink-0 items-center px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
         {t('library.title')}
       </div>
       <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
@@ -42,16 +94,20 @@ export function LibraryPanel() {
                   <button
                     key={m.id}
                     type="button"
-                    onClick={() => selected && replaceModel(selected.id, m.id, m.defaultFinish, m.size)}
+                    onClick={() => {
+                      if (!selected) return;
+                      if (active) resetView();
+                      else replaceModel(selected.id, m.id);
+                    }}
                     className={cx(
-                      'group flex flex-col items-center gap-1 rounded-xl bg-surface-2 p-2 pb-2.5 text-[11.5px] transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',
+                      'group flex flex-col items-center gap-1 rounded-xl bg-surface-2 px-1.5 pb-2 pt-1.5 text-[11.5px] leading-tight transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',
                       active
                         ? 'text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]'
                         : 'text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:bg-surface-3 hover:text-fg',
                     )}
                   >
                     <Silhouette model={m} />
-                    {tr(m.name)}
+                    <span className="text-center">{tr(m.name)}</span>
                   </button>
                 );
               })}

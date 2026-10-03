@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { roundedRectOutline, type OutlinePoint, type RoundedRectOptions } from './outline';
+import { roundedRectOutline, type CornerRadii, type OutlinePoint, type RoundedRectOptions } from './outline';
 
 /**
  * A point of an edge profile, read in the plane (inset, z):
@@ -153,7 +153,7 @@ export function sweep(
 export interface SlabOptions extends RoundedRectOptions {
   width: number;
   height: number;
-  radius: number;
+  radius: CornerRadii;
   thickness: number;
   front?: number | EdgeRadius;
   back?: number | EdgeRadius;
@@ -183,7 +183,7 @@ export function flatShape(outline: OutlinePoint[]): THREE.BufferGeometry {
 }
 
 /** Flat rounded rectangle facing +Z with 0..1 UVs. */
-export function roundedPlane(width: number, height: number, radius: number, opts?: RoundedRectOptions) {
+export function roundedPlane(width: number, height: number, radius: CornerRadii, opts?: RoundedRectOptions) {
   return flatShape(roundedRectOutline(width, height, radius, opts));
 }
 

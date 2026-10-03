@@ -3,11 +3,12 @@ import { useT } from '@/i18n';
 import { exportImage } from '@/export/exportImage';
 import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
+import type { ParamDef, ParamValue } from '@/models/types';
 import { pickImages } from '@/lib/importImage';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type Background } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { Button, ColorField, Field, Section, Segmented, Slider, Tooltip, cx } from '@/ui/primitives';
+import { Button, ColorField, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
 function ImageSection() {
   const { t } = useT();
@@ -25,7 +26,10 @@ function ImageSection() {
         <button
           type="button"
           onClick={pickImages}
-          className="group relative grid h-[92px] w-[58px] shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset] transition-shadow hover:shadow-[0_0_0_1px_var(--line-strong)_inset]"
+          className={cx(
+            'group relative grid shrink-0 place-items-center self-start overflow-hidden rounded-lg bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset] transition-shadow hover:shadow-[0_0_0_1px_var(--line-strong)_inset]',
+            asset && asset.width > asset.height ? 'h-[58px] w-[92px]' : 'h-[92px] w-[58px]',
+          )}
         >
           {asset ? (
             <img src={asset.url} alt="" className="h-full w-full object-cover object-top" />
@@ -72,16 +76,67 @@ function ImageSection() {
   );
 }
 
+/** Controls generated from the model's parameter definitions. */
+function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamValue | undefined; onChange: (v: ParamValue) => void }) {
+  const { tr } = useT();
+  switch (def.kind) {
+    case 'slider': {
+      const v = typeof value === 'number' ? value : def.default;
+      return (
+        <Field label={tr(def.label)} value={`${Math.round(v)}${def.unit ?? ''}`}>
+          <Slider label={tr(def.label)} min={def.min} max={def.max} step={def.step} value={v} onChange={onChange} />
+        </Field>
+      );
+    }
+    case 'choice':
+      return (
+        <Field label={tr(def.label)}>
+          <Segmented
+            size={def.options.length > 2 ? 'sm' : 'md'}
+            value={String(value ?? def.default)}
+            onChange={onChange}
+            options={def.options.map((o) => ({ value: o.value, label: tr(o.label) }))}
+          />
+        </Field>
+      );
+    case 'toggle':
+      return (
+        <label className="flex cursor-pointer items-center justify-between text-[12px]">
+          <span className="text-fg-muted">{tr(def.label)}</span>
+          <Switch checked={value === true} onChange={onChange} label={tr(def.label)} />
+        </label>
+      );
+    case 'text':
+      return (
+        <Field label={tr(def.label)}>
+          <input
+            type="text"
+            value={String(value ?? def.default)}
+            placeholder={def.placeholder}
+            spellCheck={false}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-8 rounded-lg bg-surface-2 px-2.5 font-mono text-[12px] text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none placeholder:text-fg-subtle focus:shadow-[0_0_0_1px_var(--accent)_inset]"
+          />
+        </Field>
+      );
+  }
+}
+
 function DeviceSection() {
   const { t, tr } = useT();
   const item = useProject(selectSelectedItem);
   const updateItem = useProject((s) => s.updateItem);
+  const setParam = useProject((s) => s.setParam);
   if (!item) return null;
   const model = getModel(item.modelId);
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
 
   return (
     <Section title={t('props.device')} aside={<span className="text-[12px] text-fg-subtle">{tr(model.name)}</span>}>
+      {model.params?.map((def) => (
+        <ParamControl key={def.id} def={def} value={item.params[def.id]} onChange={(v) => setParam(item.id, def.id, v)} />
+      ))}
+      {model.finishes.length > 1 && (
       <Field label={t('props.finish')} value={<span className="font-sans text-[11.5px]">{tr(finish.name)}</span>}>
         <div className="flex gap-2">
           {model.finishes.map((f) => (
@@ -102,6 +157,7 @@ function DeviceSection() {
           ))}
         </div>
       </Field>
+      )}
       <Field label={t('props.brightness')} value={`${Math.round(item.screen.brightness * 100)} %`}>
         <Slider
           label={t('props.brightness')}

@@ -4,13 +4,20 @@ import { useT } from '@/i18n';
 import { outputSize, ratioValue } from '@/export/settings';
 import { paintBackground } from '@/lib/background';
 import { importFromUrl, pickImages } from '@/lib/importImage';
+import { getModel } from '@/models/registry';
+import { isLandscape } from '@/models/types';
 import { Stage } from '@/scene/Stage';
 import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { IconButton, Kbd, Spinner, cx } from '@/ui/primitives';
 import { MOD } from './shortcuts';
 
-const SAMPLE_URL = `${import.meta.env.BASE_URL}samples/sample-app.png`;
+/** Bundled sample matching the device: a phone app for tall screens, a web page otherwise. */
+function sampleFor(aspect: number, landscape: boolean) {
+  const tall = landscape ? 1 / aspect < 1 : aspect < 1;
+  const name = tall ? 'sample-app.png' : 'sample-web.png';
+  return { url: `${import.meta.env.BASE_URL}samples/${name}`, name };
+}
 
 /** Size of the largest rectangle of the given aspect fitting in the container (minus padding). */
 function useFrameSize(ratio: number) {
@@ -48,6 +55,9 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
 
 function EmptyHint() {
   const { t } = useT();
+  const item = useProject(selectSelectedItem);
+  const model = getModel(item?.modelId ?? '');
+  const sample = sampleFor(model.surfaces[0]?.aspect ?? 1, item ? isLandscape(item.params) : false);
   const [loading, setLoading] = useState(false);
   const [before, after] = t('stage.emptyHint').split('{paste}');
   return (
@@ -68,7 +78,7 @@ function EmptyHint() {
           onClick={async () => {
             setLoading(true);
             try {
-              await importFromUrl(SAMPLE_URL, 'sample-app.png');
+              await importFromUrl(sample.url, sample.name);
             } finally {
               setLoading(false);
             }
@@ -121,7 +131,7 @@ export function Viewport() {
   const { t } = useT();
   const ratio = useProject((s) => s.export.ratio);
   const exportSettings = useProject((s) => s.export);
-  const hasImage = useProject((s) => !!selectSelectedItem(s)?.surfaces.screen?.assetId);
+  const hasImage = useProject((s) => Object.values(selectSelectedItem(s)?.surfaces ?? {}).some((b) => b.assetId));
   const resetView = useUi((s) => s.resetView);
   const { ref, width, height } = useFrameSize(ratioValue(ratio));
   const out = outputSize(exportSettings);
