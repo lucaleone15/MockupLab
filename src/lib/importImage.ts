@@ -1,0 +1,78 @@
+import { t } from '@/i18n';
+import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
+import { selectSelectedItem, useProject } from '@/store/project';
+import { toast } from '@/store/toasts';
+
+const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function decode(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('decode'));
+    img.src = url;
+  });
+}
+
+/** Decodes a file into an asset, downscaling it when it exceeds the GPU texture limit. */
+export async function fileToAsset(file: Blob, name: string): Promise<Asset> {
+  let url = URL.createObjectURL(file);
+  let blob = file;
+  const img = await decode(url);
+  let width = img.naturalWidth || 1024;
+  let height = img.naturalHeight || 1024;
+  const limit = Math.min(getMaxTextureSize(), 8192);
+  if (width > limit || height > limit) {
+    const k = limit / Math.max(width, height);
+    width = Math.round(width * k);
+    height = Math.round(height * k);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, width, height);
+    blob = await new Promise<Blob>((res, rej) => canvas.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), 'image/png'));
+    URL.revokeObjectURL(url);
+    url = URL.createObjectURL(blob);
+    toast.info(t('image.downscaled', { w: width, h: height }));
+  }
+  return { id: uid(), name, url, width, height, blob };
+}
+
+/** Imports images (drop, paste, picker) and binds the first one to the selected device screen. */
+export async function importImages(files: Iterable<File>) {
+  const list = [...files];
+  const images = list.filter((f) => ACCEPTED.test(f.type));
+  for (const f of list) if (!ACCEPTED.test(f.type)) toast.error(t('image.unsupported', { name: f.name || 'file' }));
+  if (!images.length) return;
+  if (images.length > 1) toast.info(t('image.multiple'));
+
+  const file = images[0];
+  try {
+    const asset = await fileToAsset(file, file.name || 'image');
+    useAssets.getState().add(asset);
+    const state = useProject.getState();
+    const item = selectSelectedItem(state);
+    if (item) state.setSurface(item.id, 'screen', { assetId: asset.id, align: 0 });
+  } catch {
+    toast.error(t('image.failed', { name: file.name || 'image' }));
+  }
+}
+
+export async function importFromUrl(url: string, name: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  await importImages([new File([blob], name, { type: blob.type || 'image/png' })]);
+}
+
+export function pickImages() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.multiple = true;
+  input.onchange = () => input.files && importImages(input.files);
+  input.click();
+}
