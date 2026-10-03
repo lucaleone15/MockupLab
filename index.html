@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="MockupLab — générateur de mock-ups 3D gratuit et open source, 100 % dans le navigateur." />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>MockupLab</title>
+    <script>
+      try {
+        const t = localStorage.getItem('mockuplab:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

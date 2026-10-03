@@ -1,0 +1,142 @@
+# MockupLab
+
+**Générateur de mock-ups 3D gratuit, open source et 100 % local.**
+Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vraie image (PNG, JPG, WebP) jusqu'en 4K. Aucun serveur, aucun upload : tes images ne quittent jamais ton navigateur.
+
+> *English summary: free, open-source, in-browser 3D mock-up generator. Drop a screenshot, get a photoreal device render, export PNG/JPG/WebP up to 4K. No backend, no upload. UI available in French and English.*
+
+---
+
+## Fonctionnalités
+
+| | Statut |
+|---|---|
+| Téléphone « Phone Pro » procédural (titane, verre, îlot caméra, boutons, antennes) | ✅ |
+| Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
+| Environnement studio HDRI procédural, ombre portée douce + ombre de contact | ✅ |
+| Fonds : uni, dégradé linéaire/radial, transparent | ✅ |
+| Export PNG / JPG / WebP, 1080p · 2K · 4K, 7 ratios, supersampling ×2, rendu par tuiles | ✅ |
+| Glisser-déposer, coller (⌘V), undo/redo, thème clair/sombre, FR/EN | ✅ |
+| Ordinateurs portables, tablettes, écrans, navigateur | 🔜 jalon b |
+| Presets d'éclairage, caméra, profondeur de champ | 🔜 jalon c |
+| Compositions multi-appareils, sauvegarde auto, projets JSON | 🔜 jalon d |
+| Print & objets (cartes, affiches, packaging, mug…) | 🔜 jalon e |
+| Mode photo (perspective sur 4 coins) | 🔜 jalon f |
+| Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
+| Vidéo / GIF (turntable, défilement) | 🔜 jalon h |
+| Import de modèles `.glb` | 🔜 jalon i |
+
+## Démarrer
+
+Prérequis : Node.js 20+.
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # build de production dans dist/
+npm run preview    # sert le build sur http://localhost:4173/MockupLab/
+```
+
+## Utilisation
+
+1. Glisse une image sur la fenêtre, colle-la avec **⌘V / Ctrl+V**, ou clique sur **Essayer un exemple**.
+2. Tourne autour de l'appareil (glisser), zoome (molette), déplace la vue (clic droit).
+3. Règle la finition, la luminosité de l'écran, les reflets et le fond dans le panneau de droite.
+4. Choisis format, résolution et ratio, puis **Exporter** (**⌘E / Ctrl+E**).
+
+Astuce : pour un téléphone, exporte ton design en **1179 × 2556 px** (ratio natif de l'écran). Les captures plus longues sont cadrées par le haut ; le curseur *Position* fait défiler le cadrage.
+
+### Raccourcis
+
+| Action | Raccourci |
+|---|---|
+| Ouvrir une image | ⌘O / Ctrl+O |
+| Coller une image | ⌘V / Ctrl+V |
+| Exporter | ⌘E / Ctrl+E |
+| Annuler / rétablir | ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Y) |
+| Recentrer la vue | F |
+
+## Comment ça marche
+
+- **Rendu** : Three.js via react-three-fiber. Matériaux PBR (`MeshPhysicalMaterial` : métal anisotrope, verre, clearcoat, iridescence des objectifs), environnement studio généré à partir de *Lightformers* (aucun fichier HDR), tone mapping *Khronos PBR Neutral*.
+- **Écran** : le shader d'écran sort du tone mapping et compose `image + Neutral(reflets)`. Les pixels de ton design sortent donc exactement avec leurs couleurs d'origine, tandis que les reflets suivent la même courbe que la vitre autour.
+- **Géométrie** : contours en *squircle* (coins continus de type superellipse) balayés le long d'un profil d'arête, avec normales analytiques pour des reflets sans facettes (`src/lib/geometry`).
+- **Export** : rendu hors écran à 2× la taille finale, découpé en tuiles (`camera.setViewOffset`) avec marges de recouvrement pour éviter les coutures, puis réduit. Le fond est peint par le même code dans l'aperçu et dans l'export (`src/lib/background.ts`), avec un léger dithering anti-banding sur les dégradés.
+
+## Structure du code
+
+```
+src/
+  app/          interface : barre du haut, bibliothèque, viewport, panneau de propriétés, raccourcis
+  ui/           composants (Button, Slider, Segmented, Section…)
+  i18n/         dictionnaires FR / EN
+  store/        état du projet (zustand + historique zundo), assets, UI, toasts
+  scene/        Stage R3F, environnement studio, matériaux, matériau d'écran, exporteur
+  models/       un dossier par appareil + registre
+  lib/geometry  contours squircle, sweep de profil, lathe
+  export/       réglages (résolutions, ratios, formats) et pipeline d'export
+scripts/        captures de vérification Playwright, génération des exemples
+```
+
+## Ajouter un modèle
+
+Chaque appareil est un module qui implémente `DeviceModule` (`src/models/types.ts`) :
+
+```tsx
+// src/models/tablet/TabletAir.tsx
+import type { DeviceModule, DeviceProps } from '../types';
+import { roundedSlab, roundedPlane } from '@/lib/geometry/sweep';
+import { brushedMetal } from '@/scene/materials';
+import { useScreenMaterial } from '@/scene/useScreenMaterial';
+
+const W = 17.85, H = 24.76, T = 0.61; // centimètres (1 unité = 1 cm)
+
+function TabletAir({ finish, surfaces, screen }: DeviceProps) {
+  const screenMat = useScreenMaterial(surfaces.screen, 16.4 / 23.6, screen);
+  // … construis la géométrie (mémoïsée) et retourne un <group>
+}
+
+export const tabletAir: DeviceModule = {
+  id: 'tablet-air',
+  name: { fr: 'Tablet Air', en: 'Tablet Air' },
+  category: 'tablet',
+  size: [W, H, T],
+  surfaces: [{ id: 'screen', label: { fr: 'Écran', en: 'Screen' }, aspect: 16.4 / 23.6, nativeSize: [1640, 2360] }],
+  finishes: [{ id: 'silver', name: { fr: 'Argent', en: 'Silver' }, swatch: '#d6d7da', colors: { frame: '#d6d7da' } }],
+  defaultFinish: 'silver',
+  Component: TabletAir,
+};
+```
+
+Puis ajoute-le à `MODELS` dans `src/models/registry.ts`. Conventions :
+
+- l'origine est au centre de l'appareil, l'écran regarde vers **+Z** et la hauteur suit **+Y** ;
+- les surfaces imprimables/écrans utilisent `useScreenMaterial`, qui gère le cadrage, la fidélité des couleurs et les reflets ;
+- les géométries sont construites une seule fois et partagées entre instances.
+
+## Vérification visuelle
+
+```bash
+npm run dev
+node scripts/shoot.mjs                         # captures UI + export 1080p dans out/
+THEME=light node scripts/shoot.mjs             # thème clair
+EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
+```
+
+## Déployer sur GitHub Pages
+
+1. Pousse le dépôt sur GitHub (branche `main`).
+2. Dans **Settings → Pages**, choisis **Source : GitHub Actions**.
+3. Le workflow `.github/workflows/deploy.yml` construit et publie le site à chaque push sur `main`, à l'adresse `https://<utilisateur>.github.io/<dépôt>/`. Le chemin de base est déduit automatiquement du nom du dépôt.
+
+Pour un autre hébergeur statique : `BASE_PATH=/ npm run build` puis publie `dist/`.
+
+## Mentions légales
+
+- Les appareils sont des **interprétations génériques** (« Phone Pro », « Laptop 14 »…). Aucun logo ni marque déposée n'est reproduit, et MockupLab n'est affilié à aucun fabricant.
+- Les **modèles `.glb`, templates photo et images** que tu importes restent sous leur propre licence. Vérifier que tu as le droit de les utiliser est de ta responsabilité.
+- Polices embarquées : Geist et Geist Mono (SIL OFL), Instrument Serif (SIL OFL).
+
+## Licence
+
+[MIT](LICENSE)
