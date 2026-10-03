@@ -52,16 +52,21 @@ export function useScreenMaterial(binding: SurfaceBinding | undefined, surfaceAs
   useEffect(() => () => material.dispose(), [material]);
 
   const asset = useAssets((s) => (binding?.assetId ? s.assets[binding.assetId] : undefined));
-  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  // The decoded image is tagged with its URL: right after the asset changes,
+  // state still holds the previous image for one render, and it must never be
+  // used (or cached) for the new asset.
+  const [loaded, setLoaded] = useState<{ url: string; img: HTMLImageElement } | null>(null);
   useEffect(() => {
-    setImage(null);
     if (!asset) return;
     let alive = true;
-    loadImage(asset.url).then((img) => alive && setImage(img)).catch(() => undefined);
+    loadImage(asset.url)
+      .then((img) => alive && setLoaded({ url: asset.url, img }))
+      .catch(() => undefined);
     return () => {
       alive = false;
     };
   }, [asset]);
+  const image = asset && loaded?.url === asset.url ? loaded.img : null;
 
   const fit = binding?.fit ?? 'cover';
   const align = binding?.align ?? 0;
