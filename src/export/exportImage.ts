@@ -1,6 +1,6 @@
 import { t, useLang } from '@/i18n';
 import { getModel } from '@/models/registry';
-import { dither, paintBackground } from '@/lib/background';
+import { dither, paintBackground, prepareBackground } from '@/lib/background';
 import { renderFrame } from '@/scene/exporter';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
@@ -39,7 +39,20 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   const { width, height } = outputSize(settings);
   const format = FORMATS.find((f) => f.id === settings.format) ?? FORMATS[0];
 
-  const { canvas: scene, tiles } = renderFrame({ width, height, supersample: supersampleFor(width, height) });
+  // With depth of field, lens samples already anti-alias (each one is sub-pixel jittered).
+  const dof = project.camera.dof && project.camera.aperture > 0;
+  const { canvas: scene, tiles } = await renderFrame({
+    width,
+    height,
+    supersample: dof ? 1 : supersampleFor(width, height),
+    samples: dof ? 64 : 1,
+    onProgress: dof
+      ? (done, total) => {
+          // Only while an export is running (renderImage is also used by scripts).
+          if (useUi.getState().exporting) useUi.getState().setExporting(t('export.rendering', { w: width, h: height }) + ` ${Math.round((done / total) * 100)} %`);
+        }
+      : undefined,
+  });
   if (tiles > 16) toast.info(t('export.tiles', { n: tiles }));
 
   const out = document.createElement('canvas');
@@ -48,8 +61,9 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   const ctx = out.getContext('2d')!;
   const transparent = project.background.kind === 'transparent';
   if (!transparent) {
+    await prepareBackground(project.background);
     paintBackground(ctx, project.background, width, height);
-    if (project.background.kind === 'gradient') dither(ctx, width, height);
+    if (project.background.kind !== 'solid') dither(ctx, width, height);
   } else if (format.id === 'jpeg') {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);

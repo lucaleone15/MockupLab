@@ -17,11 +17,13 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Écrans : Desktop 24 (tout-en-un coloré), Display 27, Monitor 27 | ✅ |
 | Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
-| Environnement studio HDRI procédural, ombre portée douce + ombre de contact | ✅ |
-| Fonds : uni, dégradé linéaire/radial, transparent | ✅ |
+| Fonds : uni, dégradé multi-couleurs (linéaire / radial / conique, éditeur), motifs procéduraux (aurora, grain, topographie, papier, béton, marbre, terrazzo, lin, bois, trame, grille, blueprint), image floutée / assombrie, transparent | ✅ |
+| Décors 3D : studio à fond courbe, podium (cylindre / bloc, arche), surfaces (marbre, bois, béton, terrazzo, lin, papier) fondues dans le fond, bureau + mur | ✅ |
+| Éclairage : 7 ambiances (studio doux, haute clé, dramatique, néon, lumière du jour, heure dorée, sombre premium) + intensité, couleur, direction, hauteur, douceur des ombres, reflets, exposition | ✅ |
+| Caméra : face, 3/4, isométrique, dessus (appareil posé à plat), plongée, contre-plongée, orbite libre, focale 14–600 mm, profondeur de champ physique | ✅ |
+| Sol : ombre douce / contact / aucune, réflexion au sol avec fondu réaliste | ✅ |
 | Export PNG / JPG / WebP, 1080p · 2K · 4K, 7 ratios, supersampling ×2, rendu par tuiles | ✅ |
 | Glisser-déposer, coller (⌘V), undo/redo, thème clair/sombre, FR/EN | ✅ |
-| Presets d'éclairage, caméra, profondeur de champ | 🔜 jalon c |
 | Compositions multi-appareils, sauvegarde auto, projets JSON | 🔜 jalon d |
 | Print & objets (cartes, affiches, packaging, mug…) | 🔜 jalon e |
 | Mode photo (perspective sur 4 coins) | 🔜 jalon f |
@@ -64,6 +66,10 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Rendu** : Three.js via react-three-fiber. Matériaux PBR (`MeshPhysicalMaterial` : métal anisotrope, verre, clearcoat, iridescence des objectifs), environnement studio généré à partir de *Lightformers* (aucun fichier HDR), tone mapping *Khronos PBR Neutral*.
 - **Écran** : le shader d'écran sort du tone mapping et compose `image + Neutral(reflets)`. Les pixels de ton design sortent donc exactement avec leurs couleurs d'origine, tandis que les reflets suivent la même courbe que la vitre autour.
 - **Géométrie** : contours en *squircle* (coins continus de type superellipse) balayés le long d'un profil d'arête, avec normales analytiques pour des reflets sans facettes (`src/lib/geometry`).
+- **Fonds et matières** : motifs générés par des shaders (`src/lib/patterns.ts`) dans un petit contexte WebGL dédié, à n'importe quelle résolution — les mêmes servent de textures aux décors 3D.
+- **Éclairage** : chaque ambiance est un environnement procédural (*Lightformers*) + une lumière clé à ombres douces (VSM) ; l'environnement tourne avec la direction de la lumière pour garder des reflets cohérents.
+- **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.
+- **Profondeur de champ** : modèle de lentille mince par accumulation (64 échantillons à l'export, progressif dans l'aperçu) — physiquement juste et compatible avec le rendu fidèle des écrans.
 - **Export** : rendu hors écran à 2× la taille finale, découpé en tuiles (`camera.setViewOffset`) avec marges de recouvrement pour éviter les coutures, puis réduit. Le fond est peint par le même code dans l'aperçu et dans l'export (`src/lib/background.ts`), avec un léger dithering anti-banding sur les dégradés.
 
 ## Structure du code

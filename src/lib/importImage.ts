@@ -62,6 +62,34 @@ export async function importImages(files: Iterable<File>) {
   }
 }
 
+/** Imports one image file as an asset (not bound to any surface). */
+export async function importAsset(file: File): Promise<Asset | null> {
+  if (!ACCEPTED.test(file.type)) {
+    toast.error(t('image.unsupported', { name: file.name || 'file' }));
+    return null;
+  }
+  try {
+    const asset = await fileToAsset(file, file.name || 'image');
+    useAssets.getState().add(asset);
+    return asset;
+  } catch {
+    toast.error(t('image.failed', { name: file.name || 'image' }));
+    return null;
+  }
+}
+
+/** Opens the file picker for a single image. */
+export function pickImageFile(): Promise<File | null> {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => resolve(input.files?.[0] ?? null);
+    input.oncancel = () => resolve(null);
+    input.click();
+  });
+}
+
 export async function importFromUrl(url: string, name: string) {
   const res = await fetch(url);
   const blob = await res.blob();

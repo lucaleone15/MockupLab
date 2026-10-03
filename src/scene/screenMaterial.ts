@@ -40,8 +40,11 @@ export interface ScreenMaterialUniforms {
   uExposure: { value: number };
 }
 
+/** Uniforms shared by every screen material (set by the lighting). */
+export const screenUniforms = { uExposure: { value: 1 } };
+
 export function createScreenMaterial(): THREE.MeshPhysicalMaterial {
-  const uniforms: ScreenMaterialUniforms = { uFill: { value: new THREE.Color('#000000') }, uExposure: { value: 1 } };
+  const uniforms: ScreenMaterialUniforms = { uFill: { value: new THREE.Color('#000000') }, uExposure: screenUniforms.uExposure };
   const material = new THREE.MeshPhysicalMaterial({
     color: '#000000',
     emissive: '#ffffff',

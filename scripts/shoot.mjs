@@ -12,11 +12,17 @@ const browser = await chromium.launch({
   headless: process.env.HEADED ? false : true,
   args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
 });
-const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 2 });
+const page = await browser.newPage({ viewport: { width: 1600, height: Number(process.env.HEIGHT ?? 1000) }, deviceScaleFactor: 2 });
 const logs = [];
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
-await page.addInitScript((t) => localStorage.setItem('mockuplab:theme', t), theme);
+await page.addInitScript(
+  ([t, tab]) => {
+    localStorage.setItem('mockuplab:theme', t);
+    if (tab) localStorage.setItem('mockuplab:tab', tab);
+  },
+  [theme, process.env.TAB ?? ''],
+);
 await page.goto(url);
 await page.waitForFunction(() => window.__mockuplab, null, { timeout: 30000 });
 await page.waitForTimeout(2500);
