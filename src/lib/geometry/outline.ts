@@ -68,7 +68,18 @@ function resample(pts: [number, number][], count: number): [number, number][] {
   return out;
 }
 
-/** Corner radii: one value for all corners, or [top-right, top-left, bottom-left, bottom-right]. */
+/**
+ * Extent of a continuous corner that "bites" as much as a circular corner of
+ * radius `r`: both curves pass through the same point on the 45° diagonal.
+ * A superellipse is squarer than a circle, so it needs a longer run-out
+ * (≈ 1.6 r for the default smoothing — the familiar industrial-design ratio).
+ */
+export function cornerExtent(r: number, smooth = 0.6) {
+  const n = 2 + 2.4 * smooth;
+  return (r * (1 - Math.SQRT1_2)) / (1 - 2 ** (-1 / n));
+}
+
+/** Corner radii (visual, i.e. equivalent circular radius): one value, or [top-right, top-left, bottom-left, bottom-right]. */
 export type CornerRadii = number | [number, number, number, number];
 
 /** Closed CCW outline of a rectangle with continuous corners, centred on the origin. */
@@ -79,7 +90,7 @@ export function roundedRectOutline(
   { smooth = 0.6, segments = 28 }: RoundedRectOptions = {},
 ): OutlinePoint[] {
   const radii = (typeof radius === 'number' ? [radius, radius, radius, radius] : radius).map((r) =>
-    Math.max(0, Math.min(r, width / 2, height / 2)),
+    Math.max(0, Math.min(cornerExtent(r, smooth), width / 2, height / 2)),
   );
   const n = 2 + 2.4 * smooth;
   const corners: [number, number, number, number][] = [

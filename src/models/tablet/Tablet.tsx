@@ -19,7 +19,7 @@ export interface TabletSpec {
 }
 
 const GLASS_INSET = 0.035;
-const GLASS_T = 0.045;
+const GLASS_T = 0.06;
 
 function Tablet({ spec: s, finish, surfaces, screen, params }: DeviceProps & { spec: TabletSpec }) {
   const g = useMemo(
@@ -29,8 +29,8 @@ function Tablet({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
         height: s.height,
         radius: s.radius,
         thickness: s.depth,
-        front: { d: 0.035, z: 0.04 },
-        back: { d: 0.05, z: 0.05 },
+        front: { d: 0.07, z: 0.08 },
+        back: { d: 0.13, z: 0.14 },
         smooth: 0.45,
         segments: 36,
         edgeSegments: 10,

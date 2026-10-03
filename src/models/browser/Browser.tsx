@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { roundedPlane, roundedSlab } from '@/lib/geometry/sweep';
@@ -6,6 +6,7 @@ import { prepareTexture } from '@/store/assets';
 import { mattePlastic } from '@/scene/materials';
 import { createScreenMaterial } from '@/scene/screenMaterial';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
+import { useFontsReady } from '../shared/useFontsReady';
 import type { DeviceModule, DeviceProps } from '../types';
 
 /*
@@ -160,10 +161,7 @@ function Browser({ surfaces, screen, params }: DeviceProps) {
   const invalidate = useThree((s) => s.invalidate);
 
   // Fonts must be ready before drawing text on the toolbar canvas.
-  const [fontsReady, setFontsReady] = useState(false);
-  useEffect(() => {
-    document.fonts.load('500 32px "Geist Variable"').finally(() => setFontsReady(true));
-  }, []);
+  const fontsReady = useFontsReady();
 
   const chromeMaterial = useMemo(() => createScreenMaterial(), []);
   useEffect(() => {

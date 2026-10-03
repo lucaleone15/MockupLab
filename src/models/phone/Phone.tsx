@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { I18nString } from '@/i18n';
-import { circleOutline } from '@/lib/geometry/outline';
+import { circleOutline, cornerExtent } from '@/lib/geometry/outline';
 import { flatShape, roundedPlane, roundedSlab, type EdgeRadius } from '@/lib/geometry/sweep';
 import { brushedMetal, cavity, coverGlass, frostedGlass, glossyGlass, islandBlack, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
@@ -50,7 +50,7 @@ export interface PhoneSpec {
 }
 
 const GLASS_INSET = 0.05;
-const GLASS_T = 0.05;
+const GLASS_T = 0.09;
 
 /* ----------------------------------------------------------- geometry */
 
@@ -110,7 +110,7 @@ function buildGeometry(s: PhoneSpec): PhoneGeometry {
       height: s.height - GLASS_INSET * 2,
       radius: s.radius - GLASS_INSET,
       thickness: GLASS_T,
-      front: { d: 0.035, z: 0.022 },
+      front: { d: 0.06, z: 0.035 },
       back: 0,
       smooth: s.smooth,
       segments: 40,
@@ -191,7 +191,10 @@ function Phone({ spec: s, finish, surfaces, screen, params }: DeviceProps & { sp
           ? displayTop - c.top
           : 0;
   const earpieceY = c.kind === 'notch' ? displayTop - 0.12 : s.height / 2 - (s.height / 2 - displayTop) / 2;
-  const sideBand = (s.height / 2) - 1.62;
+  // Antenna lines sit on the straight runs, just past the corner curves.
+  const run = cornerExtent(s.radius, s.smooth);
+  const sideBand = s.height / 2 - run - 0.25;
+  const topBand = s.width / 2 - run - 0.2;
 
   return (
     <group>
@@ -232,7 +235,7 @@ function Phone({ spec: s, finish, surfaces, screen, params }: DeviceProps & { sp
       )}
       {[-1, 1].flatMap((sx) =>
         [-1, 1].map((sy) => (
-          <mesh key={`t${sx}${sy}`} geometry={g.antennaTop} material={antenna} position={[sx * (s.width / 2 - s.radius - 0.55), sy * (s.height / 2 - 0.002), 0]} />
+          <mesh key={`t${sx}${sy}`} geometry={g.antennaTop} material={antenna} position={[sx * topBand, sy * (s.height / 2 - 0.002), 0]} />
         )),
       )}
       {/* bottom: port and speaker grilles */}
