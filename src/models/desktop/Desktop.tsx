@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { I18nString } from '@/i18n';
 import { roundedPlane, roundedSlab } from '@/lib/geometry/sweep';
-import { brushedMetal, coverGlass, lensGlass, mattePlastic } from '@/scene/materials';
+import { brushedMetal, cavity, coverGlass, lensGlass, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
 import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
 
@@ -143,6 +143,28 @@ function Panel({ p, colors, bezel, surfaces, screen }: { p: PanelSpec; colors: {
   );
 }
 
+/* ------------------------------------------------------- connectors */
+
+/**
+ * Connectors on the back of a panel. `xs` are given as seen from behind
+ * (x → right when looking at the back), y from the panel bottom.
+ */
+function BackPorts({ p, xs, y, round }: { p: PanelSpec; xs: number[]; y: number; round?: [number, number, number] }) {
+  const g = useMemo(
+    () => ({ usbc: roundedPlane(0.84, 0.27, 0.135, { smooth: 0, segments: 8 }), round: new THREE.CircleGeometry(1, 32) }),
+    [],
+  );
+  const z = p.front - p.depth - 0.003;
+  return (
+    <group position={[0, p.bottom, z]} rotation={[0, Math.PI, 0]}>
+      {xs.map((x) => (
+        <mesh key={x} geometry={g.usbc} material={cavity()} position={[x, y, 0]} />
+      ))}
+      {round && <mesh geometry={g.round} material={mattePlastic('#1b1b1e', 0.5)} position={[round[0], round[1], 0]} scale={[round[2], round[2], 1]} />}
+    </group>
+  );
+}
+
 /* ------------------------------------------------------- modules */
 
 const surface = (aspect: number, nativeSize: [number, number]) => [
@@ -175,6 +197,14 @@ function Desktop24({ finish, surfaces, screen, params }: DeviceProps) {
     <group>
       <BentStand s={DESKTOP_STAND} color={finish.colors.body} />
       <Panel p={DESKTOP_PANEL} colors={{ body: finish.colors.body, chin: finish.colors.chin }} bezel={bezel} surfaces={surfaces} screen={screen} />
+      <BackPorts p={DESKTOP_PANEL} xs={[-22.6, -21.3, -20.0, -18.7]} y={2.6} round={[-11, 3.0, 0.55]} />
+      <mesh
+        position={[-DESKTOP_PANEL.width / 2 - 0.002, DESKTOP_PANEL.bottom + 4.2, DESKTOP_PANEL.front - DESKTOP_PANEL.depth / 2]}
+        rotation={[0, -Math.PI / 2, 0]}
+        material={cavity()}
+      >
+        <circleGeometry args={[0.17, 20]} />
+      </mesh>
     </group>
   );
 }
@@ -231,6 +261,7 @@ function Display27({ finish, surfaces, screen }: DeviceProps) {
     <group>
       <BentStand s={DISPLAY_STAND} color={finish.colors.body} />
       <Panel p={DISPLAY_PANEL} colors={{ body: finish.colors.body, chin: finish.colors.body }} bezel="#040405" surfaces={surfaces} screen={screen} />
+      <BackPorts p={DISPLAY_PANEL} xs={[19.6, 21.0, 22.4, 23.8]} y={3.2} round={[-12, 3.4, 0.6]} />
     </group>
   );
 }

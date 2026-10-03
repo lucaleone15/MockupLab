@@ -30,9 +30,13 @@ export interface LaptopSpec {
   nativeSize: [number, number];
   keyboard: { back: number; pitch: number; fnPitch: number };
   trackpad: { width: number; depth: number; front: number };
+  /** Connectors on each side wall: [kind, centre z] (z < 0 is towards the hinge). */
+  ports: { left: [PortKind, number][]; right: [PortKind, number][] };
   grilles: boolean;
   finishes: DeviceFinish[];
 }
+
+export type PortKind = 'usbc' | 'magsafe' | 'hdmi' | 'sd' | 'jack';
 
 const FEET = 0.07;
 const KEY_GAP = 0.3;
@@ -199,10 +203,13 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
       deck: roundedPlane(keyboardLayout(s.keyboard.pitch, s.keyboard.fnPitch).width + 0.4, s.keyboard.fnPitch + 5 * s.keyboard.pitch + 0.4, 0.35, { segments: 8 }),
       trackpad: roundedPlane(s.trackpad.width, s.trackpad.depth, 0.5, { smooth: 0.5, segments: 16 }),
       trackpadGap: roundedPlane(s.trackpad.width + 0.06, s.trackpad.depth + 0.06, 0.53, { smooth: 0.5, segments: 16 }),
-      portC: roundedPlane(0.84, 0.27, 0.135, { smooth: 0, segments: 8 }),
-      portMag: roundedPlane(1.5, 0.22, 0.11, { smooth: 0, segments: 8 }),
-      portHdmi: roundedPlane(1.4, 0.42, 0.06, { smooth: 0, segments: 4 }),
-      portSd: roundedPlane(2.4, 0.13, 0.06, { smooth: 0, segments: 4 }),
+      ports: {
+        usbc: roundedPlane(0.84, 0.27, 0.135, { smooth: 0, segments: 8 }),
+        magsafe: roundedPlane(1.45, 0.22, 0.11, { smooth: 0, segments: 8 }),
+        hdmi: roundedPlane(1.4, 0.4, [0.05, 0.05, 0.12, 0.12], { smooth: 0, segments: 4 }),
+        sd: roundedPlane(2.4, 0.13, 0.06, { smooth: 0, segments: 4 }),
+        jack: roundedPlane(0.34, 0.34, 0.17, { smooth: 0, segments: 10 }),
+      } satisfies Record<PortKind, THREE.BufferGeometry>,
       foot: new THREE.CylinderGeometry(0.55, 0.6, FEET, 32),
       hinge: new THREE.CylinderGeometry(0.4, 0.4, s.width - 4.6, 40, 1),
     };
@@ -253,15 +260,16 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
         )}
       </group>
       {/* ports: left and right side walls */}
+      {/* Left wall faces -X (its local x runs towards +Z), right wall faces +X (local x runs towards -Z). */}
       <group position={[-s.width / 2 - 0.002, portY, 0]} rotation={[0, -Math.PI / 2, 0]}>
-        <mesh geometry={g.portMag} material={cavity()} position={[-5.6, 0, 0]} />
-        <mesh geometry={g.portC} material={cavity()} position={[-3.1, 0, 0]} />
-        <mesh geometry={g.portC} material={cavity()} position={[-1.6, 0, 0]} />
+        {s.ports.left.map(([kind, z], i) => (
+          <mesh key={i} geometry={g.ports[kind]} material={cavity()} position={[z, 0, 0]} />
+        ))}
       </group>
       <group position={[s.width / 2 + 0.002, portY, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <mesh geometry={g.portSd} material={cavity()} position={[-4.2, 0, 0]} />
-        <mesh geometry={g.portC} material={cavity()} position={[-1.2, 0, 0]} />
-        <mesh geometry={g.portHdmi} material={cavity()} position={[1.2, 0, 0]} />
+        {s.ports.right.map(([kind, z], i) => (
+          <mesh key={i} geometry={g.ports[kind]} material={cavity()} position={[-z, 0, 0]} />
+        ))}
       </group>
       {/* hinge + lid */}
       <mesh geometry={g.hinge} material={mattePlastic('#18181b', 0.45)} position={[0, pivotY - 0.06, pivotZ]} rotation={[0, 0, Math.PI / 2]} />
@@ -341,6 +349,20 @@ export const laptop14 = defineLaptop(
     nativeSize: [3024, 1964],
     keyboard: { back: 1.55, pitch: 1.9, fnPitch: 1.3 },
     trackpad: { width: 13.3, depth: 7.8, front: 0.75 },
+    // Pro-style I/O: power + two USB-C + headphone jack left; USB-C, HDMI, SD right.
+    ports: {
+      left: [
+        ['magsafe', -8.0],
+        ['usbc', -5.7],
+        ['usbc', -4.1],
+        ['jack', 6.3],
+      ],
+      right: [
+        ['usbc', -7.6],
+        ['hdmi', -5.4],
+        ['sd', -1.6],
+      ],
+    },
     grilles: true,
     finishes: [finishes[1], finishes[0]],
   },
@@ -361,6 +383,15 @@ export const laptopAir = defineLaptop(
     nativeSize: [2560, 1664],
     keyboard: { back: 1.25, pitch: 1.86, fnPitch: 1.5 },
     trackpad: { width: 12.0, depth: 7.6, front: 0.8 },
+    // Thin-and-light I/O: power + two USB-C at the back left, headphone jack back right.
+    ports: {
+      left: [
+        ['magsafe', -7.8],
+        ['usbc', -5.7],
+        ['usbc', -4.3],
+      ],
+      right: [['jack', -7.7]],
+    },
     grilles: false,
     finishes: [finishes[2], finishes[3], finishes[1], finishes[0]],
   },

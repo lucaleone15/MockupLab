@@ -125,14 +125,6 @@ function drawToolbar(theme: Theme, layout: Layout, url: string): HTMLCanvasEleme
   g.fillStyle = p.text;
   g.fillText(url, lx + 4.5 * u, cy + 0.15 * u);
 
-  // right-side icons (share / tabs / menu), abstract
-  g.strokeStyle = p.faint;
-  g.lineWidth = 0.5 * u;
-  const rx = c.width - 10 * u;
-  g.strokeRect(rx - 1.8 * u, cy - 1.8 * u, 3.6 * u, 3.6 * u);
-  g.strokeRect(rx - 10.5 * u, cy - 1.8 * u, 3.6 * u, 3.6 * u);
-  g.strokeRect(rx - 10 * u, cy - 2.4 * u, 3.6 * u, 3.6 * u);
-
   // separator line under the toolbar
   g.fillStyle = p.line;
   g.fillRect(0, c.height - Math.max(1, 0.25 * u), c.width, Math.max(1, 0.25 * u));
