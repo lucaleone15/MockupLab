@@ -42,7 +42,29 @@ export interface SceneItem {
   locked: boolean;
 }
 
-export type OverlayFont = 'sans' | 'serif' | 'mono';
+/** Built-in faces, or the brand kit's heading / body typefaces. */
+export type OverlayFont = 'sans' | 'serif' | 'mono' | 'heading' | 'body';
+
+/** A typeface of the brand kit: one of the bundled ones, or a font file imported by the user (stored as an asset). */
+export interface BrandFont {
+  family: string;
+  assetId: string | null;
+}
+
+export interface BrandColor {
+  hex: string;
+  name: string;
+}
+
+/** Brand identity used by the "Brand" tab: palette, typefaces, logo, generated visuals. */
+export interface Brand {
+  name: string;
+  tagline: string;
+  logoAssetId: string | null;
+  colors: BrandColor[];
+  heading: BrandFont;
+  body: BrandFont;
+}
 
 /** 2D layers painted over the render: titles, captions, logos. Positions are fractions of the frame. */
 export type Overlay =
@@ -61,6 +83,28 @@ export type Overlay =
       y: number;
       /** Letter spacing in em. */
       tracking: number;
+      visible: boolean;
+    }
+  | {
+      id: string;
+      kind: 'palette';
+      /** Chip size as a fraction of the frame height. */
+      size: number;
+      x: number;
+      y: number;
+      layout: 'row' | 'column';
+      shape: 'circle' | 'square';
+      labels: boolean;
+      color: string;
+      visible: boolean;
+    }
+  | {
+      id: string;
+      kind: 'type';
+      size: number;
+      x: number;
+      y: number;
+      color: string;
       visible: boolean;
     }
   | {
@@ -142,6 +186,8 @@ export interface CameraSettings {
   aperture: number;
   /** Focus offset along the view axis, -1 (closer) .. 1 (further), relative to the subject size. */
   focus: number;
+  /** Horizontal lens shift, fraction of the frame width (positive: subject moves right). */
+  shift: number;
 }
 
 export interface Ground {
@@ -165,7 +211,8 @@ export interface ExportSettings {
 }
 
 export interface Project {
-  version: 3;
+  version: 4;
+  brand: Brand;
   name: string;
   items: SceneItem[];
   selectedId: string | null;
@@ -202,6 +249,21 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
+export const DEFAULT_BRAND: Brand = {
+  name: 'Solstice',
+  tagline: 'Festival de musique en plein air',
+  logoAssetId: null,
+  colors: [
+    { hex: '#FF5C35', name: 'Soleil' },
+    { hex: '#1D1A17', name: 'Nuit' },
+    { hex: '#2F4A3B', name: 'Forêt' },
+    { hex: '#FFB547', name: 'Miel' },
+    { hex: '#F1EBE0', name: 'Lin' },
+  ],
+  heading: { family: 'Geist Variable', assetId: null },
+  body: { family: 'Geist Variable', assetId: null },
+};
+
 export const DEFAULT_DECOR: Decor = {
   kind: 'none',
   color: '#d9d4cb',
@@ -214,12 +276,13 @@ export const DEFAULT_DECOR: Decor = {
   gobo: 'window',
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
-export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0 };
+export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0 };
 
 export function initialProject(): Project {
   const item = makeItem(getModel('phone-pro'));
   return {
-    version: 3,
+    version: 4,
+    brand: structuredClone(DEFAULT_BRAND),
     name: 'Untitled',
     items: [item],
     selectedId: item.id,
@@ -248,6 +311,7 @@ interface ProjectActions {
   setSurface: (itemId: string, slot: string, patch: Partial<SurfaceBinding>) => void;
   setBackground: (bg: Background) => void;
   setDecor: (patch: Partial<Decor>) => void;
+  setBrand: (patch: Partial<Brand>) => void;
   setLighting: (patch: Partial<Lighting>) => void;
   /** Applies a lighting preset (resets the manual values to the preset's). */
   applyLightPreset: (id: LightPresetId) => void;
@@ -290,6 +354,7 @@ function burst<T extends unknown[]>(fn: (...args: T) => void, ms = 450) {
 
 const historyOf = (s: ProjectState): Project => ({
   version: s.version,
+  brand: s.brand,
   name: s.name,
   items: s.items,
   selectedId: s.selectedId,
@@ -320,6 +385,7 @@ export const useProject = create<ProjectState>()(
         })),
       setBackground: (background) => set({ background }),
       setDecor: (patch) => set((s) => ({ decor: { ...s.decor, ...patch } })),
+      setBrand: (patch) => set((s) => ({ brand: { ...s.brand, ...patch } })),
       setLighting: (patch) => set((s) => ({ lighting: { ...s.lighting, ...patch } })),
       applyLightPreset: (id) => set({ lighting: { ...LIGHT_PRESETS[id].manual, preset: id } }),
       setCamera: (patch) => set((s) => ({ camera: { ...s.camera, ...patch } })),

@@ -12,12 +12,14 @@ import { setExportBridge } from './exporter';
 import { Lighting } from './lighting/Lighting';
 import { ReflectiveFloor } from './ReflectiveFloor';
 import { useAmbience } from './ambiences';
+import { useCompositionBounds } from './bounds';
 import { InteractionBridge, Interactive, SelectionRing } from './interaction';
 
 /** Resting height of a device lying on its back (camera bumps included). */
 const FLAT_CLEARANCE = 0.12;
 
 function Device({ item }: { item: SceneItem }) {
+  const brand = useProject((s) => s.brand);
   const model = getModel(item.modelId);
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
   const Component = model.Component;
@@ -32,7 +34,7 @@ function Device({ item }: { item: SceneItem }) {
       <Interactive item={item}>
         <group position={[0, lift, 0]} rotation={[flat ? -Math.PI / 2 : 0, 0, 0]}>
           <group rotation={[0, 0, landscape ? Math.PI / 2 : 0]}>
-            <Component finish={finish} surfaces={item.surfaces} screen={item.screen} params={item.params} />
+            <Component finish={finish} surfaces={item.surfaces} screen={item.screen} params={item.params} brand={brand} />
           </group>
         </group>
       </Interactive>
@@ -65,22 +67,46 @@ function Ground({ floorY, top }: { floorY: number; top: THREE.BufferGeometry | n
   const ground = useProject((s) => s.ground);
   const decor = useProject((s) => s.decor.kind);
   const floor = useMemo(() => new THREE.PlaneGeometry(400, 400), []);
+  // Contact shadows cover the whole composition, wherever it stands.
+  const { center, radius } = useCompositionBounds();
+  const shadowSize = Math.max(decor === 'podium' ? 60 : 90, radius * 3);
+  const catcherMaterial = useMemo(() => {
+    const m = new THREE.ShadowMaterial({ transparent: true, depthWrite: false });
+    const uRadius = { value: 1 };
+    m.userData.uRadius = uRadius;
+    m.onBeforeCompile = (shader) => {
+      shader.uniforms.uRadius = uRadius;
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vDisc;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvDisc = position.xy;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vDisc;\nuniform float uRadius;')
+        .replace(
+          'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );',
+          'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) * ( 1.0 - smoothstep( 0.62, 1.0, length( vDisc ) / uRadius ) ) );',
+        );
+    };
+    return m;
+  }, []);
+  catcherMaterial.userData.uRadius.value = radius * 1.5;
+
   const catcher = decor === 'none' || decor === 'podium';
   const k = ground.shadowOpacity / 0.55;
+  catcherMaterial.opacity = 0.36 * k;
   return (
     <>
       {/* soft cast shadow catcher on the studio floor (décors receive shadows themselves) */}
       {ground.shadow === 'soft' && catcher && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow renderOrder={-1}>
-          <planeGeometry args={[160, 160]} />
-          <shadowMaterial transparent opacity={0.36 * k} depthWrite={false} />
+        // Disc inside the key light's shadow frustum, fading out before its edge (no visible boundary).
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[center.x, 0.001, center.z]} receiveShadow renderOrder={-1} material={catcherMaterial}>
+          <circleGeometry args={[radius * 1.5, 96]} />
         </mesh>
       )}
       {ground.shadow !== 'none' && (
         <>
           {/* tight contact line + broad soft occlusion */}
-          <ContactShadow y={floorY} size={decor === 'podium' ? 60 : 90} far={1.3} blur={0.9} opacity={Math.min(1, 1.1 * k)} />
-          <ContactShadow y={floorY} size={decor === 'podium' ? 60 : 90} far={9} blur={3} resolution={512} opacity={Math.min(1, (ground.shadow === 'contact' ? 0.65 : 0.5) * k)} />
+          <ContactShadow y={floorY} x={center.x} z={center.z} size={shadowSize} far={1.3} blur={0.9 * (90 / shadowSize)} opacity={Math.min(1, 1.1 * k)} resolution={shadowSize > 120 ? 2048 : 1024} />
+          <ContactShadow y={floorY} x={center.x} z={center.z} size={shadowSize} far={9} blur={3 * (90 / shadowSize)} resolution={512} opacity={Math.min(1, (ground.shadow === 'contact' ? 0.65 : 0.5) * k)} />
         </>
       )}
       {ground.reflection && <ReflectiveFloor geometry={top ?? floor} y={floorY} strength={ground.reflectivity} />}

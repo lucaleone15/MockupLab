@@ -14,6 +14,7 @@ const SNAP = 0.012;
 export function OverlayLayer({ width, height, frame }: { width: number; height: number; frame: React.RefObject<HTMLDivElement | null> }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const overlays = useProject((s) => s.overlays);
+  const brand = useProject((s) => s.brand);
   const selectedId = useUi((s) => s.selectedOverlayId);
   const assets = useAssets((s) => s.assets);
   const boxes = useRef<OverlayBox[]>([]);
@@ -24,13 +25,13 @@ export function OverlayLayer({ width, height, frame }: { width: number; height: 
     if (!c || !width || !height) return;
     let alive = true;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    prepareOverlays(overlays).then(() => {
+    prepareOverlays(overlays, brand).then(() => {
       if (!alive) return;
       c.width = Math.round(width * dpr);
       c.height = Math.round(height * dpr);
       const ctx = c.getContext('2d')!;
       ctx.clearRect(0, 0, c.width, c.height);
-      boxes.current = paintOverlays(ctx, overlays, c.width, c.height).map((b) => ({ ...b, x: b.x / dpr, y: b.y / dpr, w: b.w / dpr, h: b.h / dpr }));
+      boxes.current = paintOverlays(ctx, overlays, c.width, c.height, brand).map((b) => ({ ...b, x: b.x / dpr, y: b.y / dpr, w: b.w / dpr, h: b.h / dpr }));
       const sel = boxes.current.find((b) => b.id === selectedId);
       if (sel) {
         ctx.save();
@@ -45,7 +46,7 @@ export function OverlayLayer({ width, height, frame }: { width: number; height: 
     return () => {
       alive = false;
     };
-  }, [overlays, selectedId, width, height, assets]);
+  }, [overlays, brand, selectedId, width, height, assets]);
 
   useEffect(() => {
     const el = frame.current;

@@ -19,6 +19,8 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
 | **Print** : carte de visite (seule, recto/verso, pile), carte postale, flyer A4/A5, affiche (au mur ou posée, cadre noir/blanc/chêne, passe-partout, verre), dépliant 3 volets (intérieur/extérieur, ouverture réglable), magazine ouvert/fermé, livre relié, papeterie (lettre + enveloppe), badge avec tour de cou, roll-up — finition mate / satinée / brillante | ✅ |
 | **Objets & textile** : boîte (3 formats, face/côté/dessus), tube, mug (5 céramiques), bouteille avec étiquette (4 verres), tote bag et t-shirt à plat (7 coloris de tissu, trame réelle, plis) | ✅ |
+| **Affichage** : TV 43/55/65" (paysage ou portrait, sur pied ou au mur), totem numérique, panneau lumineux type abribus | ✅ |
+| **Direction artistique** : kit de marque (nom, signature, logo, palette nommée jusqu'à 6 couleurs, typos de titre et de texte — y compris **tes propres fichiers de police** .ttf/.otf/.woff2), calques palette et spécimen typo, **planche de marque en un clic**, **visuels de marque générés** pour chaque face (recto, verso, motif, écran), nuancier et spécimen en 3D | ✅ |
 | **Ambiances complètes en un clic** (fond, décor, lumière, caméra, sol) | ✅ |
 | **Mise en scène « table »** : table en vraie matière contre un mur uni (couleur au choix), lumière du jour / soleil / fin de journée, ombres projetées de fenêtre, stores ou feuillage, profondeur de champ réaliste | ✅ |
 | **Matières photographiées (PBR)** : chêne, noyer, marbre blanc, marbre noir, travertin, terrazzo, béton ciré, lin | ✅ |
@@ -79,6 +81,8 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Écran** : le shader d'écran sort du tone mapping et compose `image + Neutral(reflets)`. Les pixels de ton design sortent donc exactement avec leurs couleurs d'origine, tandis que les reflets suivent la même courbe que la vitre autour.
 - **Géométrie** : contours en *squircle* (coins continus de type superellipse) balayés le long d'un profil d'arête, avec normales analytiques pour des reflets sans facettes (`src/lib/geometry`).
 - **Matières réelles et table** : textures PBR et HDRI sous licence CC0 embarqués dans `public/assets/` (≈ 15 Mo, chargés à la demande). Le HDRI ne sert qu'à la lumière d'appoint et aux reflets (il n'est jamais affiché) ; sa fenêtre est détectée et tournée vers l'avant-gauche, d'où vient la lumière principale — un spot qui projette une texture (« gobo ») de fenêtre, de stores ou de feuillage sur le mur et la table.
+- **Matières des appareils** : micro-surfaces procédurales (aluminium microbillé, titane brossé, verre dépoli) et légère variation de rugosité, pour casser l'aspect « image de synthèse ».
+- **Kit de marque** : les polices importées restent dans le navigateur (API `FontFace`), sont enregistrées avec le projet et utilisables partout (calques, visuels générés, objets 3D).
 - **Motifs graphiques** : générés par des shaders (`src/lib/patterns.ts`) dans un petit contexte WebGL dédié, à n'importe quelle résolution.
 - **Éclairage** : chaque ambiance est un environnement procédural (*Lightformers*) + une lumière clé à ombres douces (VSM) ; l'environnement tourne avec la direction de la lumière pour garder des reflets cohérents.
 - **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.

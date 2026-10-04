@@ -22,7 +22,18 @@ export const cameraState = {
   focus: new THREE.Vector3(0, 7, 0),
   forward: new THREE.Vector3(0, 0, -1),
   subject: 15,
+  /** Horizontal lens shift (fraction of the frame width, positive moves the subject right). */
+  shift: 0,
 };
+
+/** Applies the lens shift as a view offset (no-op when there is none). */
+export function applyShift(cam: THREE.PerspectiveCamera, width: number, height: number) {
+  if (Math.abs(cameraState.shift) < 1e-4) {
+    if (cam.view?.enabled) cam.clearViewOffset();
+    return;
+  }
+  cam.setViewOffset(width, height, -cameraState.shift * width, 0, width, height);
+}
 
 /** f-number for the aperture slider: 0 → f/16, 1 → f/1.4 (log scale). */
 export const fNumber = (aperture: number) => 16 * Math.pow(1.4 / 16, aperture);
@@ -258,8 +269,10 @@ export function CameraRig({ floorY }: { floorY: number }) {
  * through near), so thin layers — cover glass, bezels, cutouts — never fight.
  */
 export function useAdaptiveNear() {
-  useFrame(({ camera, controls }) => {
+  useFrame(({ camera, controls, size }) => {
     const cam = camera as THREE.PerspectiveCamera;
+    cameraState.shift = useProject.getState().camera.shift ?? 0;
+    applyShift(cam, size.width, size.height);
     cam.getWorldDirection(cameraState.forward);
     const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target ?? cameraState.target;
     const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.15, 0.5, 600);
@@ -309,12 +322,12 @@ export function DofPreview() {
     }
     if (accumulator.count < PREVIEW_SAMPLES) {
       const lens = lensFor(cam, settings);
-      const restore = applyLensSample(cam, lens, accumulator.count, PREVIEW_SAMPLES, { width: size.x, height: size.y }, { x: 0, y: 0, width: size.x, height: size.y });
+      const restore = applyLensSample(cam, lens, accumulator.count, PREVIEW_SAMPLES, { width: size.x, height: size.y }, { x: -cameraState.shift * size.x, y: 0, width: size.x, height: size.y });
       gl.setRenderTarget(null);
       gl.clear();
       gl.render(scene, cam);
       accumulator.add(gl);
-      cam.clearViewOffset();
+      applyShift(cam, size.x, size.y);
       restore();
       // Keep the camera matrices identical to the key so the next frame continues.
       st.key = `${cam.matrixWorld.elements.join(',')}|${cam.projectionMatrix.elements.join(',')}|${size.x}x${size.y}`;

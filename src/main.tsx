@@ -28,7 +28,11 @@ if (import.meta.env.DEV) {
     import('./store/persistence'),
     import('./scene/interaction'),
     import('./lib/samples'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa]) => {
+    import('./lib/brandFonts'),
+    import('./lib/brandArt'),
+    import('./lib/overlays'),
+    import('./store/ui'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -37,6 +41,11 @@ if (import.meta.env.DEV) {
         persistence: pe,
         picking: ia.picking,
         loadSamples: sa.loadSamples,
+        importFontFile: bf.importFontFile,
+        importAsset: im.importAsset,
+        applyBrandArt: ba.applyBrandArt,
+        overlays: ov,
+        ui: ui.useUi,
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),
