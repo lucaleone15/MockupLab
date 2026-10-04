@@ -25,7 +25,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { modelsByCategory } from '@/models/registry';
+import { getModel, modelsByCategory } from '@/models/registry';
+import { switchModel } from '@/lib/switchModel';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -34,7 +35,7 @@ import { Tooltip, cx } from '@/ui/primitives';
 /** MIME type used when a model card is dragged onto the scene. */
 export const MODEL_DRAG_TYPE = 'application/x-mockuplab-model';
 
-const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
+export const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   phone: 'library.phones',
   tablet: 'library.tablets',
   laptop: 'library.laptops',
@@ -139,14 +140,18 @@ function Silhouette({ model }: { model: DeviceModule }) {
 export function LibraryPanel() {
   const { t, tr } = useT();
   const selected = useProject(selectSelectedItem);
-  const replaceModel = useProject((s) => s.replaceModel);
   const addItem = useProject((s) => s.addItem);
   const resetView = useUi((s) => s.resetView);
 
   return (
     <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
-      <div className="flex h-10 shrink-0 items-center px-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">
-        {t('library.title')}
+      <div className="shrink-0 px-4 pb-2 pt-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">{t('library.title')}</div>
+        {selected && (
+          <p className="mt-1.5 text-[11px] leading-snug text-fg-subtle">
+            {t('library.hint', { name: tr(getModel(selected.modelId).name) })}
+          </p>
+        )}
       </div>
       <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
         {modelsByCategory().map(([cat, models]) => (
@@ -168,7 +173,7 @@ export function LibraryPanel() {
                         onClick={() => {
                           if (!selected) return;
                           if (active) resetView();
-                          else replaceModel(selected.id, m.id);
+                          else void switchModel(selected.id, m.id);
                         }}
                         className={cx(
                           'flex w-full flex-col items-center gap-1 rounded-xl bg-surface-2 px-1.5 pb-2 pt-1.5 text-[11.5px] leading-tight transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',

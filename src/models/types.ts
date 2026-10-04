@@ -87,6 +87,12 @@ export interface DeviceModule {
    * layout. `y0` is the height of the box bottom (e.g. a poster on a wall).
    */
   sizeFor?: (params: Record<string, ParamValue>) => { size: [number, number, number]; y0?: number; focus?: [number, number, number] };
+  /**
+   * Objects that hang on / lean against a wall: local Z of that wall (behind
+   * the object) and its colour, or null. The stage draws one shared wall for
+   * the whole scene and snaps every wall object onto it.
+   */
+  wallFor?: (params: Record<string, ParamValue>) => { z: number; color: string } | null;
   /** What the surfaces are: lit screens (default) or printed / lit materials. */
   surfaceKind?: 'screen' | 'print';
   anchor?: 'center' | 'bottom';

@@ -5,7 +5,7 @@ import { brushedMetal, mattePlastic } from '@/scene/materials';
 import { useRealMaterial } from '@/scene/realMaterials';
 import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
 import { cardGeometry } from './geometry';
-import { WallShadow, useWall } from '../shared/wall';
+import { WallShadow } from '../shared/wall';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial } from './shared';
 
 const NO_FINISH: DeviceFinish[] = [{ id: 'default', name: { fr: 'Standard', en: 'Default' }, swatch: '#f4f2ec', colors: {} }];
@@ -60,7 +60,6 @@ function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: num
 function Poster({ surfaces, params }: DeviceProps) {
   const d = posterDims(params);
   const print = usePrintMaterial(surfaces.poster, 1 / A, { finish: finishOf(params) });
-  const wall = useWall(String(params.wall));
   const board = useMemo(() => cardGeometry(d.w, d.h, d.framed ? 0.05 : 0.5, 0.02), [d.w, d.h, d.framed]);
   const onWall = params.mount !== 'lean';
   const showWall = params.wallOn !== false;
@@ -93,26 +92,15 @@ function Poster({ surfaces, params }: DeviceProps) {
           {art}
           {showWall && <WallShadow w={d.fw} h={d.fh} z={-d.depth / 2 - 0.03} />}
         </group>
-        {showWall && (
-          <mesh material={wall} position={[0, 60, -d.depth / 2 - 0.05]} receiveShadow>
-            <planeGeometry args={[900, 520]} />
-          </mesh>
-        )}
       </group>
     );
   }
-  // Leaning against the wall, standing on the floor.
-  const wallZ = -d.depth / 2 - Math.sin(LEAN) * d.fh - 0.2;
+  // Leaning against the wall, standing on the floor (the stage draws the wall).
   return (
     <group>
       <group position={[0, (Math.cos(LEAN) * d.fh) / 2, -Math.sin(LEAN) * (d.fh / 2)]} rotation={[-LEAN, 0, 0]}>
         {art}
       </group>
-      {showWall && (
-        <mesh material={wall} position={[0, 60, wallZ]} receiveShadow>
-          <planeGeometry args={[900, 520]} />
-        </mesh>
-      )}
     </group>
   );
 }
@@ -128,6 +116,12 @@ export const poster: DeviceModule = {
     const d = posterDims(p);
     const wall = p.mount !== 'lean';
     return { size: [d.fw, d.fh, wall ? d.depth : d.depth + Math.sin(LEAN) * d.fh], y0: wall ? HANG_BOTTOM : 0 };
+  },
+  wallFor: (p) => {
+    if (p.wallOn === false) return null;
+    const d = posterDims(p);
+    const z = p.mount !== 'lean' ? -d.depth / 2 - 0.05 : -d.depth / 2 - Math.sin(LEAN) * d.fh - 0.2;
+    return { z, color: String(p.wall) };
   },
   surfaces: [{ id: 'poster', label: { fr: 'Affiche', en: 'Poster' }, aspect: 1 / A, nativeSize: [4961, 7016] }],
   finishes: NO_FINISH,

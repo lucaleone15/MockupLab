@@ -32,7 +32,8 @@ if (import.meta.env.DEV) {
     import('./lib/brandArt'),
     import('./lib/overlays'),
     import('./store/ui'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui]) => {
+    import('./store/assets'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -46,6 +47,7 @@ if (import.meta.env.DEV) {
         applyBrandArt: ba.applyBrandArt,
         overlays: ov,
         ui: ui.useUi,
+        assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),

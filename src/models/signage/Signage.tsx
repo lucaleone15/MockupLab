@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { roundedPlane, roundedSlab } from '@/lib/geometry/sweep';
 import { brushedMetal, coverGlass, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
-import { WallShadow, useWall } from '../shared/wall';
+import { WallShadow } from '../shared/wall';
 import { type DeviceFinish, type DeviceModule, type DeviceProps, type ParamDef } from '../types';
 
 /*
@@ -67,7 +67,6 @@ function tvDims(params: Record<string, unknown>) {
 function Tv({ surfaces, screen, params, finish }: DeviceProps) {
   const d = tvDims(params);
   const material = useScreenMaterial(surfaces.screen, d.w / d.h, screen, { rotated: !d.landscape });
-  const wall = useWall(String(params.wall));
   const onWall = params.mount === 'wall';
   const bottom = onWall ? TV_WALL_BOTTOM : TV_STAND_H;
   return (
@@ -78,11 +77,7 @@ function Tv({ surfaces, screen, params, finish }: DeviceProps) {
         </group>
         {onWall && <WallShadow w={d.fw} h={d.fh} z={-1.55} />}
       </group>
-      {onWall ? (
-        <mesh material={wall} position={[0, 60, -1.6]} receiveShadow>
-          <planeGeometry args={[1200, 520]} />
-        </mesh>
-      ) : (
+      {!onWall && (
         <group>
           {/* pedestal: neck + low plate */}
           <mesh position={[0, TV_STAND_H / 2 + 0.6, -0.6]} material={brushedMetal(finish.colors.metal, 0.35, 0.05)} castShadow>
@@ -108,6 +103,7 @@ export const tv: DeviceModule = {
     const onWall = p.mount === 'wall';
     return { size: [d.fw, d.fh + (onWall ? 0 : TV_STAND_H), onWall ? 3 : 24], y0: onWall ? TV_WALL_BOTTOM : 0, focus: [0, (onWall ? TV_WALL_BOTTOM : TV_STAND_H) + d.fh / 2, 0] };
   },
+  wallFor: (p) => (p.mount === 'wall' ? { z: -1.6, color: String(p.wall) } : null),
   surfaces: [{ id: 'screen', label: { fr: 'Écran', en: 'Screen' }, aspect: 16 / 9, nativeSize: [3840, 2160] }],
   finishes: HOUSINGS,
   defaultFinish: 'black',
@@ -147,7 +143,7 @@ export const tv: DeviceModule = {
     WALL_PARAM,
   ],
   view: { target: [0, 0, 0], offset: [30, 6, 110] },
-  yaw: -0.2,
+  yaw: 0,
   Component: Tv,
 };
 
