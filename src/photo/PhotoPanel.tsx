@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, EyeOff, ImageOff, ImageUp, Plus, RotateCcw, Save, Trash2, Wand2 } from 'lucide-react';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
@@ -9,6 +9,24 @@ import { aspectOf, photoSize } from './editing';
 import type { Quad } from './homography';
 import { pickPhoto, pickZoneImage } from './importPhoto';
 import { saveCurrentAsTemplate } from './templates';
+import { statsFor } from './source';
+import { blankness } from './stats';
+
+/** How blank the photo's surface under the zone is (0..1), null while measuring. */
+function useBlankness(zone: PhotoZone) {
+  const photoId = useProject((s) => s.photo.assetId);
+  const [value, setValue] = useState<number | null>(null);
+  const key = zone.corners.flat().join(',');
+  useEffect(() => {
+    let alive = true;
+    if (photoId) void statsFor(photoId, zone).then((st) => alive && setValue(blankness(st, zone.kind)));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoId, key, zone.kind]);
+  return value;
+}
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
@@ -188,6 +206,7 @@ function DesignSection({ zone }: { zone: PhotoZone }) {
 function BlendSection({ zone }: { zone: PhotoZone }) {
   const { t } = useT();
   const updateZone = useProject((s) => s.updateZone);
+  const blank = useBlankness(zone);
   const set = (patch: Partial<PhotoZone>) => updateZone(zone.id, patch);
   const slider = (key: 'reflection' | 'shading' | 'match' | 'noise' | 'occlusion', label: string) => (
     <Field label={label} value={pct(zone[key])}>
@@ -199,13 +218,35 @@ function BlendSection({ zone }: { zone: PhotoZone }) {
       <Field label={t('photo.kind')}>
         <Segmented
           value={zone.kind}
-          onChange={(kind) => set({ kind, ...zoneDefaults(kind), radius: zone.radius, occlusion: zone.occlusion })}
+          onChange={(kind) => set({ kind, ...zoneDefaults(kind), radius: zone.radius, occlusion: zone.occlusion, original: zone.original, bleed: zone.bleed })}
           options={[
             { value: 'screen', label: t('photo.kind.screen') },
             { value: 'print', label: t('photo.kind.print') },
           ]}
         />
       </Field>
+      <Field label={t('photo.original')}>
+        <Segmented
+          value={zone.original}
+          onChange={(original) => set({ original })}
+          options={[
+            { value: 'auto', label: t('photo.original.auto') },
+            { value: 'hide', label: t('photo.original.hide') },
+            { value: 'keep', label: t('photo.original.keep') },
+          ]}
+        />
+      </Field>
+      <p className="-mt-2 text-[11px] leading-snug text-fg-subtle">
+        {zone.original === 'auto'
+          ? blank === null
+            ? '…'
+            : blank > 0.5
+              ? t('photo.original.autoBlank')
+              : t('photo.original.autoContent')
+          : zone.original === 'hide'
+            ? t('photo.original.hideHint')
+            : t('photo.original.keepHint')}
+      </p>
       {slider('reflection', t('photo.reflection'))}
       {slider('shading', t('photo.shading'))}
       <Field label={t('photo.brightness')} value={pct(zone.brightness)}>
@@ -228,7 +269,7 @@ function BlendSection({ zone }: { zone: PhotoZone }) {
           size="sm"
           variant="ghost"
           className="self-start"
-          onClick={() => set({ ...zoneDefaults(zone.kind), radius: zone.radius, occlusion: zone.occlusion })}
+          onClick={() => set({ ...zoneDefaults(zone.kind), radius: zone.radius, occlusion: zone.occlusion, bleed: zone.bleed })}
         >
           <RotateCcw size={13} />
           {t('photo.blend.reset')}
@@ -310,6 +351,9 @@ function GeometrySection({ zone }: { zone: PhotoZone }) {
           })}
         </div>
         <p className="text-[11px] leading-snug text-fg-subtle">{t('photo.ratio.hint', { r: estimate.toFixed(2) })}</p>
+      </Field>
+      <Field label={t('photo.bleed')} value={`${zone.bleed.toFixed(1)} px`}>
+        <Slider label={t('photo.bleed')} min={0} max={8} step={0.5} value={zone.bleed} onChange={(bleed) => updateZone(zone.id, { bleed })} />
       </Field>
       <Field label={t('photo.radius')} value={pct(zone.radius)}>
         <Slider label={t('photo.radius')} max={0.25} step={0.002} value={zone.radius} onChange={(radius) => updateZone(zone.id, { radius })} />
