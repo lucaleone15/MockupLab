@@ -11,6 +11,15 @@ interface UiState {
   /** Label of the running export, null when idle. */
   exporting: string | null;
   setExporting: (label: string | null) => void;
+  /** Stops the running export (videos), when it can be stopped. */
+  cancelExport: (() => void) | null;
+  setCancelExport: (fn: (() => void) | null) => void;
+  /** An animation preview is playing in the viewport. */
+  previewing: boolean;
+  setPreviewing: (v: boolean) => void;
+  /** Photo mode preview zoom (1 = none). */
+  previewZoom: number;
+  setPreviewZoom: (v: number) => void;
   dragging: boolean;
   setDragging: (v: boolean) => void;
   /** Selected text / logo layer (null: the selected device has focus). */
@@ -52,6 +61,12 @@ export const useUi = create<UiState>((set) => ({
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),
   exporting: null,
   setExporting: (exporting) => set({ exporting }),
+  cancelExport: null,
+  setCancelExport: (cancelExport) => set({ cancelExport }),
+  previewing: false,
+  setPreviewing: (previewing) => set({ previewing }),
+  previewZoom: 1,
+  setPreviewZoom: (previewZoom) => set({ previewZoom }),
   dragging: false,
   setDragging: (dragging) => set({ dragging }),
   selectedOverlayId: null,

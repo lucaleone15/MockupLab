@@ -497,12 +497,17 @@ export function PhotoView() {
   const { ref, width, height } = useFrameSize(ratio);
   const frame = useRef<HTMLDivElement>(null);
   const noDesign = zones.length > 0 && zones.every((z) => !z.surface.assetId);
+  const previewZoom = useUi((s) => s.previewZoom);
+  const selected = zones.find((z) => z.id === useProject.getState().photo.selectedZoneId) ?? zones[0];
+  const origin = selected ? `${(selected.corners.reduce((a, c) => a + c[0], 0) / 4) * 100}% ${(selected.corners.reduce((a, c) => a + c[1], 0) / 4) * 100}%` : '50% 50%';
 
   return (
     <main ref={ref} className="stage-dots relative flex min-w-0 flex-1 items-center justify-center overflow-hidden" data-testid="photo-view">
       {asset ? (
         <div className="relative overflow-hidden rounded-[3px]" style={{ width, height, boxShadow: 'var(--frame-shadow)' }} data-testid="frame" ref={frame}>
-          <PhotoCanvas width={width} height={height} />
+          <div className="absolute inset-0" style={previewZoom !== 1 ? { transform: `scale(${previewZoom})`, transformOrigin: origin } : undefined}>
+            <PhotoCanvas width={width} height={height} />
+          </div>
           <OverlayLayer width={width} height={height} frame={frame} />
           <ZoneEditor width={width} height={height} />
           {tool !== 'place' && zones.length === 0 && <ZoneHint />}

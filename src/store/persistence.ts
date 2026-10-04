@@ -122,7 +122,7 @@ export function migrateProject(raw: unknown): Project {
     lighting: { ...base.lighting, ...(r.lighting ?? {}) },
     camera: { ...DEFAULT_CAMERA, ...(r.camera ?? {}) },
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
-    export: { ...base.export, ...(r.export ?? {}) },
+    export: { ...base.export, ...(r.export ?? {}), video: { ...base.export.video, ...(r.export?.video ?? {}) } },
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     mode: r.mode === 'photo' ? 'photo' : 'scene',
     photo,

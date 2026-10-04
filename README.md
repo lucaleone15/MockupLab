@@ -41,7 +41,7 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste — en 3D ou posé e
 | **Modèles photo** : 5 photos CC0 prêtes à l'emploi (portable au bureau, tablette + téléphone, téléphone en main, cadres au mur, carte) ; enregistre tes propres modèles (photo + zones + réglages) dans le navigateur, exporte-les / importe-les en fichier `.mockuplab-template.json` | ✅ |
 | **Variantes** : 6, 9 ou 12 mises en scène générées à partir de ta scène (décor, fond, lumière, angle, finition — tu choisis ce qui varie), galerie pour sélectionner, agrandir, **comparer** deux variantes, **affiner** autour de celle qui te plaît, régénérer en gardant la sélection, appliquer à la scène (annulable) ; export de la sélection en **ZIP** | ✅ |
 | **Traitement par lot** : plusieurs designs passés sur le même écran (ou la même zone d'une photo), avec la scène actuelle ou chaque variante sélectionnée — un ZIP de mock-ups | ✅ |
-| Vidéo / GIF (turntable, défilement) | 🔜 jalon h |
+| **Vidéo & GIF** : rotation 360°, balancement, travelling de caméra, défilement d'une capture longue sur l'écran, flottement (mode 3D) ; défilement et zoom lent (mode photo) ; 2 à 12 s, 24/30/60 i/s, 720p/1080p/4K ; **MP4** (H.264), **WebM** (VP9) ou **GIF** en boucle ; aperçu en direct | ✅ |
 | Import de modèles `.glb` | 🔜 jalon i |
 
 ## Démarrer
@@ -78,6 +78,10 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Variantes** (bouton en haut, mode 3D) : choisis ce qui peut varier (décor, fond, lumière, angle, finition) et combien de variantes. Clique les aperçus pour les sélectionner ; survole-en un pour l'agrandir, **affiner** (des variations proches de celle-ci) ou l'**utiliser** comme scène. Avec deux sélectionnées, **Comparer** les met côte à côte. *Exporter* sort la sélection au format et à la taille de l'onglet Export (un ZIP s'il y en a plusieurs). Ta scène n'est jamais modifiée tant que tu ne cliques pas *Utiliser* (et ⌘Z revient en arrière).
 - **Lot** (icône de calques en haut) : glisse plusieurs images ; chacune passe sur l'écran de l'appareil sélectionné (ou dans la zone sélectionnée en mode photo), avec la scène actuelle ou avec chacune des variantes sélectionnées. Tout part dans un ZIP.
 
+### Vidéo
+
+Dans l'onglet **Export**, choisis **Vidéo** : une animation (rotation, balancement, travelling, défilement, flottement — ou défilement et zoom en mode photo), sa durée, le format (MP4, WebM ou GIF), la taille et la cadence. **Aperçu** la joue en direct dans la vue (Échap pour l'arrêter) ; **Exporter la vidéo** (ou ⌘E) la calcule image par image puis la télécharge. Pour le défilement, importe une capture pleine page plus longue que l'écran.
+
 ### Raccourcis
 
 | Action | Raccourci |
@@ -110,6 +114,7 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Profondeur de champ** : modèle de lentille mince par accumulation (64 échantillons à l'export, progressif dans l'aperçu) — physiquement juste et compatible avec le rendu fidèle des écrans.
 - **Mode photo** : homographie carré unité → quadrilatère (forme fermée de Heckbert) ; un shader WebGL2 renvoie chaque pixel de sortie dans le repère de la zone, échantillonne le design (mipmaps + anisotropie), découpe un rectangle arrondi anti-aliasé, puis le fond dans la photo en lumière linéaire : ombres (multiplication par l'éclairage adouci de la surface, qui ne fait qu'assombrir), reflets (*screen* de ce qui dépasse le noir de l'écran), teinte ambiante, grain. Le format réel de la zone est estimé par la méthode de Zhang & He (focale déduite des points de fuite). La détection au double-clic combine deux sources de candidats — une région de couleur proche qui croît autour du clic, et des quadrilatères formés par les droites de l'image (transformée de Hough votée par la direction du gradient, droites globales et proches du clic) — puis les note : part de chaque côté posée sur un vrai bord, régularité de la bande juste à l'extérieur (bordure, cadre, mur), cohérence des bandes intérieure et extérieure, vraisemblance géométrique d'un rectangle en perspective. Entre deux zones emboîtées, un anneau uniforme (bordure d'écran, cadre) fait préférer l'intérieur ; un anneau chargé (contenu d'une page) fait préférer l'extérieur. Les meilleurs candidats sont recalés au sous-pixel et proposés dans l'ordre. Pour masquer le contenu d'origine, l'éclairage de la surface est modélisé par une fonction quadratique du log de la luminance, ajustée de façon robuste (Tukey) : le contenu est rejeté comme aberrant, seule la lumière reste ; une mesure des détails fins et de la couleur décide si la surface est vierge.
 - **Variantes et lots** : une variante est un « look » (fond, décor, lumière, caméra, sol, angle et finition de chaque appareil) tiré d'une graine. Les rendus se font dans un bac à sable : le projet est modifié temporairement hors historique et hors sauvegarde automatique, chaque look est préchargé (matières, HDRI, motifs) puis rendu par le moteur d'export, et le projet comme la vue de la caméra sont restaurés à l'identique. Le ZIP est écrit sans dépendance (`src/lib/zip.ts`, entrées stockées : les images sont déjà compressées).
+- **Vidéo** : chaque animation est une fonction du temps (`src/animation/animations.ts`) ; chaque image est rendue hors ligne à son instant exact (aucune capture d'écran, donc aucune image perdue quelle que soit la machine), dans le bac à sable des variantes, puis encodée par **WebCodecs** via [Mediabunny](https://mediabunny.dev) (MP4 H.264 ou WebM VP9) ou quantifiée en GIF par [gifenc](https://github.com/mattdesl/gifenc). Les encodeurs ne se chargent qu'au premier export vidéo.
 - **Export** : rendu hors écran à 2× la taille finale, découpé en tuiles (`camera.setViewOffset`) avec marges de recouvrement pour éviter les coutures, puis réduit. Le fond est peint par le même code dans l'aperçu et dans l'export (`src/lib/background.ts`), avec un léger dithering anti-banding sur les dégradés.
 
 ## Structure du code
@@ -184,6 +189,7 @@ node scripts/check-photo-ui.mjs                # mode photo : 4 clics, double-cl
 PHOTOS='[["photo.jpg",[0.5,0.4]]]' node scripts/check-photo-own.mjs   # tes photos : détection au point donné, export
 node scripts/check-variants.mjs                # variantes : aperçus, projet intact, affiner, comparer, ZIP, lot
 node scripts/check-batch-photo.mjs             # lot en mode photo
+node scripts/check-video.mjs                   # vidéos : chaque animation, MP4/WebM/GIF vérifiés avec ffprobe, aperçu
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```
@@ -212,6 +218,7 @@ Le script `python3 scripts/fetch_assets.py` télécharge à nouveau le HDRI et l
 - Les appareils sont des **interprétations génériques** (« Phone Pro », « Laptop 14 »…). Aucun logo ni marque déposée n'est reproduit, et MockupLab n'est affilié à aucun fabricant.
 - Les **modèles `.glb`, templates photo et images** que tu importes restent sous leur propre licence. Vérifier que tu as le droit de les utiliser est de ta responsabilité.
 - Polices embarquées : Geist et Geist Mono (SIL OFL), Instrument Serif (SIL OFL).
+- Bibliothèques vidéo : Mediabunny (MPL-2.0, utilisée sans modification) et gifenc (MIT).
 
 ## Licence
 
