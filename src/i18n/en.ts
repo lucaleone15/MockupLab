@@ -224,6 +224,7 @@ export const en: Record<keyof typeof fr, string> = {
   'sc.frame': 'Reframe the view',
   'sc.help': 'Show this help',
   'sc.deselect': 'Deselect the text',
+  'library.signage': 'Signage',
   'library.print': 'Print',
   'library.merch': 'Objects & apparel',
   'props.images': 'Images',

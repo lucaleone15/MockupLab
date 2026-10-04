@@ -9,6 +9,8 @@ import { useAssets } from '@/store/assets';
  */
 
 const BY_MODEL: Record<string, Record<string, string>> = {
+  totem: { screen: 'poster' },
+  'street-poster': { screen: 'poster' },
   'business-card': { front: 'card-front', back: 'card-back' },
   postcard: { front: 'poster', back: 'card-back' },
   flyer: { front: 'poster', back: 'label' },

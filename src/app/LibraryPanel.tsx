@@ -6,6 +6,9 @@ import {
   Coffee,
   Cylinder,
   FileText,
+  GalleryVertical,
+  Signpost,
+  Tv,
   Frame,
   IdCard,
   Mail,
@@ -35,12 +38,16 @@ const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   laptop: 'library.laptops',
   desktop: 'library.desktops',
   browser: 'library.browser',
+  signage: 'library.signage',
   print: 'library.print',
   merch: 'library.merch',
 };
 
 /** Line icons for print and objects (no proportional silhouette makes sense there). */
 const OBJECT_ICONS: Record<string, LucideIcon> = {
+  tv: Tv,
+  totem: GalleryVertical,
+  'street-poster': Signpost,
   'business-card': IdCard,
   postcard: Mail,
   flyer: FileText,

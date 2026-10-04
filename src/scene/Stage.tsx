@@ -21,8 +21,9 @@ function Device({ item }: { item: SceneItem }) {
   const model = getModel(item.modelId);
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
   const Component = model.Component;
-  const landscape = isLandscape(item.params);
   const upright = model.anchor !== 'bottom';
+  // Only free-standing devices (phones, tablets…) are turned for landscape; others handle it themselves.
+  const landscape = upright && isLandscape(item.params);
   const flat = upright && item.pose === 'flat';
   // Centre-anchored devices are lifted so they rest on the floor.
   const lift = !upright ? 0 : flat ? model.size[2] / 2 + FLAT_CLEARANCE : (landscape ? model.size[0] : model.size[1]) / 2;

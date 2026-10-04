@@ -222,6 +222,7 @@ export const fr = {
   'sc.frame': 'Recadrer la vue',
   'sc.help': 'Afficher cette aide',
   'sc.deselect': 'Désélectionner le texte',
+  'library.signage': 'Affichage',
   'library.print': 'Print',
   'library.merch': 'Objets & textile',
   'props.images': 'Images',

@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import type { I18nString } from '@/i18n';
 import type { ScreenSettings, SurfaceBinding } from '@/store/project';
 
-export type DeviceCategory = 'phone' | 'tablet' | 'laptop' | 'desktop' | 'browser' | 'wearable' | 'print' | 'merch';
+export type DeviceCategory = 'phone' | 'tablet' | 'laptop' | 'desktop' | 'signage' | 'browser' | 'wearable' | 'print' | 'merch' | 'brand';
 
 /** A surface that receives a user image (a screen, a printed face…). */
 export interface SurfaceSlot {
