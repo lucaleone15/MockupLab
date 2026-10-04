@@ -28,8 +28,8 @@ export interface PhotoTemplate {
   zones: TemplateZone[];
 }
 
-const screen = { aspectAuto: false, radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0 };
-const print = { aspectAuto: false, radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0 };
+const screen = { aspectAuto: false, radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0, original: 'auto' as const, bleed: 0.5 };
+const print = { aspectAuto: false, radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0, original: 'auto' as const, bleed: 0.5 };
 
 export const PHOTO_TEMPLATES: PhotoTemplate[] = [
   {
@@ -111,8 +111,6 @@ export const PHOTO_TEMPLATES: PhotoTemplate[] = [
         ],
         aspect: 9 / 16,
         ...screen,
-        // the photo's screen shows a camera view: nothing of it should read as a reflection
-        reflection: 0,
       },
     ],
   },
@@ -135,9 +133,6 @@ export const PHOTO_TEMPLATES: PhotoTemplate[] = [
         ],
         aspect: 4 / 5,
         ...print,
-        // the frames hold artwork: none of it must show through
-        shading: 0,
-        reflection: 0,
       },
       {
         name: { fr: 'Cadre droit', en: 'Right frame' },
@@ -150,8 +145,6 @@ export const PHOTO_TEMPLATES: PhotoTemplate[] = [
         ],
         aspect: 3 / 4,
         ...print,
-        shading: 0,
-        reflection: 0,
       },
     ],
   },
@@ -174,9 +167,6 @@ export const PHOTO_TEMPLATES: PhotoTemplate[] = [
         ],
         aspect: Math.SQRT2,
         ...print,
-        // the card already carries an embossed border and text: only its lighting is kept
-        shading: 0.45,
-        reflection: 0,
       },
     ],
   },

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImagePlus, MousePointerClick, Sparkles, Wand2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ImagePlus, MousePointerClick, Sparkles, Wand2 } from 'lucide-react';
 import { useT } from '@/i18n';
 import { DropOverlay, ExportOverlay, useFrameSize } from '@/app/Viewport';
 import { OverlayLayer } from '@/app/OverlayLayer';
@@ -7,7 +7,7 @@ import { loadImage, useAssets } from '@/store/assets';
 import { useProject, type PhotoZone } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Button, Spinner, cx } from '@/ui/primitives';
-import { aspectOf, createZone, detectZoneAt } from './editing';
+import { aspectOf, createZone, detectZoneAt, pickSuggestion } from './editing';
 import { isConvex, type Quad, type Vec2 } from './homography';
 import { loadPhotoSamples, pickPhoto } from './importPhoto';
 import { PhotoRenderer, type ZoneDraw } from './renderer';
@@ -160,6 +160,7 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
   const selectedId = useProject((s) => s.photo.selectedZoneId);
   const tool = useUi((s) => s.photoTool);
   const activeCorner = useUi((s) => s.activeCorner);
+  const suggestions = useUi((s) => s.suggestions);
   const svg = useRef<SVGSVGElement>(null);
   const [placing, setPlacing] = useState<Vec2[]>([]);
   const [hover, setHover] = useState<Vec2 | null>(null);
@@ -169,6 +170,10 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
   useEffect(() => {
     if (tool !== 'place') setPlacing([]);
   }, [tool]);
+  // suggestions belong to a zone of this photo
+  useEffect(() => {
+    if (suggestions && !zones.some((z) => z.id === suggestions.zoneId)) useUi.getState().setSuggestions(null);
+  }, [zones, suggestions]);
 
   const norm = (e: { clientX: number; clientY: number }): Vec2 => {
     const r = svg.current!.getBoundingClientRect();
@@ -204,7 +209,12 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
     }
     const target = (e.target as Element).closest('[data-handle]') as HTMLElement | null;
     const project = useProject.getState();
+    if (target && target.dataset.handle === 'suggestion') {
+      pickSuggestion(Number(target.dataset.index));
+      return;
+    }
     if (target) {
+      useUi.getState().setSuggestions(null);
       const zone = target.dataset.zone!;
       const i = Number(target.dataset.index);
       project.selectZone(zone);
@@ -238,6 +248,7 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
     } else {
       const dx = p[0] - drag.start[0];
       const dy = p[1] - drag.start[1];
+      if (useUi.getState().suggestions && Math.hypot(dx, dy) > 0.002) useUi.getState().setSuggestions(null);
       const moved = drag.corners.map((c, i) => (drag.kind === 'move' || i === drag.i || i === (drag.i + 1) % 4 ? [c[0] + dx, c[1] + dy] : c)) as Quad;
       update(z.id, moved, drag.kind === 'edge');
     }
@@ -271,6 +282,17 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
         onDoubleClick={onDoubleClick}
         data-testid="zone-editor"
       >
+        {suggestions &&
+          suggestions.zoneId === selectedId &&
+          suggestions.candidates.map((c, i) =>
+            i === suggestions.index ? null : (
+              <g key={`s${i}`} data-handle="suggestion" data-index={i} className="cursor-pointer">
+                <polygon points={pts(c as Vec2[])} fill="none" stroke="transparent" strokeWidth={12} pointerEvents="stroke" />
+                <polygon points={pts(c as Vec2[])} fill="none" stroke="rgba(0,0,0,0.5)" strokeWidth={2.5} pointerEvents="none" />
+                <polygon points={pts(c as Vec2[])} fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1} strokeDasharray="3 4" pointerEvents="none" />
+              </g>
+            ),
+          )}
         {zones.map((z: PhotoZone) => {
           const sel = z.id === selectedId;
           if (!z.visible) return null;
@@ -333,6 +355,24 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
         )}
       </svg>
       <Loupe at={loupeAt} frame={{ w: width, h: height }} quad={loupeQuad} />
+      {suggestions && suggestions.zoneId === selectedId && suggestions.candidates.length > 1 && tool !== 'place' && (
+        <div className="absolute inset-x-0 top-3 z-20 flex justify-center" data-testid="suggestions">
+          <div className="flex items-center gap-1 rounded-full bg-black/70 py-1 pl-3.5 pr-1 text-[12px] text-white/90 shadow-xl backdrop-blur-xl">
+            <Wand2 size={13} className="mr-1 text-accent" />
+            {t('photo.suggest', { i: suggestions.index + 1, n: suggestions.candidates.length })}
+            <button type="button" aria-label={t('photo.suggest.prev')} onClick={() => pickSuggestion(suggestions.index - 1)} className="ml-1 grid size-7 place-items-center rounded-full hover:bg-white/15">
+              <ChevronLeft size={15} />
+            </button>
+            <button type="button" aria-label={t('photo.suggest.next')} onClick={() => pickSuggestion(suggestions.index + 1)} className="grid size-7 place-items-center rounded-full hover:bg-white/15">
+              <ChevronRight size={15} />
+            </button>
+            <button type="button" onClick={() => useUi.getState().setSuggestions(null)} className="ml-1 flex h-7 items-center gap-1 rounded-full bg-white/15 px-2.5 font-medium hover:bg-white/25">
+              <Check size={13} />
+              {t('photo.suggest.ok')}
+            </button>
+          </div>
+        </div>
+      )}
       {tool === 'place' && (
         <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center">
           <div className="flex items-center gap-2 rounded-full bg-black/65 px-3.5 py-1.5 text-[12px] text-white/90 shadow-xl backdrop-blur-xl">

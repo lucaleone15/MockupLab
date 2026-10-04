@@ -1,5 +1,5 @@
 import { invert, squareToQuad, type Quad } from './homography';
-import type { ZoneStats } from './stats';
+import { blankness, type ZoneStats } from './stats';
 import type { PhotoZone } from '@/store/project';
 
 /*
@@ -49,7 +49,12 @@ uniform float uRadius, uFeather, uShading, uReflection, uBrightness, uSharp, uNo
 uniform vec3 uLow;
 uniform vec3 uMid;
 uniform float uOcclusion;
-uniform float uHigh;
+uniform vec3 uLightA;
+uniform vec3 uLightB;
+uniform float uLightRef;
+uniform float uDetail;
+uniform float uReflWeight;
+uniform float uBleed;
 uniform vec3 uTint;
 uniform float uPreview;
 
@@ -72,6 +77,8 @@ void main() {
   vec2 d2 = abs(q) - half_ + r;
   float d = length(max(d2, 0.0)) + min(max(d2.x, d2.y), 0.0) - r;
   float aa = max(fwidth(d), 1e-6);
+  // bleed: the design reaches a little past the corners, over the surface's own edge
+  d -= aa * uBleed;
   float alpha = 1.0 - smoothstep(-aa * (0.5 + uFeather), aa * 0.5, d);
   if (alpha <= 0.0) discard;
 
@@ -108,19 +115,24 @@ void main() {
   vec3 photo = texture(uPhoto, vUv).rgb;
   // Foreground kept from the photo: what differs clearly from the surface's own colour.
   if (uOcclusion > 0.0) {
-    float dist = length(sqrt(photo) - sqrt(uMid));
+    // half sharp, half softened: a crisp outline without salt-and-pepper where the object nears the surface's colour
+    float dist = 0.5 * (length(sqrt(photo) - sqrt(uMid)) + length(sqrt(texture(uPhoto, vUv, 1.5).rgb) - sqrt(uMid)));
     float thr = mix(0.9, 0.16, uOcclusion);
-    alpha *= 1.0 - smoothstep(thr, thr + 0.08, dist);
+    alpha *= 1.0 - smoothstep(thr - 0.04, thr + 0.1, dist);
     if (alpha <= 0.0) discard;
   }
   if (uHasDesign > 0.5) {
     col *= uBrightness;
     col *= mix(vec3(1.0), uTint, uMatch);
-    // shading from a slightly softened photo: the light, not fine printed marks
-    float lum = dot(texture(uPhoto, vUv, 3.0).rgb, vec3(0.2126, 0.7152, 0.0722));
-    // shadows only darken: brighter marks on the surface (print, text) never show through
-    col *= mix(1.0, clamp(lum / uHigh, 0.0, 1.0), uShading);
-    vec3 refl = clamp(photo - uLow, 0.0, 1.0) * uReflection;
+    // Light on the surface: a smooth fit of the photo, which never holds its content;
+    // its fine detail only when the surface is blank (uDetail).
+    vec2 st = clamp(uv, 0.0, 1.0);
+    float fit = dot(uLightA, vec3(1.0, st.x, st.y)) + dot(uLightB, vec3(st.x * st.x, st.x * st.y, st.y * st.y));
+    float lit = clamp(exp(fit - uLightRef), 0.55, 1.0);
+    float fine = dot(texture(uPhoto, vUv, 1.0).rgb, vec3(0.2126, 0.7152, 0.0722));
+    float detail = clamp((fine + 0.02) / exp(fit), 0.0, 1.0);
+    col *= mix(1.0, lit * mix(1.0, detail, uDetail), uShading);
+    vec3 refl = clamp(photo - uLow, 0.0, 1.0) * uReflection * uReflWeight;
     col = 1.0 - (1.0 - clamp(col, 0.0, 1.0)) * (1.0 - refl);
   }
   vec3 outc = toSrgb(col);
@@ -257,7 +269,16 @@ export class PhotoRenderer {
       gl.uniform3fv(P.u('uLow'), stats?.low ?? [0, 0, 0]);
       gl.uniform3fv(P.u('uMid'), stats?.mid ?? [0, 0, 0]);
       gl.uniform1f(P.u('uOcclusion'), z.occlusion);
-      gl.uniform1f(P.u('uHigh'), stats?.high ?? 1);
+      const blank = stats ? blankness(stats, z.kind) : 1;
+      // auto: a surface with content lends nothing of it (a clear cut, not a fade)
+      const t = Math.min(1, Math.max(0, (blank - 0.45) / 0.4));
+      const lend = z.original === 'keep' ? 1 : z.original === 'hide' ? 0 : t * t * (3 - 2 * t);
+      gl.uniform3fv(P.u('uLightA'), stats ? stats.light.slice(0, 3) : [0, 0, 0]);
+      gl.uniform3fv(P.u('uLightB'), stats ? stats.light.slice(3, 6) : [0, 0, 0]);
+      gl.uniform1f(P.u('uLightRef'), stats?.lightRef ?? 0);
+      gl.uniform1f(P.u('uDetail'), lend);
+      gl.uniform1f(P.u('uReflWeight'), lend);
+      gl.uniform1f(P.u('uBleed'), (z.bleed * opts.width) / photo.width);
       gl.uniform3fv(P.u('uTint'), stats?.tint ?? [1, 1, 1]);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }

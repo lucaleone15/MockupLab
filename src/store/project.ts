@@ -243,6 +243,14 @@ export interface PhotoZone {
   match: number;
   /** 0..1: keeps in front what clearly differs from the surface (fingers on a screen). 0 = off. */
   occlusion: number;
+  /**
+   * What the photo's own surface lends to the design: 'auto' keeps its fine
+   * details and reflections only when it is blank (an unlit screen, plain
+   * paper); 'hide' never (only its smooth light); 'keep' always.
+   */
+  original: 'auto' | 'hide' | 'keep';
+  /** Pixels the design extends past the corners, to cover the surface's own edge. */
+  bleed: number;
   visible: boolean;
 }
 
@@ -287,8 +295,8 @@ export const EMPTY_PHOTO: PhotoScene = { assetId: null, templateId: null, zones:
 /** Blend settings that suit a kind of zone. */
 export function zoneDefaults(kind: PhotoZone['kind']) {
   return kind === 'screen'
-    ? { radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0 }
-    : { radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0 };
+    ? { radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0, original: 'auto' as const, bleed: 1 }
+    : { radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0, original: 'auto' as const, bleed: 1 };
 }
 
 export function makeZone(init: Partial<PhotoZone> & Pick<PhotoZone, 'corners' | 'aspect'>): PhotoZone {

@@ -3,7 +3,7 @@ import { useAssets } from '@/store/assets';
 import { makeZone, useProject, type PhotoZone } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { detectQuad } from './detect';
+import { detectQuads } from './detect';
 import { estimateAspect, isConvex, orderCorners, type Quad, type Vec2 } from './homography';
 import { assetPixels, statsFor } from './source';
 
@@ -20,35 +20,84 @@ export function aspectOf(corners: Quad) {
 }
 
 /** Adds a zone on four points (any order); its kind follows what the photo shows there. */
-export async function createZone(points: Vec2[]) {
+export async function createZone(points: Vec2[]): Promise<string | null> {
   const { photo } = useProject.getState();
-  if (!photo.assetId || points.length !== 4) return;
+  if (!photo.assetId || points.length !== 4) return null;
   const corners = orderCorners(points);
   if (!isConvex(corners)) {
     toast.error(t('photo.zone.invalid'));
-    return;
+    return null;
   }
   const probe = makeZone({ corners, aspect: aspectOf(corners) });
   const stats = await statsFor(photo.assetId, probe);
-  // a light, even surface is paper; a dark one is a screen
-  const kind: PhotoZone['kind'] = stats.high > 0.35 ? 'print' : 'screen';
+  // a dark surface is a screen (off, or dimmed); a light one is most often paper
+  const kind: PhotoZone['kind'] = stats.level > 0.15 ? 'print' : 'screen';
+  // a dark screen with something light in front of it (fingers, a phone held up): keep that in front
+  const occlusion = kind === 'screen' && stats.foreground > 0.03 && stats.foreground < 0.6 ? 0.6 : 0;
   const n = useProject.getState().photo.zones.length + 1;
-  useProject.getState().addZone(makeZone({ corners, aspect: probe.aspect, kind, name: `${t('photo.zone')} ${n}` }));
+  const zone = makeZone({ corners, aspect: probe.aspect, kind, occlusion, name: `${t('photo.zone')} ${n}` });
+  useProject.getState().addZone(zone);
   useUi.getState().setPhotoTool('select');
   useUi.getState().setActiveCorner(null);
+  return zone.id;
 }
 
-/** Magic wand: finds the screen / sheet around a point (normalised coordinates) and adds it as a zone. */
+function insideQuad(q: Quad, x: number, y: number) {
+  let sign = 0;
+  for (let i = 0; i < 4; i++) {
+    const a = q[i];
+    const b = q[(i + 1) % 4];
+    const c = Math.sign((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]));
+    if (c && sign && c !== sign) return false;
+    if (c) sign = c;
+  }
+  return true;
+}
+
+/** Applies suggestion i of the last detection to its zone. */
+export function pickSuggestion(i: number) {
+  const s = useUi.getState().suggestions;
+  if (!s) return;
+  const zone = useProject.getState().photo.zones.find((z) => z.id === s.zoneId);
+  if (!zone) return;
+  const index = ((i % s.candidates.length) + s.candidates.length) % s.candidates.length;
+  const corners = s.candidates[index] as Quad;
+  useProject.getState().updateZone(zone.id, { corners, ...(zone.aspectAuto && { aspect: aspectOf(corners) }) });
+  useProject.getState().selectZone(zone.id);
+  useUi.getState().setSuggestions({ ...s, index });
+}
+
+const differs = (a: Quad, b: Quad) => a.some((p, i) => Math.hypot(p[0] - b[i][0], p[1] - b[i][1]) > 0.006);
+
+/**
+ * Magic wand on a double-click (normalised coordinates): on empty photo, finds
+ * the screen / sheet / frame around the point and adds it as a zone; on an
+ * existing zone, replaces its outline with the next candidate.
+ */
 export async function detectZoneAt(x: number, y: number) {
   const { photo } = useProject.getState();
   if (!photo.assetId) return false;
+  const zone = [...photo.zones].reverse().find((z) => z.visible && insideQuad(z.corners, x, y));
+  const shown = useUi.getState().suggestions;
+  if (zone && shown && shown.zoneId === zone.id && shown.candidates.length > 1) {
+    pickSuggestion(shown.index + 1);
+    return true;
+  }
   const px = await assetPixels(photo.assetId, 1600);
-  const quad = detectQuad(px, x, y);
-  if (!quad) {
+  const candidates = detectQuads(px, x, y, 6);
+  if (!candidates.length) {
     toast.info(t('photo.detect.none'));
     return false;
   }
-  await createZone(quad);
+  if (zone) {
+    // an existing zone: offer what the photo suggests, starting with what differs from it
+    const list = [...candidates.filter((c) => differs(c, zone.corners)), zone.corners];
+    useUi.getState().setSuggestions({ zoneId: zone.id, candidates: list, index: list.length - 1 });
+    pickSuggestion(0);
+    return true;
+  }
+  const id = await createZone(candidates[0]);
+  if (id && candidates.length > 1) useUi.getState().setSuggestions({ zoneId: id, candidates, index: 0 });
   return true;
 }
 

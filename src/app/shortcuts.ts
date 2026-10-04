@@ -107,7 +107,12 @@ function onPhotoKey(e: KeyboardEvent, key: string) {
     } else if (project.photo.selectedZoneId) project.removeZone(project.photo.selectedZoneId);
     return true;
   }
+  if (key === 'enter' && ui.suggestions) {
+    ui.setSuggestions(null);
+    return true;
+  }
   if (key === 'escape') {
+    ui.setSuggestions(null);
     ui.setPhotoTool('select');
     ui.setActiveCorner(null);
     ui.selectOverlay(null);

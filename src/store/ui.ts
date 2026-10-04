@@ -30,6 +30,9 @@ interface UiState {
   /** Photo mode: corner of the selected zone moved by the arrow keys (0..3). */
   activeCorner: number | null;
   setActiveCorner: (i: number | null) => void;
+  /** Photo mode: the suggestions of the last detection, shown on the photo to pick from. */
+  suggestions: { zoneId: string; candidates: [number, number][][]; index: number } | null;
+  setSuggestions: (s: UiState['suggestions']) => void;
 }
 
 const initialTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -63,4 +66,6 @@ export const useUi = create<UiState>((set) => ({
   setPhotoTool: (photoTool) => set({ photoTool }),
   activeCorner: null,
   setActiveCorner: (activeCorner) => set({ activeCorner }),
+  suggestions: null,
+  setSuggestions: (suggestions) => set({ suggestions }),
 }));
