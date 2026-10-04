@@ -8,6 +8,7 @@ const out = process.env.OUT ?? 'out/models';
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
+await page.addInitScript(() => { if (!sessionStorage.getItem('mockuplab:keep')) indexedDB.deleteDatabase('mockuplab'); });
 const logs = [];
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && logs.push(`[error] ${m.text()}`));

@@ -17,7 +17,12 @@ const SENSOR_HEIGHT = 24; // full-frame, mm
 export const focalToFov = (mm: number) => THREE.MathUtils.radToDeg(2 * Math.atan(SENSOR_HEIGHT / 2 / mm));
 
 /** Shared with the exporter: what the camera looks at, the point to keep sharp, and the subject size. */
-export const cameraState = { target: new THREE.Vector3(0, 7, 0), focus: new THREE.Vector3(0, 7, 0), subject: 15 };
+export const cameraState = {
+  target: new THREE.Vector3(0, 7, 0),
+  focus: new THREE.Vector3(0, 7, 0),
+  forward: new THREE.Vector3(0, 0, -1),
+  subject: 15,
+};
 
 /** f-number for the aperture slider: 0 → f/16, 1 → f/1.4 (log scale). */
 export const fNumber = (aperture: number) => 16 * Math.pow(1.4 / 16, aperture);
@@ -30,10 +35,15 @@ export const fNumber = (aperture: number) => 16 * Math.pow(1.4 / 16, aperture);
 export function lensFor(camera: THREE.PerspectiveCamera, settings: CameraSettings): LensSetup {
   const forward = new THREE.Vector3();
   camera.getWorldDirection(forward);
+  // Several devices: focus on the composition and stop down to f/8 at most,
+  // like a photographer would for a group, so every design stays readable.
+  const group = useProject.getState().items.filter((it) => it.visible).length > 1;
+  const point = group ? cameraState.target : cameraState.focus;
   // Distance to the focus plane along the view axis (thin-lens model).
-  const toFocus = cameraState.focus.clone().sub(camera.position).dot(forward);
+  const toFocus = point.clone().sub(camera.position).dot(forward);
   const focusDistance = Math.max(1, toFocus + settings.focus * cameraState.subject * 0.8);
-  const radius = settings.dof ? settings.focal / 10 / (2 * fNumber(settings.aperture)) : 0;
+  const n = group ? Math.max(8, fNumber(settings.aperture)) : fNumber(settings.aperture);
+  const radius = settings.dof ? settings.focal / 10 / (2 * n) : 0;
   return { radius, focusDistance };
 }
 
@@ -246,6 +256,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
 export function useAdaptiveNear() {
   useFrame(({ camera, controls }) => {
     const cam = camera as THREE.PerspectiveCamera;
+    cam.getWorldDirection(cameraState.forward);
     const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target ?? cameraState.target;
     const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.12, 0.5, 60);
     if (Math.abs(near - cam.near) / cam.near > 0.05) {

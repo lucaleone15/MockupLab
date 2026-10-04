@@ -2,6 +2,7 @@ import { Tooltip } from 'radix-ui';
 import { LibraryPanel } from './LibraryPanel';
 import { PropertiesPanel } from './PropertiesPanel';
 import { useGlobalInput } from './shortcuts';
+import { HelpDialog } from './HelpDialog';
 import { Toaster } from './Toaster';
 import { TopBar } from './TopBar';
 import { Viewport } from './Viewport';
@@ -19,6 +20,7 @@ export function App() {
         </div>
       </div>
       <Toaster />
+      <HelpDialog />
     </Tooltip.Provider>
   );
 }

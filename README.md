@@ -26,8 +26,10 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Caméra : face, 3/4, isométrique, dessus (appareil posé à plat), plongée, contre-plongée, orbite libre, focale 14–600 mm, profondeur de champ physique | ✅ |
 | Sol : ombre douce / contact / aucune, réflexion au sol avec fondu réaliste | ✅ |
 | Export PNG / JPG / WebP, 1080p · 2K · 4K, 7 ratios, supersampling ×2, rendu par tuiles | ✅ |
-| Glisser-déposer, coller (⌘V), undo/redo, thème clair/sombre, FR/EN | ✅ |
-| Compositions multi-appareils, sauvegarde auto, projets JSON | 🔜 jalon d |
+| **Compositions multi-appareils** : ajout (bouton + ou glisser depuis la bibliothèque), sélection au clic, déplacement à la souris, rotation (Alt + glisser, R), duplication, masquage, verrouillage, disposition automatique | ✅ |
+| **Textes & logo** sur le rendu (3 polices, graisse, taille, couleur, interlettrage, position, glisser avec aimantation), exportés avec l'image | ✅ |
+| **Sauvegarde automatique** dans le navigateur (images comprises), projet en `.json` (images intégrées) : nouveau / ouvrir / enregistrer | ✅ |
+| Glisser-déposer (une image déposée sur un appareil va sur son écran), coller (⌘V), undo/redo, raccourcis (touche ?), thème clair/sombre, FR/EN | ✅ |
 | Print & objets (cartes, affiches, packaging, mug…) | 🔜 jalon e |
 | Mode photo (perspective sur 4 coins) | 🔜 jalon f |
 | Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
@@ -59,6 +61,12 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 | Action | Raccourci |
 |---|---|
 | Ouvrir une image | ⌘O / Ctrl+O |
+| Enregistrer le projet (.json) | ⌘S / Ctrl+S |
+| Dupliquer l'appareil | ⌘D / Ctrl+D |
+| Supprimer l'appareil / le texte sélectionné | ⌫ |
+| Déplacer l'appareil (Maj : ×5) | Flèches |
+| Tourner de 15° | R (Maj+R : sens inverse) |
+| Afficher l'aide | ? |
 | Coller une image | ⌘V / Ctrl+V |
 | Exporter | ⌘E / Ctrl+E |
 | Annuler / rétablir | ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Y) |
@@ -137,6 +145,8 @@ npm run dev
 node scripts/shoot.mjs                         # captures UI + export 1080p dans out/
 node scripts/gallery.mjs                       # rend chaque modèle dans out/models/
 node scripts/check-swap.mjs                    # non-régression : changement d'image
+node scripts/check-composition.mjs             # multi-appareils, textes, sauvegarde auto, projet JSON
+node scripts/scenes.mjs                        # scénarios de scène (décors, lumières, caméra)
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```

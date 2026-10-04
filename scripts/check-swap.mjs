@@ -2,6 +2,7 @@
 import { chromium } from 'playwright';
 const b = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu'] });
 const p = await b.newPage({ viewport: { width: 1400, height: 900 } });
+await p.addInitScript(() => { if (!sessionStorage.getItem('mockuplab:keep')) indexedDB.deleteDatabase('mockuplab'); });
 await p.goto('http://localhost:5173/');
 await p.waitForFunction(() => window.__mockuplab);
 await p.waitForTimeout(1500);

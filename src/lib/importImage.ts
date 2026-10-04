@@ -42,8 +42,8 @@ export async function fileToAsset(file: Blob, name: string): Promise<Asset> {
   return { id: uid(), name, url, width, height, blob };
 }
 
-/** Imports images (drop, paste, picker) and binds the first one to the selected device screen. */
-export async function importImages(files: Iterable<File>) {
+/** Imports images (drop, paste, picker) and binds the first one to a device screen (the selected one by default). */
+export async function importImages(files: Iterable<File>, targetItemId?: string) {
   const list = [...files];
   const images = list.filter((f) => ACCEPTED.test(f.type));
   for (const f of list) if (!ACCEPTED.test(f.type)) toast.error(t('image.unsupported', { name: f.name || 'file' }));
@@ -55,8 +55,12 @@ export async function importImages(files: Iterable<File>) {
     const asset = await fileToAsset(file, file.name || 'image');
     useAssets.getState().add(asset);
     const state = useProject.getState();
-    const item = selectSelectedItem(state);
-    if (item) state.setSurface(item.id, 'screen', { assetId: asset.id, align: 0 });
+    const item = (targetItemId && state.items.find((it) => it.id === targetItemId)) || selectSelectedItem(state);
+    if (item) {
+      const slot = Object.keys(item.surfaces)[0] ?? 'screen';
+      state.setSurface(item.id, slot, { assetId: asset.id, align: 0 });
+      if (state.selectedId !== item.id) state.selectItem(item.id);
+    }
   } catch {
     toast.error(t('image.failed', { name: file.name || 'image' }));
   }

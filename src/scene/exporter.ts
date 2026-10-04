@@ -71,6 +71,8 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
   const step = Math.floor((tile - pad * 2) / supersample) * supersample;
 
   const camera = source.clone();
+  // Only the scene: helpers (selection ring…) live on layer 1.
+  camera.layers.set(0);
   camera.aspect = rw / rh;
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();

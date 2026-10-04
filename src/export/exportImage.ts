@@ -1,6 +1,7 @@
 import { t, useLang } from '@/i18n';
 import { getModel } from '@/models/registry';
 import { dither, paintBackground, prepareBackground } from '@/lib/background';
+import { paintOverlays, prepareOverlays } from '@/lib/overlays';
 import { renderFrame } from '@/scene/exporter';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
@@ -71,6 +72,9 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
     ctx.fillRect(0, 0, width, height);
   }
   ctx.drawImage(scene, 0, 0);
+  // Titles, captions and logos on top.
+  await prepareOverlays(project.overlays);
+  paintOverlays(ctx, project.overlays, width, height);
 
   let blob = await toBlob(out, format.mime, settings.quality);
   let ext = format.ext;
@@ -80,7 +84,12 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
     ext = 'png';
   }
   const item = project.items.find((i) => i.id === project.selectedId) ?? project.items[0];
-  const slug = item ? getModel(item.modelId).id : 'scene';
+  const slug =
+    project.name && project.name !== 'Untitled'
+      ? project.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'mockup'
+      : item
+        ? getModel(item.modelId).id
+        : 'scene';
   return { blob, width, height, filename: `mockuplab-${slug}-${width}x${height}.${ext}` };
 }
 
