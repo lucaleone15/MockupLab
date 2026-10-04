@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { cameraState } from './camera';
 
 /*
  * Planar reflection with a physically motivated fade.
@@ -144,6 +145,7 @@ export function ReflectiveFloor({ geometry, y, strength }: { geometry: THREE.Buf
         full.matrixWorld.copy(cam.matrixWorld);
         full.matrixWorldInverse.copy(cam.matrixWorldInverse);
         full.clearViewOffset();
+        if (Math.abs(cameraState.shift) > 1e-4) full.setViewOffset(v.fullWidth, v.fullHeight, -cameraState.shift * v.fullWidth, 0, v.fullWidth, v.fullHeight);
         cam = full;
         fullW = v.fullWidth;
         fullH = v.fullHeight;

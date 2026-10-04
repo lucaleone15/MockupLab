@@ -131,7 +131,11 @@ export function Viewport() {
   const { t } = useT();
   const ratio = useProject((s) => s.export.ratio);
   const exportSettings = useProject((s) => s.export);
-  const hasImage = useProject((s) => Object.values(selectSelectedItem(s)?.surfaces ?? {}).some((b) => b.assetId));
+  const hasImage = useProject((s) => {
+    const it = selectSelectedItem(s);
+    // objects without faces (brand objects) never need an image
+    return !it || Object.keys(it.surfaces).length === 0 || Object.values(it.surfaces).some((b) => b.assetId);
+  });
   const resetView = useUi((s) => s.resetView);
   const { ref, width, height } = useFrameSize(ratioValue(ratio));
   const frame = useRef<HTMLDivElement>(null);

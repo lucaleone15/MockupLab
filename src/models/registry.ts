@@ -7,6 +7,7 @@ import { tablet11, tablet13 } from './tablet/Tablet';
 import { bottle, box, mug, tube } from './merch/Objects';
 import { tote, tshirt } from './merch/Apparel';
 import { badge } from './print/Badge';
+import { specimenCard, swatchFan } from './brand/Brand';
 import { streetPoster, totem, tv } from './signage/Signage';
 import { businessCard, flyer, postcard, stationery } from './print/Cards';
 import { poster, rollUp } from './print/Posters';
@@ -44,6 +45,8 @@ export const MODELS: DeviceModule[] = [
   bottle,
   tote,
   tshirt,
+  swatchFan,
+  specimenCard,
 ];
 
 const byId = new Map(MODELS.map((m) => [m.id, m]));

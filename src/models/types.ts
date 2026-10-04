@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { I18nString } from '@/i18n';
-import type { ScreenSettings, SurfaceBinding } from '@/store/project';
+import type { Brand, ScreenSettings, SurfaceBinding } from '@/store/project';
 
 export type DeviceCategory = 'phone' | 'tablet' | 'laptop' | 'desktop' | 'signage' | 'browser' | 'wearable' | 'print' | 'merch' | 'brand';
 
@@ -63,6 +63,8 @@ export interface DeviceProps {
   surfaces: Record<string, SurfaceBinding>;
   screen: ScreenSettings;
   params: Record<string, ParamValue>;
+  /** The project's brand kit (for objects drawn from it). */
+  brand: Brand;
 }
 
 /**

@@ -4,6 +4,7 @@ import { getModel } from '@/models/registry';
 import { defaultParams } from '@/models/types';
 import { useAssets, type Asset } from './assets';
 import {
+  DEFAULT_BRAND,
   DEFAULT_CAMERA,
   DEFAULT_DECOR,
   DEFAULT_GROUND,
@@ -36,7 +37,8 @@ interface StoredAsset {
 
 export function snapshot(s: ProjectState = useProject.getState()): Project {
   return {
-    version: 3,
+    version: 4,
+    brand: s.brand,
     name: s.name,
     items: s.items,
     selectedId: s.selectedId,
@@ -56,6 +58,7 @@ export function referencedAssets(p: Project): Set<string> {
   for (const it of p.items) for (const b of Object.values(it.surfaces)) if (b.assetId) ids.add(b.assetId);
   if (p.background.kind === 'image' && p.background.assetId) ids.add(p.background.assetId);
   for (const o of p.overlays) if (o.kind === 'logo' && o.assetId) ids.add(o.assetId);
+  for (const id of [p.brand?.logoAssetId, p.brand?.heading.assetId, p.brand?.body.assetId]) if (id) ids.add(id);
   return ids;
 }
 
@@ -93,7 +96,8 @@ export function migrateProject(raw: unknown): Project {
     camera: { ...DEFAULT_CAMERA, ...(r.camera ?? {}) },
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
     export: { ...base.export, ...(r.export ?? {}) },
-    version: 3,
+    brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
+    version: 4,
   };
 }
 
@@ -102,7 +106,14 @@ function addAsset(a: StoredAsset) {
   useAssets.getState().add(asset);
 }
 
+/** Registers the brand's imported typefaces with the document. */
+async function registerBrandFonts(project: Project) {
+  const { registerFontAsset } = await import('@/lib/brandFonts');
+  for (const f of [project.brand.heading, project.brand.body]) if (f.assetId) await registerFontAsset(f.assetId, f.family).catch(() => undefined);
+}
+
 function load(project: Project) {
+  void registerBrandFonts(project);
   useProject.getState().loadProject(project);
   useProject.temporal.getState().clear();
   useUi.getState().selectOverlay(null);

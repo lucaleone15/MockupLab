@@ -73,8 +73,8 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   }
   ctx.drawImage(scene, 0, 0);
   // Titles, captions and logos on top.
-  await prepareOverlays(project.overlays);
-  paintOverlays(ctx, project.overlays, width, height);
+  await prepareOverlays(project.overlays, project.brand);
+  paintOverlays(ctx, project.overlays, width, height, project.brand);
 
   let blob = await toBlob(out, format.mime, settings.quality);
   let ext = format.ext;

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Accumulator, applyLensSample, type LensSetup } from './accumulator';
+import { cameraState } from './camera';
 
 /**
  * Offline renderer for exports.
@@ -77,6 +78,7 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
   const lens = bridge.lens();
+  const shift = cameraState.shift;
   const accumulate = samples > 1 && lens.radius > 0;
   const accumulator = accumulate ? new Accumulator() : null;
 
@@ -102,7 +104,8 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
       for (let x = 0; x < rw; x += step) {
         const iw = Math.min(step, rw - x);
         const ih = Math.min(step, rh - y);
-        const rect = { x: x - pad, y: y - pad, width: tile, height: tile };
+        // the lens shift moves the whole window sideways
+        const rect = { x: x - pad - shift * rw, y: y - pad, width: tile, height: tile };
         if (accumulator) {
           accumulator.reset(gl, tile, tile);
           for (let i = 0; i < samples; i++) {

@@ -352,6 +352,9 @@ function CameraSection() {
         <Switch checked={cam.dof} onChange={(dof) => setCamera({ dof })} label={t('camera.dof')} />
       </label>
       <Advanced more={t('ui.more')} less={t('ui.less')}>
+        <Field label={t('camera.shift')} value={`${Math.round((cam.shift ?? 0) * 100)} %`}>
+          <Slider label={t('camera.shift')} min={-0.35} max={0.35} step={0.005} value={cam.shift ?? 0} onChange={(shift) => setCamera({ shift })} />
+        </Field>
         <Field label={t('camera.focal')} value={`${Math.round(cam.focal)} mm`}>
           <Slider label={t('camera.focal')} min={F_MIN} max={F_MAX} step={0.001} value={Math.log(cam.focal)} onChange={(v) => setCamera({ focal: Math.round(Math.exp(v)) })} />
         </Field>

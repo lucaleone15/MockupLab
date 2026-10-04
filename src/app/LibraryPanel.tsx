@@ -18,6 +18,8 @@ import {
   Plus,
   RectangleVertical,
   Shirt,
+  SwatchBook,
+  CaseSensitive,
   ShoppingBag,
   Wine,
   type LucideIcon,
@@ -41,6 +43,7 @@ const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   signage: 'library.signage',
   print: 'library.print',
   merch: 'library.merch',
+  brand: 'library.brand',
 };
 
 /** Line icons for print and objects (no proportional silhouette makes sense there). */
@@ -64,6 +67,8 @@ const OBJECT_ICONS: Record<string, LucideIcon> = {
   bottle: Wine,
   tote: ShoppingBag,
   tshirt: Shirt,
+  'swatch-fan': SwatchBook,
+  specimen: CaseSensitive,
 };
 
 const SHELL = 'fill-surface-4 stroke-fg-subtle';

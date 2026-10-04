@@ -16,6 +16,8 @@ import { HorizontalBlurShader, VerticalBlurShader } from 'three-stdlib';
 
 interface Props {
   y: number;
+  x?: number;
+  z?: number;
   size: number;
   far: number;
   blur: number;
@@ -23,7 +25,7 @@ interface Props {
   resolution?: number;
 }
 
-export function ContactShadow({ y, size, far, blur, opacity, resolution = 1024 }: Props) {
+export function ContactShadow({ y, x = 0, z = 0, size, far, blur, opacity, resolution = 1024 }: Props) {
   const scene = useThree((s) => s.scene);
   const gl = useThree((s) => s.gl);
   const group = useRef<THREE.Group>(null);
@@ -80,7 +82,7 @@ export function ContactShadow({ y, size, far, blur, opacity, resolution = 1024 }
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    r.camera.position.set(0, y - 0.01, 0);
+    r.camera.position.set(x, y - 0.01, z);
     r.camera.updateMatrixWorld();
     const prevBg = scene.background;
     const prevOverride = scene.overrideMaterial;
@@ -103,7 +105,7 @@ export function ContactShadow({ y, size, far, blur, opacity, resolution = 1024 }
   });
 
   return (
-    <group ref={group} position={[0, y + 0.003, 0]}>
+    <group ref={group} position={[x, y + 0.003, z]}>
       {/* The camera looks up: flip so the shadow lines up with the objects. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1, -1, 1]} renderOrder={1}>
         <planeGeometry args={[size, size]} />

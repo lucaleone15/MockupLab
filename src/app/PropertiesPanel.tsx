@@ -93,6 +93,8 @@ function ImageSection() {
   if (!item) return null;
   const model = getModel(item.modelId);
   const slots = model.surfaces;
+  // brand objects draw themselves from the brand kit
+  if (!slots.length) return null;
   const multi = slots.length > 1;
   const current = slots.find((sl) => sl.id === activeSlot) ?? slots[0];
   const binding = item.surfaces[current.id];
@@ -369,7 +371,7 @@ export function PropertiesPanel() {
           options={[
             { value: 'device', label: t('tab.device') },
             { value: 'scene', label: t('tab.scene') },
-            { value: 'text', label: t('tab.text') },
+            { value: 'text', label: t('tab.brand') },
             { value: 'export', label: t('tab.export') },
           ]}
         />
