@@ -15,6 +15,20 @@ export function photoOutputSize() {
 
 /** Renders the photo mock-up at full resolution and encodes it. */
 export async function renderPhotoImage(): Promise<{ blob: Blob; width: number; height: number; filename: string; ext: string; canvas: HTMLCanvasElement }> {
+  const { canvas: out, width, height } = await composePhoto();
+  const project = useProject.getState();
+  const format = FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0];
+  const blob = await new Promise<Blob>((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), format.mime, project.export.quality));
+  const tpl = PHOTO_TEMPLATES.find((t) => t.id === project.photo.templateId);
+  const slug =
+    project.name && project.name !== 'Untitled'
+      ? project.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'photo'
+      : (tpl?.id ?? 'photo');
+  return { blob, width, height, ext: format.ext, canvas: out, filename: `mockuplab-${slug}-${width}x${height}.${format.ext}` };
+}
+
+/** Composes the photo mock-up (photo, zones, text layers) at the photo's resolution. */
+export async function composePhoto(): Promise<{ canvas: HTMLCanvasElement; width: number; height: number }> {
   const project = useProject.getState();
   const assets = useAssets.getState().assets;
   const pa = project.photo.assetId ? assets[project.photo.assetId] : undefined;
@@ -42,13 +56,5 @@ export async function renderPhotoImage(): Promise<{ blob: Blob; width: number; h
   const ctx = out.getContext('2d')!;
   await prepareOverlays(project.overlays, project.brand);
   paintOverlays(ctx, project.overlays, width, height, project.brand);
-
-  const format = FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0];
-  const blob = await new Promise<Blob>((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), format.mime, project.export.quality));
-  const tpl = PHOTO_TEMPLATES.find((t) => t.id === project.photo.templateId);
-  const slug =
-    project.name && project.name !== 'Untitled'
-      ? project.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'photo'
-      : (tpl?.id ?? 'photo');
-  return { blob, width, height, ext: format.ext, canvas: out, filename: `mockuplab-${slug}-${width}x${height}.${format.ext}` };
+  return { canvas: out, width, height };
 }

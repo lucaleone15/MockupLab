@@ -9,6 +9,8 @@ import { Viewport } from './Viewport';
 import { useProject } from '@/store/project';
 import { PhotoLibrary } from '@/photo/PhotoLibrary';
 import { PhotoView } from '@/photo/PhotoView';
+import { VariantsDialog } from '@/variants/VariantsDialog';
+import { BatchDialog } from '@/variants/BatchDialog';
 
 export function App() {
   useGlobalInput();
@@ -25,6 +27,8 @@ export function App() {
       </div>
       <Toaster />
       <HelpDialog />
+      <VariantsDialog />
+      <BatchDialog />
     </Tooltip.Provider>
   );
 }

@@ -58,6 +58,7 @@ function ExportBridge() {
         gl.setSize(size.width, size.height, false);
         invalidate();
       },
+      invalidate,
     });
     return () => setExportBridge(null);
   }, [gl, scene, camera, size, viewport.dpr, invalidate]);

@@ -38,7 +38,8 @@ if (import.meta.env.DEV) {
     import('./photo/detect'),
     import('./photo/source'),
     import('./photo/editing'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2]) => {
+    import('./variants/store'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -53,6 +54,7 @@ if (import.meta.env.DEV) {
         overlays: ov,
         ui: ui.useUi,
         assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
+        variants: va.useVariants,
         photo: {
           templates: pt.PHOTO_TEMPLATES,
           applyTemplate: pt.applyTemplate,

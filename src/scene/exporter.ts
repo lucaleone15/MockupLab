@@ -34,6 +34,7 @@ interface Bridge {
   camera: THREE.Camera;
   lens: () => LensSetup;
   restore: () => void;
+  invalidate: () => void;
 }
 
 let bridge: Bridge | null = null;
@@ -44,6 +45,18 @@ export function setExportBridge(b: Bridge | null) {
 
 /** Dev only: renderer internals for debugging scripts. */
 export const debugBridge = () => bridge;
+
+/**
+ * Lets the live view draw a few frames, so that everything updated once per
+ * frame (contact shadows, reflections, environment) reflects the latest state
+ * before an offline render.
+ */
+export async function settle(frames = 4) {
+  for (let i = 0; i < frames; i++) {
+    bridge?.invalidate();
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+  }
+}
 
 export function hasRenderer() {
   return bridge !== null;

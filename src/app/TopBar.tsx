@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useStore } from 'zustand';
 import { DropdownMenu } from 'radix-ui';
-import { Check, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, Moon, Redo2, Save, Sun, Undo2 } from 'lucide-react';
+import { Check, ChevronDown, CircleHelp, Download, FilePlus2, FolderOpen, Layers, Moon, Redo2, Save, Sparkles, Sun, Undo2 } from 'lucide-react';
+import { variants } from '@/variants/store';
+import { batch } from '@/variants/batch';
 import { useLang, useT } from '@/i18n';
 import { exportImage } from '@/export/exportImage';
 import { newProject } from '@/store/persistence';
@@ -115,6 +117,7 @@ export function TopBar() {
   const theme = useUi((s) => s.theme);
   const setTheme = useUi((s) => s.setTheme);
   const exporting = useUi((s) => s.exporting);
+  const mode = useProject((s) => s.mode);
   const canUndo = useStore(useProject.temporal, (s) => s.pastStates.length > 0);
   const canRedo = useStore(useProject.temporal, (s) => s.futureStates.length > 0);
 
@@ -152,6 +155,15 @@ export function TopBar() {
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </IconButton>
         <div className="mx-2 h-5 w-px bg-line" />
+        {mode === 'scene' && (
+          <Button onClick={() => variants.open()} className="gap-1.5" data-testid="open-variants">
+            <Sparkles size={15} />
+            {t('variants.open')}
+          </Button>
+        )}
+        <IconButton label={t('batch.open')} onClick={() => batch.open()} data-testid="open-batch">
+          <Layers size={16} />
+        </IconButton>
         <Button variant="primary" onClick={exportImage} disabled={!!exporting} className="gap-2 pr-2">
           <Download size={15} strokeWidth={2.2} />
           {t('top.export')}
