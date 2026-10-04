@@ -11,7 +11,30 @@ import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { IconButton, Spinner, cx } from '@/ui/primitives';
 import { MOD } from './shortcuts';
+import { videoSize } from '@/animation/size';
 import { OverlayLayer } from './OverlayLayer';
+
+/** While an animation preview plays: the app is frozen (the scene is a temporary copy), with a stop button. */
+export function PreviewOverlay() {
+  const { t } = useT();
+  const previewing = useUi((s) => s.previewing);
+  if (!previewing) return null;
+  return (
+    <div className="fixed inset-0 z-40" onPointerDown={(e) => e.preventDefault()}>
+      <div className="absolute inset-x-0 bottom-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => void import('@/animation/actions').then((m) => m.togglePreview())}
+          className="flex items-center gap-2 rounded-full bg-black/75 py-2 pl-3 pr-4 text-[13px] font-medium text-white shadow-2xl backdrop-blur-xl hover:bg-black/85"
+          data-testid="preview-stop"
+        >
+          <span className="size-2.5 rounded-sm bg-accent" />
+          {t('video.stopPreview')}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Size of the largest rectangle of the given aspect fitting in the container (minus padding). */
 export function useFrameSize(ratio: number) {
@@ -115,13 +138,20 @@ export function DropOverlay() {
 }
 
 export function ExportOverlay() {
+  const { t } = useT();
   const label = useUi((s) => s.exporting);
+  const cancel = useUi((s) => s.cancelExport);
   if (!label) return null;
   return (
     <div className="absolute inset-0 z-30 grid place-items-center bg-black/35 backdrop-blur-[3px] animate-[fade-in_150ms_ease-out]">
       <div className="flex items-center gap-3 rounded-xl bg-surface px-4 py-3 text-[13px] font-medium shadow-2xl ring-1 ring-line">
         <Spinner />
-        {label}
+        <span className="tabular-nums">{label}</span>
+        {cancel && (
+          <button type="button" onClick={cancel} className="ml-1 rounded-md px-2 py-1 text-[12px] text-fg-muted hover:bg-surface-3 hover:text-fg">
+            {t('cancel')}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -139,7 +169,8 @@ export function Viewport() {
   const resetView = useUi((s) => s.resetView);
   const { ref, width, height } = useFrameSize(ratioValue(ratio));
   const frame = useRef<HTMLDivElement>(null);
-  const out = outputSize(exportSettings);
+  useAssets((s) => s.assets);
+  const out = exportSettings.kind === 'video' ? videoSize() : outputSize(exportSettings);
 
   return (
     <main ref={ref} className="stage-dots relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">

@@ -13,6 +13,7 @@ import { ScenePanel } from './panels/ScenePanel';
 import { ModelSwitcher } from './ModelSwitcher';
 import { TextPanel } from './panels/TextPanel';
 import { PhotoPanel } from '@/photo/PhotoPanel';
+import { VideoSection } from '@/animation/VideoSection';
 import { photoOutputSize } from '@/photo/exportPhoto';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
@@ -283,36 +284,13 @@ function DeviceSection() {
   );
 }
 
-function ExportSection() {
+/** The ratio of the output (images and videos). */
+function RatioPicker() {
   const { t } = useT();
   const settings = useProject((s) => s.export);
   const setExport = useProject((s) => s.setExport);
-  const transparent = useProject((s) => s.background.kind === 'transparent');
-  const dof = useProject((s) => s.camera.dof);
-  const exporting = useUi((s) => s.exporting);
-  const photoMode = useProject((s) => s.mode === 'photo');
-  useProject((s) => s.photo.assetId);
-  const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
-
   return (
-    <Section title={t('props.export')}>
-      <Field label={t('props.format')}>
-        <Segmented value={settings.format} onChange={(format) => setExport({ format })} options={FORMATS.map((f) => ({ value: f.id, label: f.label }))} />
-      </Field>
-      {settings.format === 'jpeg' && transparent && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('props.transparentJpg')}</p>}
-      {settings.format !== 'png' && (
-        <Field label={t('props.quality')} value={`${Math.round(settings.quality * 100)}`}>
-          <Slider label={t('props.quality')} min={0.6} max={1} value={settings.quality} onChange={(quality) => setExport({ quality })} />
-        </Field>
-      )}
-      {photoMode ? (
-        <p className="text-[11.5px] leading-snug text-fg-subtle">{t('photo.export.native')}</p>
-      ) : (
-      <>
-      <Field label={t('props.size')}>
-        <Segmented value={settings.resolution} onChange={(resolution) => setExport({ resolution })} options={RESOLUTIONS.map((r) => ({ value: r.id, label: r.label }))} />
-      </Field>
-      <Field label={t('props.ratio')}>
+    <Field label={t('props.ratio')}>
         <div className="grid grid-cols-4 gap-1.5">
           {RATIOS.map((r) => (
             <button
@@ -336,6 +314,54 @@ function ExportSection() {
           ))}
         </div>
       </Field>
+  );
+}
+
+function ExportSection() {
+  const { t } = useT();
+  const settings = useProject((s) => s.export);
+  const setExport = useProject((s) => s.setExport);
+  const transparent = useProject((s) => s.background.kind === 'transparent');
+  const dof = useProject((s) => s.camera.dof);
+  const exporting = useUi((s) => s.exporting);
+  const photoMode = useProject((s) => s.mode === 'photo');
+  useProject((s) => s.photo.assetId);
+  const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
+
+  return (
+    <Section title={t('props.export')}>
+      <Segmented
+        value={settings.kind}
+        onChange={(kind) => setExport({ kind })}
+        options={[
+          { value: 'image', label: t('export.kind.image') },
+          { value: 'video', label: t('export.kind.video') },
+        ]}
+      />
+      {settings.kind === 'video' ? (
+        <>
+          {!photoMode && <RatioPicker />}
+          <VideoSection />
+        </>
+      ) : (
+      <>
+      <Field label={t('props.format')}>
+        <Segmented value={settings.format} onChange={(format) => setExport({ format })} options={FORMATS.map((f) => ({ value: f.id, label: f.label }))} />
+      </Field>
+      {settings.format === 'jpeg' && transparent && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('props.transparentJpg')}</p>}
+      {settings.format !== 'png' && (
+        <Field label={t('props.quality')} value={`${Math.round(settings.quality * 100)}`}>
+          <Slider label={t('props.quality')} min={0.6} max={1} value={settings.quality} onChange={(quality) => setExport({ quality })} />
+        </Field>
+      )}
+      {photoMode ? (
+        <p className="text-[11.5px] leading-snug text-fg-subtle">{t('photo.export.native')}</p>
+      ) : (
+      <>
+      <Field label={t('props.size')}>
+        <Segmented value={settings.resolution} onChange={(resolution) => setExport({ resolution })} options={RESOLUTIONS.map((r) => ({ value: r.id, label: r.label }))} />
+      </Field>
+      <RatioPicker />
       </>
       )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
@@ -350,6 +376,8 @@ function ExportSection() {
         <Download size={16} strokeWidth={2.2} />
         {t('export.cta')}
       </Button>
+      </>
+      )}
     </Section>
   );
 }

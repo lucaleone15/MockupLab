@@ -5,7 +5,7 @@ import { useGlobalInput } from './shortcuts';
 import { HelpDialog } from './HelpDialog';
 import { Toaster } from './Toaster';
 import { TopBar } from './TopBar';
-import { Viewport } from './Viewport';
+import { PreviewOverlay, Viewport } from './Viewport';
 import { useProject } from '@/store/project';
 import { PhotoLibrary } from '@/photo/PhotoLibrary';
 import { PhotoView } from '@/photo/PhotoView';
@@ -28,6 +28,7 @@ export function App() {
       <Toaster />
       <HelpDialog />
       <VariantsDialog />
+      <PreviewOverlay />
       <BatchDialog />
     </Tooltip.Provider>
   );

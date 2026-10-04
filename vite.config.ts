@@ -8,6 +8,8 @@ export default defineConfig(({ command, isPreview }) => ({
   base: command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/MockupLab/') : '/',
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // loaded on demand (video export): pre-bundled so the dev server never reloads mid-session
+  optimizeDeps: { include: ['mediabunny', 'gifenc'] },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 2000,

@@ -55,6 +55,7 @@ if (import.meta.env.DEV) {
         ui: ui.useUi,
         assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
         variants: va.useVariants,
+        renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         photo: {
           templates: pt.PHOTO_TEMPLATES,
           applyTemplate: pt.applyTemplate,

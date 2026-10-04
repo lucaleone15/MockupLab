@@ -127,6 +127,10 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
 export async function exportImage() {
   const ui = useUi.getState();
   if (ui.exporting) return;
+  if (useProject.getState().export.kind === 'video') {
+    const { exportVideo } = await import('@/animation/actions');
+    return exportVideo();
+  }
   const project = useProject.getState();
   if (project.mode === 'photo' && !project.photo.assetId) return;
   const { width, height } = project.mode === 'photo' ? photoOutputSize() : outputSize(project.export);

@@ -35,6 +35,14 @@ export const SHORTCUTS: [string, string][] = [
 
 function onKey(e: KeyboardEvent) {
   if (isEditable(e.target)) return;
+  // an animation preview: only Escape (or space) to stop it
+  if (useUi.getState().previewing) {
+    if (e.key === 'Escape' || e.key === ' ') {
+      e.preventDefault();
+      void import('@/animation/actions').then((m) => m.togglePreview());
+    }
+    return;
+  }
   const mod = e.metaKey || e.ctrlKey;
   const key = e.key.toLowerCase();
   const project = useProject.getState();

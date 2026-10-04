@@ -204,7 +204,21 @@ export type ImageFormat = 'png' | 'jpeg' | 'webp';
 export type ResolutionPreset = '1080' | '2k' | '4k';
 export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4';
 
+export type AnimationId = 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float' | 'zoom';
+
+export interface VideoSettings {
+  animation: AnimationId;
+  /** Seconds. */
+  duration: number;
+  fps: 24 | 30 | 60;
+  resolution: '720' | '1080' | '4k';
+  format: 'mp4' | 'webm' | 'gif';
+}
+
 export interface ExportSettings {
+  /** What the Export button produces. */
+  kind: 'image' | 'video';
+  video: VideoSettings;
   format: ImageFormat;
   resolution: ResolutionPreset;
   ratio: RatioPreset;
@@ -357,6 +371,7 @@ export const DEFAULT_DECOR: Decor = {
   gobo: 'window',
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
+export const DEFAULT_VIDEO: VideoSettings = { animation: 'turntable', duration: 6, fps: 30, resolution: '1080', format: 'mp4' };
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0 };
 
 export function initialProject(): Project {
@@ -383,7 +398,7 @@ export function initialProject(): Project {
     lighting: { ...LIGHT_PRESETS.studio.manual, preset: 'studio' },
     camera: { ...DEFAULT_CAMERA },
     ground: { ...DEFAULT_GROUND },
-    export: { format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
+    export: { kind: 'image', video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
   };
 }
 
