@@ -4,22 +4,14 @@ import { useT } from '@/i18n';
 import { outputSize, ratioValue } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
 import { useAssets } from '@/store/assets';
-import { importFromUrl, pickImages } from '@/lib/importImage';
-import { getModel } from '@/models/registry';
-import { isLandscape } from '@/models/types';
+import { pickImages } from '@/lib/importImage';
+import { loadSamples } from '@/lib/samples';
 import { Stage } from '@/scene/Stage';
 import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { IconButton, Kbd, Spinner, cx } from '@/ui/primitives';
 import { MOD } from './shortcuts';
 import { OverlayLayer } from './OverlayLayer';
-
-/** Bundled sample matching the device: a phone app for tall screens, a web page otherwise. */
-function sampleFor(aspect: number, landscape: boolean) {
-  const tall = landscape ? 1 / aspect < 1 : aspect < 1;
-  const name = tall ? 'sample-app.png' : 'sample-web.png';
-  return { url: `${import.meta.env.BASE_URL}samples/${name}`, name };
-}
 
 /** Size of the largest rectangle of the given aspect fitting in the container (minus padding). */
 function useFrameSize(ratio: number) {
@@ -66,8 +58,6 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
 function EmptyHint() {
   const { t } = useT();
   const item = useProject(selectSelectedItem);
-  const model = getModel(item?.modelId ?? '');
-  const sample = sampleFor(model.surfaces[0]?.aspect ?? 1, item ? isLandscape(item.params) : false);
   const [loading, setLoading] = useState(false);
   const [before, after] = t('stage.emptyHint').split('{paste}');
   return (
@@ -88,7 +78,7 @@ function EmptyHint() {
           onClick={async () => {
             setLoading(true);
             try {
-              await importFromUrl(sample.url, sample.name);
+              if (item) await loadSamples(item.id);
             } finally {
               setLoading(false);
             }

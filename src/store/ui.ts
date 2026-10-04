@@ -16,6 +16,9 @@ interface UiState {
   /** Selected text / logo layer (null: the selected device has focus). */
   selectedOverlayId: string | null;
   selectOverlay: (id: string | null) => void;
+  /** Surface slot that receives imported images (null: the first empty one). */
+  activeSlot: string | null;
+  setActiveSlot: (slot: string | null) => void;
   helpOpen: boolean;
   setHelpOpen: (v: boolean) => void;
   /** Last successful autosave (ms), null before the first one. */
@@ -44,6 +47,8 @@ export const useUi = create<UiState>((set) => ({
   setDragging: (dragging) => set({ dragging }),
   selectedOverlayId: null,
   selectOverlay: (selectedOverlayId) => set({ selectedOverlayId }),
+  activeSlot: null,
+  setActiveSlot: (activeSlot) => set({ activeSlot }),
   helpOpen: false,
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   savedAt: null,

@@ -17,6 +17,8 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | Écrans : Desktop 24 (tout-en-un coloré), Display 27, Monitor 27 | ✅ |
 | Fenêtre de navigateur : clair / sombre, barre compacte ou onglets, carte 3D ou plat, URL personnalisable | ✅ |
 | Écran fidèle aux couleurs (pas d'effet « autocollant ») + reflet de vitre réglable | ✅ |
+| **Print** : carte de visite (seule, recto/verso, pile), carte postale, flyer A4/A5, affiche (au mur ou posée, cadre noir/blanc/chêne, passe-partout, verre), dépliant 3 volets (intérieur/extérieur, ouverture réglable), magazine ouvert/fermé, livre relié, papeterie (lettre + enveloppe), badge avec tour de cou, roll-up — finition mate / satinée / brillante | ✅ |
+| **Objets & textile** : boîte (3 formats, face/côté/dessus), tube, mug (5 céramiques), bouteille avec étiquette (4 verres), tote bag et t-shirt à plat (7 coloris de tissu, trame réelle, plis) | ✅ |
 | **Ambiances complètes en un clic** (fond, décor, lumière, caméra, sol) | ✅ |
 | **Mise en scène « table »** : table en vraie matière contre un mur uni (couleur au choix), lumière du jour / soleil / fin de journée, ombres projetées de fenêtre, stores ou feuillage, profondeur de champ réaliste | ✅ |
 | **Matières photographiées (PBR)** : chêne, noyer, marbre blanc, marbre noir, travertin, terrazzo, béton ciré, lin | ✅ |
@@ -30,7 +32,6 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | **Textes & logo** sur le rendu (3 polices, graisse, taille, couleur, interlettrage, position, glisser avec aimantation), exportés avec l'image | ✅ |
 | **Sauvegarde automatique** dans le navigateur (images comprises), projet en `.json` (images intégrées) : nouveau / ouvrir / enregistrer | ✅ |
 | Glisser-déposer (une image déposée sur un appareil va sur son écran), coller (⌘V), undo/redo, raccourcis (touche ?), thème clair/sombre, FR/EN | ✅ |
-| Print & objets (cartes, affiches, packaging, mug…) | 🔜 jalon e |
 | Mode photo (perspective sur 4 coins) | 🔜 jalon f |
 | Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
 | Vidéo / GIF (turntable, défilement) | 🔜 jalon h |
@@ -135,7 +136,9 @@ Puis ajoute-le à `MODELS` dans `src/models/registry.ts`. Conventions :
 - `params` déclare des réglages (`slider`, `toggle`, `choice`, `text`) que le panneau de propriétés affiche tout seul ; `ORIENTATION_PARAM` ajoute portrait/paysage ;
 - `view` donne le point visé et la direction de la caméra ; la distance est calculée automatiquement ;
 - les pièces communes (objectifs, flash, perçages) sont dans `src/models/shared/parts.tsx`, les familles paramétrables dans `phone/Phone.tsx`, `tablet/Tablet.tsx`, `laptop/Laptop.tsx` ;
-- les surfaces imprimables/écrans utilisent `useScreenMaterial`, qui gère le cadrage, la fidélité des couleurs et les reflets ;
+- les écrans utilisent `useScreenMaterial` (couleurs exactes, reflets de vitre) ; les objets imprimés utilisent `usePrintMaterial` (`src/models/print/shared.tsx`), un vrai matériau papier / céramique éclairé par la scène, et déclarent `surfaceKind: 'print'` ;
+- un modèle peut avoir plusieurs `surfaces` (recto, verso, couverture…) : l'interface affiche une image par face ;
+- `sizeFor(params)` donne l'encombrement selon les réglages (format, présentation) pour le cadrage automatique ;
 - les géométries sont construites une seule fois et partagées entre instances.
 
 ## Vérification visuelle

@@ -4,6 +4,12 @@ import { desktop24, display27, monitor27 } from './desktop/Desktop';
 import { laptop14, laptopAir } from './laptop/Laptop';
 import { phoneClassic, phoneNeo, phonePro } from './phone/phones';
 import { tablet11, tablet13 } from './tablet/Tablet';
+import { bottle, box, mug, tube } from './merch/Objects';
+import { tote, tshirt } from './merch/Apparel';
+import { badge } from './print/Badge';
+import { businessCard, flyer, postcard, stationery } from './print/Cards';
+import { poster, rollUp } from './print/Posters';
+import { book, brochure, magazine } from './print/Publications';
 
 /** Every available model, in library order. Add new modules here. */
 export const MODELS: DeviceModule[] = [
@@ -18,6 +24,22 @@ export const MODELS: DeviceModule[] = [
   display27,
   monitor27,
   browserWindow,
+  businessCard,
+  postcard,
+  flyer,
+  poster,
+  brochure,
+  magazine,
+  book,
+  stationery,
+  badge,
+  rollUp,
+  box,
+  tube,
+  mug,
+  bottle,
+  tote,
+  tshirt,
 ];
 
 const byId = new Map(MODELS.map((m) => [m.id, m]));

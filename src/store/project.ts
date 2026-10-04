@@ -191,7 +191,7 @@ export function makeItem(model: DeviceModule): SceneItem {
     modelId: model.id,
     finishId: model.defaultFinish,
     params: defaultParams(model),
-    surfaces: Object.fromEntries(model.surfaces.map((s) => [s.id, { ...DEFAULT_SURFACE }])),
+    surfaces: Object.fromEntries(model.surfaces.map((s) => [s.id, { ...DEFAULT_SURFACE, fit: s.fit ?? 'cover', align: s.fit ? 0.5 : 0 }])),
     screen: { ...DEFAULT_SCREEN },
     position: [0, 0, 0],
     rotation: [0, model.yaw ?? -0.32, 0],
@@ -370,8 +370,12 @@ export const useProject = create<ProjectState>()(
             const model = getModel(modelId);
             // Keep the first image across devices (screen → screen).
             const firstImage = Object.values(it.surfaces).find((b) => b.assetId);
+            // Each slot keeps its own image; the first one inherits the old first image.
             const surfaces = Object.fromEntries(
-              model.surfaces.map((slot, i) => [slot.id, it.surfaces[slot.id] ?? (i === 0 && firstImage ? { ...firstImage } : { ...DEFAULT_SURFACE })]),
+              model.surfaces.map((slot, i) => [
+                slot.id,
+                it.surfaces[slot.id] ?? (i === 0 && firstImage ? { ...firstImage, fit: slot.fit ?? firstImage.fit } : { ...DEFAULT_SURFACE, fit: slot.fit ?? 'cover' }),
+              ]),
             );
             return {
               ...it,

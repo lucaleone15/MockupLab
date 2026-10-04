@@ -12,6 +12,8 @@ export interface SurfaceSlot {
   aspect: number;
   /** Suggested pixel size for designs (shown to the user). */
   nativeSize?: [number, number];
+  /** Initial framing of a new image (default: cover). */
+  fit?: 'cover' | 'contain';
 }
 
 export interface DeviceFinish {
@@ -30,7 +32,9 @@ export type ParamDef =
   | { id: string; kind: 'slider'; label: I18nString; min: number; max: number; step: number; default: number; unit?: string }
   | { id: string; kind: 'toggle'; label: I18nString; default: boolean }
   | { id: string; kind: 'choice'; label: I18nString; options: { value: string; label: I18nString }[]; default: string }
-  | { id: string; kind: 'text'; label: I18nString; default: string; placeholder?: string };
+  | { id: string; kind: 'text'; label: I18nString; default: string; placeholder?: string }
+  /** Colour swatches (value = hex colour). */
+  | { id: string; kind: 'swatch'; label: I18nString; options: { value: string; label: I18nString }[]; default: string };
 
 /** Shared parameter: rotates the device 90° and maps landscape images upright. */
 export const ORIENTATION_PARAM = {
@@ -76,6 +80,13 @@ export interface DeviceModule {
   category: DeviceCategory;
   /** Bounding box in centimetres: width, height, depth (upright orientation). */
   size: [number, number, number];
+  /**
+   * Size that depends on the parameters (layout, format…), for framing and
+   * layout. `y0` is the height of the box bottom (e.g. a poster on a wall).
+   */
+  sizeFor?: (params: Record<string, ParamValue>) => { size: [number, number, number]; y0?: number; focus?: [number, number, number] };
+  /** What the surfaces are: lit screens (default) or printed / lit materials. */
+  surfaceKind?: 'screen' | 'print';
   anchor?: 'center' | 'bottom';
   surfaces: SurfaceSlot[];
   finishes: DeviceFinish[];
@@ -90,6 +101,12 @@ export interface DeviceModule {
   /** Default yaw (radians) when the device is added. */
   yaw?: number;
   Component: FC<DeviceProps>;
+}
+
+/** Bounding box of a model for the given parameters. */
+export function sizeOf(model: DeviceModule, params: Record<string, ParamValue>): { size: [number, number, number]; y0: number; focus?: [number, number, number] } {
+  const s = model.sizeFor?.({ ...defaultParams(model), ...params });
+  return { size: s?.size ?? model.size, y0: s?.y0 ?? 0, focus: s?.focus };
 }
 
 export function defaultParams(model: DeviceModule): Record<string, ParamValue> {

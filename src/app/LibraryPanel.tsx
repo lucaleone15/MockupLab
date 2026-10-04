@@ -1,5 +1,24 @@
 import type { ReactNode } from 'react';
-import { Plus } from 'lucide-react';
+import {
+  BadgeCheck,
+  BookMarked,
+  BookOpenText,
+  Coffee,
+  Cylinder,
+  FileText,
+  Frame,
+  IdCard,
+  Mail,
+  Mails,
+  Newspaper,
+  Package,
+  Plus,
+  RectangleVertical,
+  Shirt,
+  ShoppingBag,
+  Wine,
+  type LucideIcon,
+} from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { modelsByCategory } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
@@ -16,6 +35,28 @@ const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   laptop: 'library.laptops',
   desktop: 'library.desktops',
   browser: 'library.browser',
+  print: 'library.print',
+  merch: 'library.merch',
+};
+
+/** Line icons for print and objects (no proportional silhouette makes sense there). */
+const OBJECT_ICONS: Record<string, LucideIcon> = {
+  'business-card': IdCard,
+  postcard: Mail,
+  flyer: FileText,
+  poster: Frame,
+  brochure: BookOpenText,
+  magazine: Newspaper,
+  book: BookMarked,
+  stationery: Mails,
+  badge: BadgeCheck,
+  'roll-up': RectangleVertical,
+  box: Package,
+  tube: Cylinder,
+  mug: Coffee,
+  bottle: Wine,
+  tote: ShoppingBag,
+  tshirt: Shirt,
 };
 
 const SHELL = 'fill-surface-4 stroke-fg-subtle';
@@ -23,6 +64,13 @@ const SCREEN = 'fill-surface-2';
 
 /** Line-art silhouette drawn from the model's real proportions. */
 function Silhouette({ model }: { model: DeviceModule }) {
+  const Icon = OBJECT_ICONS[model.id];
+  if (Icon)
+    return (
+      <span className="grid h-14 w-14 place-items-center text-fg-subtle">
+        <Icon size={30} strokeWidth={1.25} />
+      </span>
+    );
   const [w, h] = model.size;
   let art: ReactNode;
   if (model.category === 'phone' || model.category === 'tablet') {

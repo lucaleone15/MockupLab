@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ratioValue } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import { isLandscape } from '@/models/types';
+import { isLandscape, sizeOf } from '@/models/types';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type CameraPresetId, type CameraSettings, type SceneItem } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -51,7 +51,10 @@ export function lensFor(camera: THREE.PerspectiveCamera, settings: CameraSetting
 export function focusPoint(item: SceneItem, floorY: number): THREE.Vector3 {
   const model = getModel(item.modelId);
   let local: THREE.Vector3;
-  if (model.anchor === 'bottom') local = new THREE.Vector3(...(model.focus ?? model.view.target));
+  if (model.anchor === 'bottom') {
+    const sz = sizeOf(model, item.params);
+    local = new THREE.Vector3(...(sz.focus ?? model.focus ?? [0, sz.y0 + sz.size[1] / 2, 0]));
+  }
   else {
     const flat = item.pose === 'flat';
     const landscape = isLandscape(item.params);
@@ -86,14 +89,15 @@ export const CAMERA_PRESETS: Record<Exclude<CameraPresetId, 'custom'>, PresetDef
 /** Bounding box corners of an item in world space. */
 function itemCorners(item: SceneItem, floorY: number): THREE.Vector3[] {
   const model = getModel(item.modelId);
-  const [w, h, d] = model.size;
+  const { size, y0 } = sizeOf(model, item.params);
+  const [w, h, d] = size;
   const landscape = isLandscape(item.params) && model.anchor !== 'bottom';
   const flat = item.pose === 'flat' && model.anchor !== 'bottom';
   const fw = landscape ? h : w;
   const fh = landscape ? w : h;
   const box = flat
     ? { x: fw / 2, y0: 0, y1: d + 0.3, z: fh / 2 }
-    : { x: fw / 2, y0: 0, y1: fh, z: model.anchor === 'bottom' ? d / 2 : d / 2 + 0.3 };
+    : { x: fw / 2, y0, y1: y0 + fh, z: model.anchor === 'bottom' ? d / 2 : d / 2 + 0.3 };
   const m = new THREE.Matrix4().compose(
     new THREE.Vector3(item.position[0], item.position[1] + floorY, item.position[2]),
     new THREE.Quaternion().setFromEuler(new THREE.Euler(...item.rotation)),

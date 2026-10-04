@@ -1,5 +1,5 @@
 import { getModel } from '@/models/registry';
-import { isLandscape } from '@/models/types';
+import { isLandscape, sizeOf } from '@/models/types';
 import type { SceneItem, Vec3 } from '@/store/project';
 
 /*
@@ -11,7 +11,7 @@ const GAP = 4;
 
 export function footprint(item: Pick<SceneItem, 'modelId' | 'params' | 'pose' | 'scale'>): { w: number; d: number; h: number } {
   const model = getModel(item.modelId);
-  const [w, h, d] = model.size;
+  const [w, h, d] = sizeOf(model, item.params).size;
   const k = item.scale ?? 1;
   if (model.anchor === 'bottom') return { w: w * k, d: d * k, h: h * k };
   const landscape = isLandscape(item.params);

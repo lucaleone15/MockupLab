@@ -29,11 +29,8 @@ for (const m of models.filter((m) => !only || only.includes(m.id))) {
       if (finish) api.project.getState().updateItem(id, { finishId: finish });
       if (bg) api.project.getState().setBackground(bg);
       api.project.getState().setExport({ resolution: '1080', ratio, format: 'png' });
-      const item = api.project.getState().items[0];
-      const landscape = item.params.orientation === 'landscape';
-      const tall = landscape ? 1 / m.aspect < 1 : m.aspect < 1;
-      await api.importFromUrl(tall ? '/samples/sample-app.png' : '/samples/sample-web.png', 'sample');
-      await new Promise((res) => setTimeout(res, 900));
+      await api.loadSamples(id);
+      await new Promise((res) => setTimeout(res, 1600));
       const t0 = performance.now();
       const img = await api.renderImage();
       const buf = new Uint8Array(await img.blob.arrayBuffer());

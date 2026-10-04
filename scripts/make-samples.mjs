@@ -82,6 +82,73 @@ p.lead{font-size:20px;line-height:1.5;color:#55525c;margin-top:26px;max-width:54
 <div class="logos"><span>NORTHWIND</span><span>Lumen</span><span>KOTO</span><span>fieldnotes</span><span>ORBITAL</span><span>Maple&Co</span></div>
 </body></html>`;
 
+const base = `*{box-sizing:border-box;margin:0}body{overflow:hidden;font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}`;
+const poster = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:707px;height:1000px;background:#f1ebe0;color:#1d1a17;position:relative}
+.sun{position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#ff8a4c,#e2452c 70%);left:94px;top:150px}
+.wave{position:absolute;left:-40px;right:-40px;height:260px;top:520px;background:#1d1a17;border-radius:50% 50% 0 0}
+.wave2{position:absolute;left:-40px;right:-40px;height:420px;top:610px;background:#2f4a3b;border-radius:60% 40% 0 0}
+h1{position:absolute;left:56px;top:48px;font-size:96px;line-height:.9;letter-spacing:-4px;font-weight:800}
+h1 em{font-family:Georgia,serif;font-weight:400}
+.meta{position:absolute;left:56px;right:56px;bottom:56px;display:flex;justify-content:space-between;color:#f1ebe0;font-size:20px;font-weight:600}
+.meta b{display:block;font-size:44px;letter-spacing:-1px}
+</style></head><body><div class="sun"></div><div class="wave"></div><div class="wave2"></div>
+<h1>Solstice<br/><em>festival</em></h1><div class="meta"><div><b>21.06</b>Parc des Rives</div><div style="text-align:right"><b>12 artistes</b>Entrée libre</div></div></body></html>`;
+
+const cardFront = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:850px;height:550px;background:#1d1a17;color:#f1ebe0;position:relative}
+.mark{position:absolute;left:70px;top:70px;width:90px;height:90px;border-radius:50%;background:#ff5c35}
+.mark:after{content:"";position:absolute;inset:26px;border-radius:50%;background:#1d1a17}
+h1{position:absolute;left:70px;bottom:70px;font-size:64px;font-weight:800;letter-spacing:-2px}
+h1 em{font-family:Georgia,serif;font-weight:400;color:#ff5c35}
+</style></head><body><div class="mark"></div><h1>nora<em>studio</em></h1></body></html>`;
+
+const cardBack = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:850px;height:550px;background:#f1ebe0;color:#1d1a17;position:relative;padding:70px}
+h2{font-size:44px;font-weight:800;letter-spacing:-1px}
+p{font-size:24px;color:#5a544c;margin-top:6px}
+.c{position:absolute;left:70px;bottom:70px;font-size:22px;line-height:1.7}
+.dot{position:absolute;right:70px;bottom:70px;width:56px;height:56px;border-radius:50%;background:#ff5c35}
+</style></head><body><h2>Lina Moreau</h2><p>Directrice artistique</p>
+<div class="c">lina@norastudio.fr<br/>+33 6 12 34 56 78<br/>norastudio.fr</div><div class="dot"></div></body></html>`;
+
+const pattern = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:1000px;height:1000px;background:#f1ebe0;display:grid;grid-template-columns:repeat(4,1fr)}
+div{aspect-ratio:1;position:relative;overflow:hidden}
+div:nth-child(3n){background:#ff5c35}div:nth-child(4n+1){background:#2f4a3b}div:nth-child(5n+2){background:#1d1a17}
+div:before{content:"";position:absolute;inset:22%;border-radius:50%;background:#f1ebe0}
+div:nth-child(2n):before{border-radius:0 100% 0 100%;background:#ffb547}
+</style></head><body>${'<div></div>'.repeat(16)}</body></html>`;
+
+const label = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:900px;height:1000px;background:#f3eee4;color:#1d1a17;position:relative;text-align:center;padding-top:110px}
+small{letter-spacing:8px;font-size:22px;font-weight:700;color:#8a6a3a}
+h1{font-family:Georgia,serif;font-style:italic;font-weight:400;font-size:120px;margin-top:40px;letter-spacing:-3px}
+.line{width:120px;height:3px;background:#1d1a17;margin:46px auto}
+p{font-size:26px;letter-spacing:4px;font-weight:600}
+.y{position:absolute;left:0;right:0;bottom:110px;font-size:64px;font-weight:800;color:#8a6a3a}
+</style></head><body><small>DOMAINE DES RIVES</small><h1>Solstice</h1><div class="line"></div><p>CUVÉE D’ÉTÉ<br/>VIN DE FRANCE</p><div class="y">2025</div></body></html>`;
+
+const logo = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:900px;height:1000px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ff5c35}
+.mark{width:420px;height:420px;border-radius:50%;background:#ff5c35;position:relative}
+.mark:after{content:"";position:absolute;inset:120px;border-radius:50%;background:#f1ebe0}
+.mark:before{content:"";position:absolute;left:-60px;right:-60px;top:190px;height:40px;background:#1d1a17;transform:rotate(-18deg)}
+h1{font-size:120px;font-weight:800;letter-spacing:-5px;margin-top:40px;color:#1d1a17;-webkit-text-stroke:0}
+h1 em{font-family:Georgia,serif;font-weight:400;color:#ff5c35}
+</style></head><body><div class="mark"></div><h1>sol<em>stice</em></h1></body></html>`;
+
+const spread = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:1400px;height:917px;background:#f6f2ea;color:#1d1a17;display:grid;grid-template-columns:1fr 1fr}
+.l{background:linear-gradient(160deg,#ff8a4c,#c2304a);position:relative}
+.l:after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;background:#f6f2ea;opacity:.18;right:-60px;bottom:-80px}
+.r{padding:90px 80px}
+small{letter-spacing:6px;font-weight:700;color:#c2304a;font-size:16px}
+h1{font-family:Georgia,serif;font-weight:400;font-size:78px;line-height:.95;margin:22px 0 30px;letter-spacing:-2px}
+p{font-size:19px;line-height:1.65;color:#4a443d;columns:2;column-gap:36px}
+</style></head><body><div class="l"></div><div class="r"><small>DOSSIER · N°12</small><h1>Le design qui ralentit</h1>
+<p>${'Dans un monde saturé d’images, certains studios choisissent la lenteur : moins de projets, plus de soin, et des objets qui durent. Nous avons rencontré six d’entre eux pour comprendre comment ils travaillent. '.repeat(4)}</p></div></body></html>`;
+
 mkdirSync('public/samples', { recursive: true });
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
@@ -90,5 +157,20 @@ await page.screenshot({ path: 'public/samples/sample-app.png' });
 const wide = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
 await wide.setContent(web);
 await wide.screenshot({ path: 'public/samples/sample-web.png' });
+const shots = [
+  ['sample-poster.png', poster, 707, 1000, 2, false],
+  ['sample-card-front.png', cardFront, 850, 550, 2, false],
+  ['sample-card-back.png', cardBack, 850, 550, 2, false],
+  ['sample-pattern.png', pattern, 1000, 1000, 2, false],
+  ['sample-label.png', label, 900, 1000, 1.5, false],
+  ['sample-logo.png', logo, 900, 1000, 1.5, true],
+  ['sample-spread.png', spread, 1400, 917, 2, false],
+];
+for (const [name, html, w, h, dpr, transparent] of shots) {
+  const pg = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+  await pg.setContent(html);
+  await pg.screenshot({ path: `public/samples/${name}`, omitBackground: transparent });
+  await pg.close();
+}
 await browser.close();
-console.log('wrote public/samples/sample-app.png, sample-web.png');
+console.log('wrote samples');
