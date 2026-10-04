@@ -37,6 +37,23 @@ function sampleName(modelId: string, slotId: string, aspect: number) {
 
 const cache = new Map<string, Promise<string>>();
 
+/** Asset id of a bundled sample (loaded once). */
+export function sampleAsset(name: string): Promise<string> {
+  let p = cache.get(name);
+  if (!p) {
+    p = (async () => {
+      const blob = await (await fetch(`${import.meta.env.BASE_URL}samples/${name}`)).blob();
+      const asset = await fileToAsset(blob, name);
+      useAssets.getState().add(asset);
+      return asset.id;
+    })();
+    cache.set(name, p);
+  }
+  return p;
+}
+
+export const isSampleAsset = (assetId: string | null | undefined) => !!assetId && !!useAssets.getState().assets[assetId]?.name.startsWith('sample-');
+
 /** Fills every face of a device with a matching sample (one asset per file, shared). */
 export async function loadSamples(itemId: string) {
   const state = useProject.getState();
@@ -49,18 +66,7 @@ export async function loadSamples(itemId: string) {
     const current = item.surfaces[slot.id]?.assetId;
     if (current && !useAssets.getState().assets[current]?.name.startsWith('sample-')) continue;
     const aspect = landscape ? 1 / slot.aspect : slot.aspect;
-    const name = sampleName(model.id, slot.id, aspect);
-    let p = cache.get(name);
-    if (!p) {
-      p = (async () => {
-        const blob = await (await fetch(`${import.meta.env.BASE_URL}samples/${name}`)).blob();
-        const asset = await fileToAsset(blob, name);
-        useAssets.getState().add(asset);
-        return asset.id;
-      })();
-      cache.set(name, p);
-    }
-    const assetId = await p;
+    const assetId = await sampleAsset(sampleName(model.id, slot.id, aspect));
     useProject.getState().setSurface(itemId, slot.id, { assetId });
   }
 }

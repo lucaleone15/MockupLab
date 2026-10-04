@@ -6,6 +6,7 @@ import { defaultParams, type DeviceModule, type ParamValue } from '@/models/type
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
 import { arrangeItems, besideOthers, constrainItems } from '@/lib/arrange';
 import { useAssets } from './assets';
+import type { Quad } from '@/photo/homography';
 
 /* ------------------------------------------------------------------ types */
 
@@ -211,8 +212,56 @@ export interface ExportSettings {
   quality: number;
 }
 
+/** A target area of a photo (a screen, a sheet of paper) that receives a design in perspective. */
+export interface PhotoZone {
+  id: string;
+  name: string;
+  /** Screens add the photo's reflections; prints also take its shading. Sets the defaults below. */
+  kind: 'screen' | 'print';
+  /** Normalised photo coordinates (0..1), TL, TR, BR, BL of the design. */
+  corners: Quad;
+  /** Width / height of the real surface (estimated from the perspective, or set by the template). */
+  aspect: number;
+  /** The ratio follows the corners (re-estimated when they move); off once chosen by hand or by a template. */
+  aspectAuto: boolean;
+  surface: SurfaceBinding;
+  /** Corner rounding, fraction of the shorter side. */
+  radius: number;
+  /** 0..1: multiply by the photo's shading (paper folds, shadows). */
+  shading: number;
+  /** 0..1: add the photo's reflections and highlights (screen blend). */
+  reflection: number;
+  /** 0.5..1.5 */
+  brightness: number;
+  /** -1 (softer, to match a blurry photo) .. 1 (crisper). */
+  sharpness: number;
+  /** 0..1 film grain matching the photo. */
+  noise: number;
+  /** Edge softness in pixels. */
+  feather: number;
+  /** 0..1: tint the design with the photo's ambient light. */
+  match: number;
+  /** 0..1: keeps in front what clearly differs from the surface (fingers on a screen). 0 = off. */
+  occlusion: number;
+  visible: boolean;
+}
+
+export interface PhotoScene {
+  /** The photo (an asset). */
+  assetId: string | null;
+  /** Bundled or saved template the photo comes from. */
+  templateId: string | null;
+  zones: PhotoZone[];
+  selectedZoneId: string | null;
+}
+
+export type WorkMode = 'scene' | 'photo';
+
 export interface Project {
-  version: 4;
+  version: 5;
+  /** 3D scene or photo mock-up. */
+  mode: WorkMode;
+  photo: PhotoScene;
   brand: Brand;
   name: string;
   items: SceneItem[];
@@ -232,6 +281,29 @@ export const DEFAULT_SURFACE: SurfaceBinding = { assetId: null, fit: 'cover', al
 export const DEFAULT_SCREEN: ScreenSettings = { brightness: 1, reflection: 0.5 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
+
+export const EMPTY_PHOTO: PhotoScene = { assetId: null, templateId: null, zones: [], selectedZoneId: null };
+
+/** Blend settings that suit a kind of zone. */
+export function zoneDefaults(kind: PhotoZone['kind']) {
+  return kind === 'screen'
+    ? { radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0 }
+    : { radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0 };
+}
+
+export function makeZone(init: Partial<PhotoZone> & Pick<PhotoZone, 'corners' | 'aspect'>): PhotoZone {
+  const kind = init.kind ?? 'screen';
+  return {
+    id: uid(),
+    name: '',
+    kind,
+    surface: { ...DEFAULT_SURFACE },
+    ...zoneDefaults(kind),
+    aspectAuto: true,
+    visible: true,
+    ...init,
+  };
+}
 
 export function makeItem(model: DeviceModule): SceneItem {
   return {
@@ -282,7 +354,9 @@ export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 5
 export function initialProject(): Project {
   const item = makeItem(getModel('phone-pro'));
   return {
-    version: 4,
+    version: 5,
+    mode: 'scene',
+    photo: structuredClone(EMPTY_PHOTO),
     brand: structuredClone(DEFAULT_BRAND),
     name: 'Untitled',
     items: [item],
@@ -336,10 +410,23 @@ interface ProjectActions {
   resetScene: () => void;
   /** Everything back to a fresh project (undoable). */
   resetAll: () => void;
+  /** Photo mode: removes the photo and its zones. */
+  resetPhoto: () => void;
   setExport: (patch: Partial<ExportSettings>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
   replaceModel: (itemId: string, modelId: string) => void;
+  setMode: (mode: WorkMode) => void;
+  /**
+   * Sets the photo and its zones (own photo: no zones; template: its zones).
+   * Designs already placed carry over to the new zones, in order.
+   */
+  setPhoto: (assetId: string, templateId: string | null, zones: PhotoZone[]) => void;
+  addZone: (zone: PhotoZone) => void;
+  updateZone: (id: string, patch: Partial<PhotoZone> | ((z: PhotoZone) => Partial<PhotoZone>)) => void;
+  setZoneSurface: (id: string, patch: Partial<SurfaceBinding>) => void;
+  removeZone: (id: string) => void;
+  selectZone: (id: string | null) => void;
 }
 
 export type ProjectState = Project & ProjectActions;
@@ -366,6 +453,8 @@ function burst<T extends unknown[]>(fn: (...args: T) => void, ms = 450) {
 
 const historyOf = (s: ProjectState): Project => ({
   version: s.version,
+  mode: s.mode,
+  photo: s.photo,
   brand: s.brand,
   name: s.name,
   items: s.items,
@@ -463,7 +552,11 @@ export const useProject = create<ProjectState>()(
       },
       resetAll: () => {
         breakBurst();
-        set({ ...initialProject() });
+        set((s) => ({ ...initialProject(), mode: s.mode }));
+      },
+      resetPhoto: () => {
+        breakBurst();
+        set({ photo: structuredClone(EMPTY_PHOTO) });
       },
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
       setParam: (itemId, id, value) =>
@@ -507,6 +600,38 @@ export const useProject = create<ProjectState>()(
           ),
         }));
       },
+      setMode: (mode) => {
+        breakBurst();
+        set({ mode });
+      },
+      setPhoto: (assetId, templateId, zones) => {
+        breakBurst();
+        set((s) => {
+          const prev = s.photo.zones;
+          const next = zones.map((z, i) => (prev[i]?.surface.assetId ? { ...z, surface: { ...prev[i].surface } } : z));
+          return { photo: { assetId, templateId, zones: next, selectedZoneId: next[0]?.id ?? null } };
+        });
+      },
+      addZone: (zone) => {
+        breakBurst();
+        set((s) => ({ photo: { ...s.photo, zones: [...s.photo.zones, zone], selectedZoneId: zone.id } }));
+      },
+      updateZone: (id, patch) =>
+        set((s) => ({
+          photo: { ...s.photo, zones: s.photo.zones.map((z) => (z.id === id ? { ...z, ...(typeof patch === 'function' ? patch(z) : patch) } : z)) },
+        })),
+      setZoneSurface: (id, patch) =>
+        set((s) => ({
+          photo: { ...s.photo, zones: s.photo.zones.map((z) => (z.id === id ? { ...z, surface: { ...z.surface, ...patch } } : z)) },
+        })),
+      removeZone: (id) => {
+        breakBurst();
+        set((s) => {
+          const zones = s.photo.zones.filter((z) => z.id !== id);
+          return { photo: { ...s.photo, zones, selectedZoneId: s.photo.selectedZoneId === id ? (zones[zones.length - 1]?.id ?? null) : s.photo.selectedZoneId } };
+        });
+      },
+      selectZone: (id) => set((s) => ({ photo: { ...s.photo, selectedZoneId: id } })),
     }),
     {
       limit: 100,

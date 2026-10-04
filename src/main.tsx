@@ -33,7 +33,12 @@ if (import.meta.env.DEV) {
     import('./lib/overlays'),
     import('./store/ui'),
     import('./store/assets'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as]) => {
+    import('./photo/templates'),
+    import('./photo/importPhoto'),
+    import('./photo/detect'),
+    import('./photo/source'),
+    import('./photo/editing'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -48,6 +53,17 @@ if (import.meta.env.DEV) {
         overlays: ov,
         ui: ui.useUi,
         assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
+        photo: {
+          templates: pt.PHOTO_TEMPLATES,
+          applyTemplate: pt.applyTemplate,
+          saveCurrentAsTemplate: pt.saveCurrentAsTemplate,
+          loadSamples: pi.loadPhotoSamples,
+          importIntoPhoto: pi.importIntoPhoto,
+          detectQuad: pd.detectQuad,
+          assetPixels: ps.assetPixels,
+          detectZoneAt: pe2.detectZoneAt,
+          createZone: pe2.createZone,
+        },
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),

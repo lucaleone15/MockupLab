@@ -1,7 +1,7 @@
 # MockupLab
 
 **Générateur de mock-ups 3D gratuit, open source et 100 % local.**
-Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vraie image (PNG, JPG, WebP) jusqu'en 4K. Aucun serveur, aucun upload : tes images ne quittent jamais ton navigateur.
+Glisse un screenshot, obtiens un rendu d'appareil réaliste — en 3D ou posé en perspective sur une vraie photo — et exporte-le en vraie image (PNG, JPG, WebP) jusqu'en 4K. Aucun serveur, aucun upload : tes images ne quittent jamais ton navigateur.
 
 > *English summary: free, open-source, in-browser 3D mock-up generator. Drop a screenshot, get a photoreal device render, export PNG/JPG/WebP up to 4K. No backend, no upload. UI available in French and English.*
 
@@ -37,7 +37,8 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | **Mur commun** pour affiches, TV et panneaux : ils s'y accrochent, rien ne peut passer derrière | ✅ |
 | **Réinitialiser** (bouton ↺ en haut) : la scène seule ou tout le projet, annulable avec ⌘Z | ✅ |
 | Glisser-déposer (une image déposée sur un appareil va sur son écran), coller (⌘V), undo/redo, raccourcis (touche ?), thème clair/sombre, FR/EN | ✅ |
-| Mode photo (perspective sur 4 coins) | 🔜 jalon f |
+| **Mode photo** : ton design posé en perspective sur une vraie photo — 4 clics avec loupe de précision, ou **détection automatique** d'un écran / d'une feuille au double-clic ; plusieurs zones par photo ; format réel estimé d'après la perspective ; fusion avec la photo (reflets, ombres, couleur de la lumière, grain, netteté, bords doux) ; **premier plan préservé** (doigts devant un écran) ; coins au pixel près (flèches, coordonnées) ; export à la résolution de la photo | ✅ |
+| **Modèles photo** : 5 photos CC0 prêtes à l'emploi (portable au bureau, tablette + téléphone, téléphone en main, cadres au mur, carte) ; enregistre tes propres modèles (photo + zones + réglages) dans le navigateur, exporte-les / importe-les en fichier `.mockuplab-template.json` | ✅ |
 | Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
 | Vidéo / GIF (turntable, défilement) | 🔜 jalon h |
 | Import de modèles `.glb` | 🔜 jalon i |
@@ -63,6 +64,14 @@ npm run preview    # sert le build sur http://localhost:4173/MockupLab/
 
 Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de l'image, par ex. **1179 × 2556** pour Phone Pro, **3024 × 1964** pour Laptop 14, **1440 × 900** pour le navigateur). Les captures plus longues sont cadrées par le haut ; le curseur *Position* fait défiler le cadrage. Les réglages propres à chaque appareil (orientation, ouverture, encoche, thème du navigateur…) apparaissent dans la section *Appareil*.
 
+### Mode photo
+
+1. Bascule sur **Photo** dans la barre du haut.
+2. Choisis une photo fournie dans la bibliothèque, ou **Importer ma photo** (écran, affiche, carte… prise en perspective).
+3. Indique la zone : **double-clique** au milieu d'un écran ou d'une feuille pour la détecter, ou clique ses **4 coins** (touche **N**) — la loupe aide à viser au pixel près. Glisse ensuite les coins ou les côtés, ou ajuste-les aux flèches (Maj : 10 px).
+4. Glisse ton design sur la zone (ou colle-le). Règle la fusion dans le panneau de droite : *Reflets* pour un écran éteint (les reflets de la photo passent par-dessus ton design), *Ombres* pour du papier (plis, dégradés de lumière), *Premier plan* si des doigts ou un objet passent devant.
+5. **Enregistrer comme modèle** pour réutiliser la photo et ses zones ; **Exporter** sort l'image à la résolution de la photo.
+
 ### Raccourcis
 
 | Action | Raccourci |
@@ -78,6 +87,8 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 | Exporter | ⌘E / Ctrl+E |
 | Annuler / rétablir | ⌘Z / ⇧⌘Z (Ctrl+Z / Ctrl+Y) |
 | Recentrer la vue | F |
+| Mode photo : nouvelle zone (4 clics) / annuler | N / Échap |
+| Mode photo : ajuster le coin actif (Maj : 10 px) | Flèches |
 
 ## Comment ça marche
 
@@ -91,6 +102,7 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Éclairage** : chaque ambiance est un environnement procédural (*Lightformers*) + une lumière clé à ombres douces (VSM) ; l'environnement tourne avec la direction de la lumière pour garder des reflets cohérents.
 - **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.
 - **Profondeur de champ** : modèle de lentille mince par accumulation (64 échantillons à l'export, progressif dans l'aperçu) — physiquement juste et compatible avec le rendu fidèle des écrans.
+- **Mode photo** : homographie carré unité → quadrilatère (forme fermée de Heckbert) ; un shader WebGL2 renvoie chaque pixel de sortie dans le repère de la zone, échantillonne le design (mipmaps + anisotropie), découpe un rectangle arrondi anti-aliasé, puis le fond dans la photo en lumière linéaire : ombres (multiplication par l'éclairage adouci de la surface, qui ne fait qu'assombrir), reflets (*screen* de ce qui dépasse le noir de l'écran), teinte ambiante, grain. Le format réel de la zone est estimé par la méthode de Zhang & He (focale déduite des points de fuite). La détection au double-clic fait croître une région de couleur proche (tolérance croissante, arrêtée avant qu'elle ne déborde), puis ajuste un quadrilatère : enveloppe convexe → 4 coins par perte d'aire minimale → droites ajustées sur les parties rectilignes des bords (les coins arrondis des écrans sont ignorés).
 - **Export** : rendu hors écran à 2× la taille finale, découpé en tuiles (`camera.setViewOffset`) avec marges de recouvrement pour éviter les coutures, puis réduit. Le fond est peint par le même code dans l'aperçu et dans l'export (`src/lib/background.ts`), avec un léger dithering anti-banding sur les dégradés.
 
 ## Structure du code
@@ -160,6 +172,8 @@ node scripts/check-composition.mjs             # multi-appareils, textes, sauveg
 node scripts/scenes.mjs                        # scénarios de scène (décors, lumières, caméra)
 node scripts/check-walls.mjs                   # mur commun : rien ne passe derrière, glisser le long du mur
 node scripts/check-switch.mjs                  # changement d'appareil, réinitialisation + annulation
+node scripts/check-photo.mjs                   # mode photo : modèles, détection, export pleine résolution
+node scripts/check-photo-ui.mjs                # mode photo : 4 clics, double-clic, coins, modèles, rechargement
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```
@@ -179,7 +193,9 @@ Tous les environnements et matières fournis sont sous licence **CC0 1.0** (doma
 - **HDRI** — [Poly Haven](https://polyhaven.com) : `photo_studio_loft_hall` (lumière et reflets de la mise en scène « table »).
 - **Textures** — [ambientCG](https://ambientcg.com) : `Marble012`, `Marble016`, `Travertine009`, `Terrazzo009`, `Concrete034`, `Fabric036` ; [Poly Haven](https://polyhaven.com) : `oak_veneer_04`, `walnut_veneer`.
 
-Le script `python3 scripts/fetch_assets.py` les télécharge et les optimise à nouveau (redimensionnement, compression).
+- **Photos des modèles** — [Wikimedia Commons](https://commons.wikimedia.org), toutes en CC0 : *Typing on a laptop* (Simon Hattinga Verschure), *Lauren Mancke 2016-05-27* (Lauren Mancke), *Phone overseas.* (Jef Pawlikowski), *Framed wall art* (Crew), *Thank you!* (Aaron Burden). Redimensionnées à 2400 px dans `public/assets/photo/`.
+
+Le script `python3 scripts/fetch_assets.py` télécharge à nouveau le HDRI et les textures et les optimise (redimensionnement, compression).
 
 ## Mentions légales
 
