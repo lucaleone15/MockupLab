@@ -159,6 +159,12 @@ export function presetDirection(preset: CameraPresetId, item: SceneItem | null):
 
 /* ------------------------------------------------------------ rig */
 
+/** Saves / restores the live view (an orbited view is not part of the project). */
+export const cameraHandle: {
+  save?: () => { position: THREE.Vector3; target: THREE.Vector3; fov: number };
+  restore?: (v: { position: THREE.Vector3; target: THREE.Vector3; fov: number }) => void;
+} = {};
+
 export function CameraRig({ floorY }: { floorY: number }) {
   useAdaptiveNear();
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
@@ -226,6 +232,23 @@ export function CameraRig({ floorY }: { floorY: number }) {
     controls.current?.update();
     invalidate();
   }, [settings.focal, camera, invalidate]);
+
+  useEffect(() => {
+    cameraHandle.save = () => ({ position: camera.position.clone(), target: (controls.current?.target ?? cameraState.target).clone(), fov: camera.fov });
+    cameraHandle.restore = (v) => {
+      camera.position.copy(v.position);
+      camera.fov = v.fov;
+      camera.updateProjectionMatrix();
+      controls.current?.target.copy(v.target);
+      cameraState.target.copy(v.target);
+      controls.current?.update();
+      invalidate();
+    };
+    return () => {
+      cameraHandle.save = undefined;
+      cameraHandle.restore = undefined;
+    };
+  }, [camera, invalidate]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;

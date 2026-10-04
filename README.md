@@ -39,7 +39,8 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste — en 3D ou posé e
 | Glisser-déposer (une image déposée sur un appareil va sur son écran), coller (⌘V), undo/redo, raccourcis (touche ?), thème clair/sombre, FR/EN | ✅ |
 | **Mode photo** : ton design posé en perspective sur une vraie photo — 4 clics avec loupe de précision, ou **détection automatique** d'un écran / d'une feuille / d'un cadre au double-clic, avec plusieurs **propositions** à choisir d'un clic (écran ou verre entier, affiche ou cadre…) ; plusieurs zones par photo ; format réel estimé d'après la perspective ; fusion avec la photo (reflets, ombres, couleur de la lumière, grain, netteté, bords doux) ; **contenu d'origine masqué** (écran allumé, image d'un cadre, texte imprimé : seule la lumière de la photo est gardée) ; **premier plan préservé** (doigts, téléphone tenu devant un écran — activé automatiquement) ; débord réglable ; coins au pixel près (flèches, coordonnées) ; export à la résolution de la photo | ✅ |
 | **Modèles photo** : 5 photos CC0 prêtes à l'emploi (portable au bureau, tablette + téléphone, téléphone en main, cadres au mur, carte) ; enregistre tes propres modèles (photo + zones + réglages) dans le navigateur, exporte-les / importe-les en fichier `.mockuplab-template.json` | ✅ |
-| Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
+| **Variantes** : 6, 9 ou 12 mises en scène générées à partir de ta scène (décor, fond, lumière, angle, finition — tu choisis ce qui varie), galerie pour sélectionner, agrandir, **comparer** deux variantes, **affiner** autour de celle qui te plaît, régénérer en gardant la sélection, appliquer à la scène (annulable) ; export de la sélection en **ZIP** | ✅ |
+| **Traitement par lot** : plusieurs designs passés sur le même écran (ou la même zone d'une photo), avec la scène actuelle ou chaque variante sélectionnée — un ZIP de mock-ups | ✅ |
 | Vidéo / GIF (turntable, défilement) | 🔜 jalon h |
 | Import de modèles `.glb` | 🔜 jalon i |
 
@@ -72,6 +73,11 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 4. Glisse ton design sur la zone (ou colle-le). Règle la fusion dans le panneau de droite : *Reflets* pour un écran éteint (les reflets de la photo passent par-dessus ton design), *Ombres* pour du papier (plis, dégradés de lumière), *Premier plan* si des doigts ou un objet passent devant. *Surface d'origine* : en **Auto**, si la photo montre déjà quelque chose à cet endroit (écran allumé, affiche, texte), ce contenu est masqué et seule la lumière de la photo est gardée ; sur une surface vierge, ses reflets et ses détails passent sur ton design.
 5. **Enregistrer comme modèle** pour réutiliser la photo et ses zones ; **Exporter** sort l'image à la résolution de la photo.
 
+### Variantes et lots
+
+- **Variantes** (bouton en haut, mode 3D) : choisis ce qui peut varier (décor, fond, lumière, angle, finition) et combien de variantes. Clique les aperçus pour les sélectionner ; survole-en un pour l'agrandir, **affiner** (des variations proches de celle-ci) ou l'**utiliser** comme scène. Avec deux sélectionnées, **Comparer** les met côte à côte. *Exporter* sort la sélection au format et à la taille de l'onglet Export (un ZIP s'il y en a plusieurs). Ta scène n'est jamais modifiée tant que tu ne cliques pas *Utiliser* (et ⌘Z revient en arrière).
+- **Lot** (icône de calques en haut) : glisse plusieurs images ; chacune passe sur l'écran de l'appareil sélectionné (ou dans la zone sélectionnée en mode photo), avec la scène actuelle ou avec chacune des variantes sélectionnées. Tout part dans un ZIP.
+
 ### Raccourcis
 
 | Action | Raccourci |
@@ -103,6 +109,7 @@ Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de 
 - **Réflexion au sol** : miroir planaire avec plan de coupe oblique ; le reflet s'estompe selon la hauteur réelle du point reflété au-dessus du sol (lue dans la profondeur), comme sur une pierre polie.
 - **Profondeur de champ** : modèle de lentille mince par accumulation (64 échantillons à l'export, progressif dans l'aperçu) — physiquement juste et compatible avec le rendu fidèle des écrans.
 - **Mode photo** : homographie carré unité → quadrilatère (forme fermée de Heckbert) ; un shader WebGL2 renvoie chaque pixel de sortie dans le repère de la zone, échantillonne le design (mipmaps + anisotropie), découpe un rectangle arrondi anti-aliasé, puis le fond dans la photo en lumière linéaire : ombres (multiplication par l'éclairage adouci de la surface, qui ne fait qu'assombrir), reflets (*screen* de ce qui dépasse le noir de l'écran), teinte ambiante, grain. Le format réel de la zone est estimé par la méthode de Zhang & He (focale déduite des points de fuite). La détection au double-clic combine deux sources de candidats — une région de couleur proche qui croît autour du clic, et des quadrilatères formés par les droites de l'image (transformée de Hough votée par la direction du gradient, droites globales et proches du clic) — puis les note : part de chaque côté posée sur un vrai bord, régularité de la bande juste à l'extérieur (bordure, cadre, mur), cohérence des bandes intérieure et extérieure, vraisemblance géométrique d'un rectangle en perspective. Entre deux zones emboîtées, un anneau uniforme (bordure d'écran, cadre) fait préférer l'intérieur ; un anneau chargé (contenu d'une page) fait préférer l'extérieur. Les meilleurs candidats sont recalés au sous-pixel et proposés dans l'ordre. Pour masquer le contenu d'origine, l'éclairage de la surface est modélisé par une fonction quadratique du log de la luminance, ajustée de façon robuste (Tukey) : le contenu est rejeté comme aberrant, seule la lumière reste ; une mesure des détails fins et de la couleur décide si la surface est vierge.
+- **Variantes et lots** : une variante est un « look » (fond, décor, lumière, caméra, sol, angle et finition de chaque appareil) tiré d'une graine. Les rendus se font dans un bac à sable : le projet est modifié temporairement hors historique et hors sauvegarde automatique, chaque look est préchargé (matières, HDRI, motifs) puis rendu par le moteur d'export, et le projet comme la vue de la caméra sont restaurés à l'identique. Le ZIP est écrit sans dépendance (`src/lib/zip.ts`, entrées stockées : les images sont déjà compressées).
 - **Export** : rendu hors écran à 2× la taille finale, découpé en tuiles (`camera.setViewOffset`) avec marges de recouvrement pour éviter les coutures, puis réduit. Le fond est peint par le même code dans l'aperçu et dans l'export (`src/lib/background.ts`), avec un léger dithering anti-banding sur les dégradés.
 
 ## Structure du code
@@ -175,6 +182,8 @@ node scripts/check-switch.mjs                  # changement d'appareil, réiniti
 node scripts/check-photo.mjs                   # mode photo : modèles, détection, export pleine résolution
 node scripts/check-photo-ui.mjs                # mode photo : 4 clics, double-clic, coins, modèles, rechargement
 PHOTOS='[["photo.jpg",[0.5,0.4]]]' node scripts/check-photo-own.mjs   # tes photos : détection au point donné, export
+node scripts/check-variants.mjs                # variantes : aperçus, projet intact, affiner, comparer, ZIP, lot
+node scripts/check-batch-photo.mjs             # lot en mode photo
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```

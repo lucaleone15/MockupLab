@@ -34,36 +34,19 @@ export function download(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-/** Renders the current composition and returns the encoded image. */
-export async function renderImage(): Promise<{ blob: Blob; width: number; height: number; filename: string }> {
+/** Renders the current 3D composition (background, scene, text layers) at the given size. */
+export async function composeScene(o: { width: number; height: number; supersample?: number; samples?: number; onProgress?: (done: number, total: number) => void; opaque?: boolean }) {
   const project = useProject.getState();
-  if (project.mode === 'photo') {
-    const r = await renderPhotoImage();
-    if (r.blob.type === (FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0]).mime) return r;
-    toast.info(t('export.webpFallback'));
-    const blob = await toBlob(r.canvas, 'image/png', 1);
-    return { ...r, blob, filename: r.filename.replace(/\.[a-z]+$/, '.png') };
-  }
-  const settings = project.export;
-  const { width, height } = outputSize(settings);
-  const format = FORMATS.find((f) => f.id === settings.format) ?? FORMATS[0];
-
-  // With depth of field, lens samples already anti-alias (each one is sub-pixel jittered).
+  const { width, height } = o;
   const dof = project.camera.dof && project.camera.aperture > 0;
   const { canvas: scene, tiles } = await renderFrame({
     width,
     height,
-    supersample: dof ? 1 : supersampleFor(width, height),
-    samples: dof ? 64 : 1,
-    onProgress: dof
-      ? (done, total) => {
-          // Only while an export is running (renderImage is also used by scripts).
-          if (useUi.getState().exporting) useUi.getState().setExporting(t('export.rendering', { w: width, h: height }) + ` ${Math.round((done / total) * 100)} %`);
-        }
-      : undefined,
+    // With depth of field, lens samples already anti-alias (each one is sub-pixel jittered).
+    supersample: dof ? 1 : (o.supersample ?? supersampleFor(width, height)),
+    samples: dof ? (o.samples ?? 64) : 1,
+    onProgress: dof ? o.onProgress : undefined,
   });
-  if (tiles > 16) toast.info(t('export.tiles', { n: tiles }));
-
   const out = document.createElement('canvas');
   out.width = width;
   out.height = height;
@@ -75,7 +58,7 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
     await prepareBackground(project.background);
     paintBackground(ctx, project.background, width, height);
     if (project.background.kind !== 'solid') dither(ctx, width, height);
-  } else if (format.id === 'jpeg') {
+  } else if (o.opaque) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
   }
@@ -83,18 +66,58 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   // Titles, captions and logos on top.
   await prepareOverlays(project.overlays, project.brand);
   paintOverlays(ctx, project.overlays, width, height, project.brand);
+  return { canvas: out, tiles };
+}
 
-  let blob = await toBlob(out, format.mime, settings.quality);
+/** Encodes a canvas in the export format (PNG when the browser cannot write WebP). */
+export async function encodeCanvas(canvas: HTMLCanvasElement) {
+  const settings = useProject.getState().export;
+  const format = FORMATS.find((f) => f.id === settings.format) ?? FORMATS[0];
+  let blob = await toBlob(canvas, format.mime, settings.quality);
   let ext = format.ext;
   if (blob.type !== format.mime) {
     toast.info(t('export.webpFallback'));
-    blob = await toBlob(out, 'image/png', 1);
+    blob = await toBlob(canvas, 'image/png', 1);
     ext = 'png';
   }
+  return { blob, ext };
+}
+
+/** A file-name friendly version of a label. */
+export const slugify = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** Renders the current composition and returns the encoded image. */
+export async function renderImage(): Promise<{ blob: Blob; width: number; height: number; filename: string }> {
+  const project = useProject.getState();
+  if (project.mode === 'photo') {
+    const r = await renderPhotoImage();
+    if (r.blob.type === (FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0]).mime) return r;
+    toast.info(t('export.webpFallback'));
+    const blob = await toBlob(r.canvas, 'image/png', 1);
+    return { ...r, blob, filename: r.filename.replace(/\.[a-z]+$/, '.png') };
+  }
+  const { width, height } = outputSize(project.export);
+  const { canvas, tiles } = await composeScene({
+    width,
+    height,
+    opaque: project.export.format === 'jpeg',
+    onProgress: (done, total) => {
+      // Only while an export is running (renderImage is also used by scripts).
+      if (useUi.getState().exporting) useUi.getState().setExporting(t('export.rendering', { w: width, h: height }) + ` ${Math.round((done / total) * 100)} %`);
+    },
+  });
+  if (tiles > 16) toast.info(t('export.tiles', { n: tiles }));
+  const { blob, ext } = await encodeCanvas(canvas);
   const item = project.items.find((i) => i.id === project.selectedId) ?? project.items[0];
   const slug =
     project.name && project.name !== 'Untitled'
-      ? project.name.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'mockup'
+      ? slugify(project.name) || 'mockup'
       : item
         ? getModel(item.modelId).id
         : 'scene';

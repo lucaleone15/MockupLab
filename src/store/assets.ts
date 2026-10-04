@@ -17,11 +17,26 @@ export interface Asset {
 interface AssetState {
   assets: Record<string, Asset>;
   add: (asset: Asset) => void;
+  /** Forgets temporary assets (batch inputs). */
+  remove: (ids: string[]) => void;
 }
 
 export const useAssets = create<AssetState>((set) => ({
   assets: {},
   add: (asset) => set((s) => ({ assets: { ...s.assets, [asset.id]: asset } })),
+  remove: (ids) =>
+    set((s) => {
+      const assets = { ...s.assets };
+      for (const id of ids) {
+        const a = assets[id];
+        if (!a) continue;
+        URL.revokeObjectURL(a.url);
+        textures.get(id)?.dispose();
+        textures.delete(id);
+        delete assets[id];
+      }
+      return { assets };
+    }),
 }));
 
 /* ------------------------------------------------------------ textures */

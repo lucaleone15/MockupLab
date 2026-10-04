@@ -169,6 +169,16 @@ export async function restoreProject(): Promise<boolean> {
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined;
+let paused = false;
+
+/** Suspends autosave while the project is changed temporarily (variants, batches); resuming saves. */
+export function pauseAutosave(v: boolean) {
+  paused = v;
+  if (!v) {
+    clearTimeout(timer);
+    timer = setTimeout(() => void save().catch(() => undefined), 700);
+  }
+}
 
 async function save() {
   const project = snapshot();
@@ -188,6 +198,7 @@ async function save() {
 /** Saves shortly after every change. */
 export function startAutosave() {
   const schedule = () => {
+    if (paused) return;
     clearTimeout(timer);
     timer = setTimeout(() => void save().catch(() => undefined), 700);
   };
