@@ -10,6 +10,7 @@ import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { CompositionSection } from './panels/CompositionSection';
 import { ScenePanel } from './panels/ScenePanel';
+import { ModelSwitcher } from './ModelSwitcher';
 import { TextPanel } from './panels/TextPanel';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
@@ -217,7 +218,8 @@ function DeviceSection() {
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
 
   return (
-    <Section title={t('props.device')} aside={<span className="text-[12px] text-fg-subtle">{tr(model.name)}</span>}>
+    <Section title={t('props.device')}>
+      <ModelSwitcher />
       {model.anchor !== 'bottom' && (
         <Field label={t('props.pose')}>
           <Segmented
@@ -379,9 +381,9 @@ export function PropertiesPanel() {
       <div className="scroll-thin flex-1 overflow-y-auto" key={tab}>
         {tab === 'device' && (
           <>
-            <CompositionSection />
-            <ImageSection />
             <DeviceSection />
+            <ImageSection />
+            <CompositionSection />
           </>
         )}
         {tab === 'scene' && <ScenePanel />}

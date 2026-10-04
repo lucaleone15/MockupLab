@@ -63,7 +63,7 @@ function radialFade() {
 function sweepGeometry(width: number) {
   const pts: { z: number; y: number; nz: number; ny: number }[] = [];
   const R = 60;
-  const back = -70;
+  const back = SWEEP_BACK;
   // floor and wall run far enough that their edges never show, even with long lenses
   pts.push({ z: 6000, y: 0, nz: 0, ny: 1 });
   pts.push({ z: back + R, y: 0, nz: 0, ny: 1 });
@@ -193,7 +193,8 @@ function useWallMaterial(color: string) {
   return material;
 }
 
-export const TABLE_BACK = -55;
+export { TABLE_BACK } from '@/lib/arrange';
+import { SWEEP_BACK, TABLE_BACK } from '@/lib/arrange';
 
 /**
  * Product-photography table set: a real-material table top pushed against a

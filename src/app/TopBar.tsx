@@ -6,6 +6,7 @@ import { useLang, useT } from '@/i18n';
 import { exportImage } from '@/export/exportImage';
 import { newProject } from '@/store/persistence';
 import { openProjectFile, saveProjectFile } from './projectFiles';
+import { ResetButton } from './ResetDialog';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Button, IconButton, Kbd, Segmented } from '@/ui/primitives';
@@ -108,6 +109,7 @@ export function TopBar() {
         <IconButton label={t('top.redo')} shortcut={`⇧${MOD}Z`} disabled={!canRedo} onClick={() => useProject.temporal.getState().redo()}>
           <Redo2 size={16} />
         </IconButton>
+        <ResetButton />
         <div className="mx-2 h-5 w-px bg-line" />
         <div className="w-[84px]">
           <Segmented

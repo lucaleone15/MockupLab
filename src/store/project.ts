@@ -4,7 +4,8 @@ import type { Fit } from '@/scene/screenMaterial';
 import { getModel } from '@/models/registry';
 import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
-import { arrangeItems, besideOthers } from '@/lib/arrange';
+import { arrangeItems, besideOthers, constrainItems } from '@/lib/arrange';
+import { useAssets } from './assets';
 
 /* ------------------------------------------------------------------ types */
 
@@ -331,6 +332,10 @@ interface ProjectActions {
   removeOverlay: (id: string) => void;
   /** Replaces the whole project (load, import, new). */
   loadProject: (project: Project) => void;
+  /** Background, set, light, camera, floor and text layers back to defaults; devices and images are kept. */
+  resetScene: () => void;
+  /** Everything back to a fresh project (undoable). */
+  resetAll: () => void;
   setExport: (patch: Partial<ExportSettings>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
@@ -343,12 +348,19 @@ export type ProjectState = Project & ProjectActions;
  * History groups bursts of changes (slider drags, typing) into one undo step:
  * the state before the first change of a burst is recorded, the rest is merged.
  */
+let burstTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** Ends the current burst, so the next change gets its own undo step (resets, device swaps). */
+function breakBurst() {
+  clearTimeout(burstTimer);
+  burstTimer = undefined;
+}
+
 function burst<T extends unknown[]>(fn: (...args: T) => void, ms = 450) {
-  let timer: ReturnType<typeof setTimeout> | undefined;
   return (...args: T) => {
-    if (timer === undefined) fn(...args);
-    clearTimeout(timer);
-    timer = setTimeout(() => (timer = undefined), ms);
+    if (burstTimer === undefined) fn(...args);
+    clearTimeout(burstTimer);
+    burstTimer = setTimeout(() => (burstTimer = undefined), ms);
   };
 }
 
@@ -373,7 +385,10 @@ export const useProject = create<ProjectState>()(
       ...initialProject(),
       updateItem: (id, patch) =>
         set((s) => ({
-          items: s.items.map((it) => (it.id === id ? { ...it, ...(typeof patch === 'function' ? patch(it) : patch) } : it)),
+          items: constrainItems(
+            s.items.map((it) => (it.id === id ? { ...it, ...(typeof patch === 'function' ? patch(it) : patch) } : it)),
+            s.decor,
+          ),
         })),
       setSurface: (itemId, slot, patch) =>
         set((s) => ({
@@ -384,7 +399,11 @@ export const useProject = create<ProjectState>()(
           ),
         })),
       setBackground: (background) => set({ background }),
-      setDecor: (patch) => set((s) => ({ decor: { ...s.decor, ...patch } })),
+      setDecor: (patch) =>
+        set((s) => {
+          const decor = { ...s.decor, ...patch };
+          return { decor, items: constrainItems(s.items, decor) };
+        }),
       setBrand: (patch) => set((s) => ({ brand: { ...s.brand, ...patch } })),
       setLighting: (patch) => set((s) => ({ lighting: { ...s.lighting, ...patch } })),
       applyLightPreset: (id) => set({ lighting: { ...LIGHT_PRESETS[id].manual, preset: id } }),
@@ -402,7 +421,7 @@ export const useProject = create<ProjectState>()(
           const slot = getModel(modelId).surfaces[0];
           const sourceSlot = selected && getModel(selected.modelId).surfaces[0];
           if (source && slot && sourceSlot && (slot.aspect < 1) === (sourceSlot.aspect < 1)) item.surfaces[slot.id] = { ...source };
-          return { items: [...s.items, item], selectedId: item.id };
+          return { items: constrainItems([...s.items, item], s.decor), selectedId: item.id };
         }),
       duplicateItem: (id) =>
         set((s) => {
@@ -412,47 +431,82 @@ export const useProject = create<ProjectState>()(
           const copy: SceneItem = structuredClone(src);
           copy.id = uid();
           copy.position = [src.position[0] + w * 0.7 + 4, src.position[1], src.position[2] + 4];
-          return { items: [...s.items, copy], selectedId: copy.id };
+          return { items: constrainItems([...s.items, copy], s.decor), selectedId: copy.id };
         }),
       removeItem: (id) =>
         set((s) => {
           if (s.items.length <= 1) return {};
-          const items = s.items.filter((it) => it.id !== id);
+          const items = constrainItems(s.items.filter((it) => it.id !== id), s.decor);
           return { items, selectedId: s.selectedId === id ? items[items.length - 1].id : s.selectedId };
         }),
-      arrange: () => set((s) => ({ items: arrangeItems(s.items) })),
+      arrange: () => set((s) => ({ items: constrainItems(arrangeItems(s.items), s.decor) })),
       addOverlay: (overlay) => set((s) => ({ overlays: [...s.overlays, overlay] })),
       updateOverlay: (id, patch) =>
         set((s) => ({ overlays: s.overlays.map((o) => (o.id === id ? ({ ...o, ...patch } as Overlay) : o)) })),
       removeOverlay: (id) => set((s) => ({ overlays: s.overlays.filter((o) => o.id !== id) })),
       loadProject: (project) => set({ ...project }),
+      resetScene: () => {
+        breakBurst();
+        set((s) => {
+          const fresh = initialProject();
+          const items = s.items.map((it) => ({ ...it, pose: 'standing' as const, scale: 1, rotation: [0, getModel(it.modelId).yaw ?? -0.32, 0] as Vec3 }));
+          return {
+            background: fresh.background,
+            decor: fresh.decor,
+            lighting: fresh.lighting,
+            camera: fresh.camera,
+            ground: fresh.ground,
+            overlays: [],
+            items: constrainItems(items.length > 1 ? arrangeItems(items) : items.map((it) => ({ ...it, position: [0, 0, 0] as Vec3 })), fresh.decor),
+          };
+        });
+      },
+      resetAll: () => {
+        breakBurst();
+        set({ ...initialProject() });
+      },
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
       setParam: (itemId, id, value) =>
-        set((s) => ({ items: s.items.map((it) => (it.id === itemId ? { ...it, params: { ...it.params, [id]: value } } : it)) })),
-      replaceModel: (itemId, modelId) =>
         set((s) => ({
-          items: s.items.map((it) => {
-            if (it.id !== itemId) return it;
-            const model = getModel(modelId);
-            // Keep the first image across devices (screen → screen).
-            const firstImage = Object.values(it.surfaces).find((b) => b.assetId);
-            // Each slot keeps its own image; the first one inherits the old first image.
-            const surfaces = Object.fromEntries(
-              model.surfaces.map((slot, i) => [
-                slot.id,
-                it.surfaces[slot.id] ?? (i === 0 && firstImage ? { ...firstImage, fit: slot.fit ?? firstImage.fit } : { ...DEFAULT_SURFACE, fit: slot.fit ?? 'cover' }),
-              ]),
-            );
-            return {
-              ...it,
-              modelId,
-              finishId: model.finishes.some((f) => f.id === it.finishId) ? it.finishId : model.defaultFinish,
-              params: defaultParams(model),
-              surfaces,
-              rotation: [0, model.yaw ?? -0.32, 0],
-            };
-          }),
+          items: constrainItems(
+            s.items.map((it) => (it.id === itemId ? { ...it, params: { ...it.params, [id]: value } } : it)),
+            s.decor,
+          ),
         })),
+      replaceModel: (itemId, modelId) => {
+        breakBurst();
+        set((s) => ({
+          items: constrainItems(
+            s.items.map((it) => {
+              if (it.id !== itemId) return it;
+              const model = getModel(modelId);
+              // The user's own images follow the device; bundled samples don't (they are swapped for matching ones).
+              const assets = useAssets.getState().assets;
+              const mine = (b: SurfaceBinding | undefined) => !!b?.assetId && !assets[b.assetId]?.name.startsWith('sample-');
+              const own = Object.values(it.surfaces).filter(mine);
+              const surfaces = Object.fromEntries(
+                model.surfaces.map((slot, i) => {
+                  const fit = slot.fit ?? 'cover';
+                  const same = it.surfaces[slot.id];
+                  if (mine(same)) return [slot.id, { ...same!, fit }];
+                  if (own[i]) return [slot.id, { ...own[i], fit, align: slot.fit ? 0.5 : own[i].align }];
+                  return [slot.id, { ...DEFAULT_SURFACE, fit, align: slot.fit ? 0.5 : 0 }];
+                }),
+              );
+              return {
+                ...it,
+                modelId,
+                finishId: model.finishes.some((f) => f.id === it.finishId) ? it.finishId : model.defaultFinish,
+                params: defaultParams(model),
+                surfaces,
+                position: [it.position[0], 0, it.position[2]] as Vec3,
+                rotation: [0, model.yaw ?? -0.32, 0] as Vec3,
+              };
+            }),
+            s.decor,
+          ),
+        }));
+      },
     }),
     {
       limit: 100,

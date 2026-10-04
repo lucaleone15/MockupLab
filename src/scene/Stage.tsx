@@ -13,6 +13,8 @@ import { Lighting } from './lighting/Lighting';
 import { ReflectiveFloor } from './ReflectiveFloor';
 import { useAmbience } from './ambiences';
 import { useCompositionBounds } from './bounds';
+import { sceneWall } from '@/lib/arrange';
+import { useWall } from '@/models/shared/wall';
 import { InteractionBridge, Interactive, SelectionRing } from './interaction';
 
 /** Resting height of a device lying on its back (camera bumps included). */
@@ -114,6 +116,20 @@ function Ground({ floorY, top }: { floorY: number; top: THREE.BufferGeometry | n
   );
 }
 
+/** The scene's single wall, when objects hang on one and the set has none of its own. */
+function SharedWall() {
+  const items = useProject((s) => s.items);
+  const decor = useProject((s) => s.decor);
+  const wall = useMemo(() => sceneWall(items, decor), [items, decor]);
+  const material = useWall(wall?.color ?? '#ece6dc');
+  if (!wall?.draw) return null;
+  return (
+    <mesh material={material} position={[0, 60, wall.z]} receiveShadow>
+      <planeGeometry args={[1600, 640]} />
+    </mesh>
+  );
+}
+
 function Scene() {
   const items = useProject((s) => s.items);
   const selected = useProject(selectSelectedItem);
@@ -125,6 +141,7 @@ function Scene() {
     <>
       <Lighting ambience={ambience} />
       <DecorScene decor={decor} items={items} />
+      <SharedWall />
       <group position={[0, layout.floorY, 0]}>
         {items.map((item) => (
           <Device key={item.id} item={item} />

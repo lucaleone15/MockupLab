@@ -45,6 +45,9 @@ export async function loadSamples(itemId: string) {
   const model = getModel(item.modelId);
   const landscape = item.params.orientation === 'landscape';
   for (const slot of model.surfaces) {
+    // never overwrite the user's own images
+    const current = item.surfaces[slot.id]?.assetId;
+    if (current && !useAssets.getState().assets[current]?.name.startsWith('sample-')) continue;
     const aspect = landscape ? 1 / slot.aspect : slot.aspect;
     const name = sampleName(model.id, slot.id, aspect);
     let p = cache.get(name);

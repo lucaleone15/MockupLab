@@ -3,6 +3,7 @@ import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { footprint } from '@/lib/arrange';
 import { roundedRectOutline } from '@/lib/geometry/outline';
+import { getModel } from '@/models/registry';
 import { useProject, type SceneItem } from '@/store/project';
 
 /*
@@ -16,16 +17,32 @@ export const HELPER_LAYER = 1;
 interface Drag {
   id: string;
   mode: 'move' | 'rotate';
-  /** Height of the grabbed point: the device slides on that plane, so it stays under the cursor. */
+  /**
+   * 'plane': the device slides on the horizontal plane at the grabbed height,
+   * staying under the cursor. 'screen': the view grazes that plane (objects on
+   * a wall, eye-level shots) — a tiny mouse move would send the object metres
+   * away — so it moves sideways along the screen instead.
+   */
+  how: 'plane' | 'screen' | 'wall';
   planeY: number;
   startHit: THREE.Vector3;
   startPos: [number, number, number];
   startYaw: number;
   startX: number;
+  startY: number;
+  /** World units per screen pixel at the object's depth, and the camera's right vector on the floor. */
+  perPx: number;
+  right: THREE.Vector3;
+  started: boolean;
 }
+
+/** Pixels the pointer must travel before a click becomes a drag. */
+const DRAG_THRESHOLD = 4;
 
 /** Shared with the viewport (drops): floor / device picking at screen coordinates. */
 export const picking = {
+  /** Point on the vertical plane z = const under the pointer (objects sliding along a wall). */
+  wall: null as null | ((clientX: number, clientY: number, z: number) => [number, number, number] | null),
   /** Point on the horizontal plane at height `y` (floor by default) under the pointer. */
   floor: null as null | ((clientX: number, clientY: number, y?: number) => [number, number, number] | null),
   item: null as null | ((clientX: number, clientY: number) => string | null),
@@ -53,6 +70,10 @@ export function InteractionBridge({ floorY }: { floorY: number }) {
       const hit = ray(x, y).ray.intersectPlane(p, new THREE.Vector3());
       return hit ? [hit.x, 0, hit.z] : null;
     };
+    picking.wall = (x, y, z) => {
+      const hit = ray(x, y).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -z), new THREE.Vector3());
+      return hit ? [hit.x, hit.y, hit.z] : null;
+    };
     picking.item = (x, y) => {
       const hits = ray(x, y).intersectObjects(scene.children, true);
       for (const h of hits) {
@@ -64,6 +85,7 @@ export function InteractionBridge({ floorY }: { floorY: number }) {
     };
     return () => {
       picking.floor = null;
+      picking.wall = null;
       picking.item = null;
     };
   }, [camera, gl, scene, raycaster, plane, floorY]);
@@ -73,10 +95,22 @@ export function InteractionBridge({ floorY }: { floorY: number }) {
     const onMove = (e: PointerEvent) => {
       const d = active.drag;
       if (!d) return;
+      if (!d.started) {
+        if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < DRAG_THRESHOLD) return;
+        d.started = true;
+      }
       const s = useProject.getState();
       if (d.mode === 'rotate') {
         const yaw = d.startYaw + (e.clientX - d.startX) * 0.012;
         s.updateItem(d.id, (it) => ({ rotation: [it.rotation[0], yaw, it.rotation[2]] }));
+      } else if (d.how === 'wall') {
+        // along the wall: only X changes, the object stays under the cursor
+        const hit = picking.wall?.(e.clientX, e.clientY, d.startHit.z);
+        if (!hit) return;
+        s.updateItem(d.id, { position: [d.startPos[0] + hit[0] - d.startHit.x, d.startPos[1], d.startPos[2]] });
+      } else if (d.how === 'screen') {
+        const dx = (e.clientX - d.startX) * d.perPx;
+        s.updateItem(d.id, { position: [d.startPos[0] + d.right.x * dx, d.startPos[1], d.startPos[2] + d.right.z * dx] });
       } else {
         const hit = picking.floor?.(e.clientX, e.clientY, d.planeY);
         if (!hit) return;
@@ -117,17 +151,30 @@ export function Interactive({ item, children }: { item: SceneItem; children: Rea
     const s = useProject.getState();
     if (s.selectedId !== item.id) s.selectItem(item.id);
     if (item.locked) return;
+    const cam = e.camera as THREE.PerspectiveCamera;
     const planeY = e.point.y;
+    // How steeply the view meets the horizontal plane: shallow → sideways screen drag.
+    const grazing = Math.abs(e.ray.direction.y) < 0.28;
     const hit = picking.floor?.(e.nativeEvent.clientX, e.nativeEvent.clientY, planeY);
-    if (!hit) return;
+    if (!hit && !grazing) return;
+    const depth = e.point.clone().sub(cam.position).dot(cam.getWorldDirection(new THREE.Vector3()));
+    const perPx = (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * depth) / gl.domElement.clientHeight;
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).setY(0).normalize();
+    const onWall = !!getModel(item.modelId).wallFor?.({ ...item.params });
+    const wallHit = onWall ? picking.wall?.(e.nativeEvent.clientX, e.nativeEvent.clientY, e.point.z) : null;
     active.drag = {
       id: item.id,
+      how: wallHit ? 'wall' : grazing || !hit ? 'screen' : 'plane',
       planeY,
       mode: e.nativeEvent.altKey ? 'rotate' : 'move',
-      startHit: new THREE.Vector3(...hit),
+      startHit: new THREE.Vector3(...(wallHit ?? hit ?? [0, 0, 0])),
       startPos: [...item.position],
       startYaw: item.rotation[1],
       startX: e.nativeEvent.clientX,
+      startY: e.nativeEvent.clientY,
+      perPx,
+      right,
+      started: false,
     };
     if (controls) (controls as unknown as { enabled: boolean }).enabled = false;
     gl.domElement.style.cursor = e.nativeEvent.altKey ? 'ew-resize' : 'grabbing';

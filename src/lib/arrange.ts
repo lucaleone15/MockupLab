@@ -1,6 +1,6 @@
 import { getModel } from '@/models/registry';
 import { isLandscape, sizeOf } from '@/models/types';
-import type { SceneItem, Vec3 } from '@/store/project';
+import type { Decor, SceneItem, Vec3 } from '@/store/project';
 
 /*
  * Composition helpers for multi-device scenes. Footprints are in cm on the
@@ -62,4 +62,67 @@ export function arrangeItems(items: SceneItem[]): SceneItem[] {
     out.set(it.id, { ...it, position: [x, 0, z], rotation: [0, yaw, 0] });
   });
   return items.map((it) => out.get(it.id)!);
+}
+
+/* ------------------------------------------------------------ walls & limits */
+
+/** Back walls of the 3D sets (table set, studio sweep), local Z. */
+export const TABLE_BACK = -55;
+export const SWEEP_BACK = -70;
+const STAGE_RADIUS = 600;
+
+export function decorWallZ(decor: Pick<Decor, 'kind'>): number | null {
+  return decor.kind === 'table' ? TABLE_BACK : decor.kind === 'sweep' ? SWEEP_BACK : null;
+}
+
+export interface SceneWall {
+  z: number;
+  color: string;
+  /** False when the set already has its own wall (table, studio). */
+  draw: boolean;
+}
+
+const wallOf = (it: SceneItem) => getModel(it.modelId).wallFor?.({ ...it.params }) ?? null;
+
+/**
+ * The single wall of the scene: the set's wall when there is one, otherwise
+ * the wall of the first object that hangs on / leans against a wall.
+ */
+export function sceneWall(items: SceneItem[], decor: Pick<Decor, 'kind'>): SceneWall | null {
+  const hanging = items.filter((it) => it.visible !== false && wallOf(it));
+  if (!hanging.length) return null;
+  const first = hanging[0];
+  const color = wallOf(first)!.color;
+  const decorZ = decorWallZ(decor);
+  if (decorZ !== null) return { z: decorZ, color, draw: false };
+  return { z: first.position[2] + wallOf(first)!.z, color, draw: true };
+}
+
+/**
+ * Keeps every object where it makes sense: wall objects hang flat on the
+ * scene's wall, nothing goes behind a wall, nothing leaves the stage.
+ */
+export function constrainItems(items: SceneItem[], decor: Pick<Decor, 'kind'>): SceneItem[] {
+  const wall = sceneWall(items, decor);
+  const back = wall?.z ?? decorWallZ(decor);
+  return items.map((it) => {
+    let [x, y, z] = it.position;
+    let yaw = it.rotation[1];
+    const own = wallOf(it);
+    if (own && wall) {
+      z = wall.z - own.z;
+      yaw = 0;
+    } else if (back !== null) {
+      const f = footprint(it);
+      const ext = Math.abs(Math.cos(yaw)) * (f.d / 2) + Math.abs(Math.sin(yaw)) * (f.w / 2);
+      z = Math.max(z, back + ext + 0.5);
+    }
+    const r = Math.hypot(x, z);
+    if (r > STAGE_RADIUS) {
+      x *= STAGE_RADIUS / r;
+      z *= STAGE_RADIUS / r;
+    }
+    if (x === it.position[0] && z === it.position[2] && yaw === it.rotation[1]) return it;
+    return { ...it, position: [x, y, z] as Vec3, rotation: [it.rotation[0], yaw, it.rotation[2]] as Vec3 };
+  });
 }

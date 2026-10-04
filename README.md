@@ -33,6 +33,9 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste et exporte-le en vra
 | **Compositions multi-appareils** : ajout (bouton + ou glisser depuis la bibliothèque), sélection au clic, déplacement à la souris, rotation (Alt + glisser, R), duplication, masquage, verrouillage, disposition automatique | ✅ |
 | **Textes & logo** sur le rendu (3 polices, graisse, taille, couleur, interlettrage, position, glisser avec aimantation), exportés avec l'image | ✅ |
 | **Sauvegarde automatique** dans le navigateur (images comprises), projet en `.json` (images intégrées) : nouveau / ouvrir / enregistrer | ✅ |
+| **Changer d'appareil** en un clic (menu *Changer* du panneau ou clic dans la bibliothèque) : tes images suivent, les exemples s'adaptent au nouvel appareil | ✅ |
+| **Mur commun** pour affiches, TV et panneaux : ils s'y accrochent, rien ne peut passer derrière | ✅ |
+| **Réinitialiser** (bouton ↺ en haut) : la scène seule ou tout le projet, annulable avec ⌘Z | ✅ |
 | Glisser-déposer (une image déposée sur un appareil va sur son écran), coller (⌘V), undo/redo, raccourcis (touche ?), thème clair/sombre, FR/EN | ✅ |
 | Mode photo (perspective sur 4 coins) | 🔜 jalon f |
 | Variantes automatiques & traitement par lots (ZIP) | 🔜 jalon g |
@@ -54,8 +57,9 @@ npm run preview    # sert le build sur http://localhost:4173/MockupLab/
 
 1. Glisse une image sur la fenêtre, colle-la avec **⌘V / Ctrl+V**, ou clique sur **Essayer un exemple**.
 2. Tourne autour de l'appareil (glisser), zoome (molette), déplace la vue (clic droit).
-3. Règle la finition, la luminosité de l'écran, les reflets et le fond dans le panneau de droite.
-4. Choisis format, résolution et ratio, puis **Exporter** (**⌘E / Ctrl+E**).
+3. Pour changer d'appareil, utilise le menu **Changer** en haut de l'onglet *Appareil*, ou clique sur un modèle dans la bibliothèque (le bouton **+** l'ajoute à la scène au lieu de remplacer).
+4. Règle la finition, la luminosité de l'écran, les reflets et le fond dans le panneau de droite.
+5. Choisis format, résolution et ratio, puis **Exporter** (**⌘E / Ctrl+E**).
 
 Astuce : exporte ton design au ratio natif de l'écran (affiché sous le nom de l'image, par ex. **1179 × 2556** pour Phone Pro, **3024 × 1964** pour Laptop 14, **1440 × 900** pour le navigateur). Les captures plus longues sont cadrées par le haut ; le curseur *Position* fait défiler le cadrage. Les réglages propres à chaque appareil (orientation, ouverture, encoche, thème du navigateur…) apparaissent dans la section *Appareil*.
 
@@ -154,6 +158,8 @@ node scripts/gallery.mjs                       # rend chaque modèle dans out/mo
 node scripts/check-swap.mjs                    # non-régression : changement d'image
 node scripts/check-composition.mjs             # multi-appareils, textes, sauvegarde auto, projet JSON
 node scripts/scenes.mjs                        # scénarios de scène (décors, lumières, caméra)
+node scripts/check-walls.mjs                   # mur commun : rien ne passe derrière, glisser le long du mur
+node scripts/check-switch.mjs                  # changement d'appareil, réinitialisation + annulation
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```
