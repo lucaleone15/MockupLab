@@ -24,6 +24,8 @@ export const cameraState = {
   subject: 15,
   /** Horizontal lens shift (fraction of the frame width, positive moves the subject right). */
   shift: 0,
+  /** Camera roll in radians ("dutch angle"), used by animations. */
+  roll: 0,
 };
 
 /** Applies the lens shift as a view offset (no-op when there is none). */
@@ -160,9 +162,17 @@ export function presetDirection(preset: CameraPresetId, item: SceneItem | null):
 /* ------------------------------------------------------------ rig */
 
 /** Saves / restores the live view (an orbited view is not part of the project). */
+export interface CameraView {
+  position: THREE.Vector3;
+  target: THREE.Vector3;
+  fov: number;
+  /** Radians. */
+  roll?: number;
+}
+
 export const cameraHandle: {
-  save?: () => { position: THREE.Vector3; target: THREE.Vector3; fov: number };
-  restore?: (v: { position: THREE.Vector3; target: THREE.Vector3; fov: number }) => void;
+  save?: () => CameraView;
+  restore?: (v: CameraView) => void;
 } = {};
 
 export function CameraRig({ floorY }: { floorY: number }) {
@@ -242,6 +252,9 @@ export function CameraRig({ floorY }: { floorY: number }) {
       controls.current?.target.copy(v.target);
       cameraState.target.copy(v.target);
       controls.current?.update();
+      cameraState.roll = v.roll ?? 0;
+      if (cameraState.roll) camera.rotateZ(cameraState.roll);
+      camera.updateMatrixWorld();
       invalidate();
     };
     return () => {
@@ -249,6 +262,14 @@ export function CameraRig({ floorY }: { floorY: number }) {
       cameraHandle.restore = undefined;
     };
   }, [camera, invalidate]);
+
+  // the controls re-aim the camera every frame (priority -1); the roll comes after
+  useFrame(() => {
+    if (cameraState.roll) {
+      camera.rotateZ(cameraState.roll);
+      camera.updateMatrixWorld();
+    }
+  });
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
