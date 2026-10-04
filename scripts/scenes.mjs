@@ -6,6 +6,19 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 const table = (material, wall, ambience, gobo) => ({ kind: 'table', material, wall, ambience, gobo });
 const SCENARIOS = [
   { name: 'studio-default', model: 'phone-pro' },
+  { name: 'sweep-iso', model: 'laptop-14', decor: { kind: 'sweep', color: '#d9d4cb' }, camera: { preset: 'isometric', focal: 600 } },
+  { name: 'sweep-high', model: 'desktop-24', decor: { kind: 'sweep', color: '#d9d4cb' }, camera: { preset: 'high' } },
+  { name: 'sweep-low', model: 'display-27', decor: { kind: 'sweep', color: '#d9d4cb' }, camera: { preset: 'low' } },
+  { name: 'sweep-top', model: 'laptop-14', decor: { kind: 'sweep', color: '#d9d4cb' }, camera: { preset: 'top' } },
+  { name: 'sweep-laptop', model: 'laptop-14', decor: { kind: 'sweep', color: '#d9d4cb' } },
+  { name: 'sweep-desktop', model: 'desktop-24', decor: { kind: 'sweep', color: '#d9d4cb' } },
+  { name: 'sweep-display', model: 'display-27', decor: { kind: 'sweep', color: '#2b2b30' }, light: 'dramatic' },
+  { name: 'sweep-monitor', model: 'monitor-27', decor: { kind: 'sweep', color: '#e6e1d8' }, light: 'highkey' },
+  { name: 'sweep-poster', model: 'poster', decor: { kind: 'sweep', color: '#d9d4cb' } },
+  { name: 'poster-lean-table', model: 'poster', params: { mount: 'lean' }, decor: { kind: 'table', material: 'oak', wall: '#ece6dc', ambience: 'day', gobo: 'window' } },
+  { name: 'poster-noframe', model: 'poster', params: { frame: 'none', format: 'a3' } },
+  { name: 'poster-nowall', model: 'poster', params: { wallOn: false, frame: 'white' } },
+  { name: 'poster-podium', model: 'poster', params: { mount: 'lean', format: 'a3' }, decor: { kind: 'podium', color: '#e8d9c8' } },
   { name: 'table-oak', model: 'phone-pro', decor: table('oak', '#ece6dc', 'day', 'window') },
   { name: 'table-walnut', model: 'laptop-14', decor: table('walnut', '#b9c2ae', 'day', 'leaves') },
   { name: 'table-marble', model: 'phone', decor: table('marble-white', '#d9c8b0', 'sun', 'blinds') },
@@ -42,6 +55,7 @@ for (const sc of SCENARIOS.filter((s) => !only || only.includes(s.name))) {
     const id = st().selectedId;
     st().replaceModel(id, sc.model);
     if (sc.pose) st().setPose(sc.pose);
+    for (const [k, v] of Object.entries(sc.params ?? {})) st().setParam(id, k, v);
     if (sc.bg) st().setBackground(sc.bg);
     if (sc.decor) st().setDecor(sc.decor);
     // Let lazily loaded assets (HDRI, textures) arrive.
@@ -60,7 +74,7 @@ for (const sc of SCENARIOS.filter((s) => !only || only.includes(s.name))) {
     const m = api.models.find((x) => x.id === sc.model);
     const landscape = st().items[0].params.orientation === 'landscape';
     const tall = landscape ? 1 / m.aspect < 1 : m.aspect < 1;
-    await api.importFromUrl(tall ? '/samples/sample-app.png' : '/samples/sample-web.png', 'sample');
+    await api.loadSamples(id);
     await new Promise((res) => setTimeout(res, 2200));
     const t0 = performance.now();
     const img = await api.renderImage();

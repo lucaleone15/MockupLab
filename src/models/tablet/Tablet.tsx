@@ -55,7 +55,7 @@ function Tablet({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
   const metal = brushedMetal(finish.colors.frame, 0.42, 0.08);
   const material = useScreenMaterial(surfaces.screen, s.display.width / s.display.height, screen, { rotated: isLandscape(params) });
   const glassTop = s.depth / 2 + 0.012;
-  const screenZ = glassTop + 0.0015;
+  const screenZ = glassTop + 0.004;
   const bezelX = (s.width - s.display.width) / 2;
 
   return (
@@ -64,9 +64,9 @@ function Tablet({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
       <mesh geometry={g.glass} material={coverGlass()} position={[0, 0, glassTop - GLASS_T / 2]} />
       <mesh geometry={g.display} material={material} position={[0, 0, screenZ]} />
       {/* front camera on the long (landscape-top) edge */}
-      <group position={[s.width / 2 - bezelX / 2, 0, glassTop + 0.001]}>
+      <group position={[s.width / 2 - bezelX / 2, 0, glassTop + 0.006]}>
         <Hole position={[0, 0, 0]} radius={0.13} />
-        <mesh position={[0, 0, 0.0005]} scale={[0.07, 0.07, 1]}>
+        <mesh position={[0, 0, 0.004]} scale={[0.07, 0.07, 1]}>
           <circleGeometry args={[1, 24]} />
           <primitive object={lensGlass()} attach="material" />
         </mesh>

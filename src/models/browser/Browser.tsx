@@ -175,7 +175,7 @@ function Browser({ surfaces, screen, params }: DeviceProps) {
     [total, barH, contentH, depth, flat],
   );
   const material = useScreenMaterial(surfaces.screen, aspect, screen);
-  const front = depth / 2 + 0.002;
+  const front = depth / 2 + 0.008;
 
   // Keep the bottom edge where the stage expects it whatever the page ratio.
   const offsetY = total / 2 - browserWindow.size[1] / 2;
