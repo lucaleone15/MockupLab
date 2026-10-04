@@ -14,67 +14,124 @@ import { TextPanel } from './panels/TextPanel';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
-function ImageSection() {
+function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { itemId: string; slotId: string; label?: string; nativeSize?: [number, number]; active: boolean; onActivate: () => void }) {
   const { t } = useT();
-  const item = useProject(selectSelectedItem);
+  const binding = useProject((s) => s.items.find((it) => it.id === itemId)?.surfaces[slotId]);
   const setSurface = useProject((s) => s.setSurface);
-  const binding = item?.surfaces.screen;
   const asset = useAssets((s) => (binding?.assetId ? s.assets[binding.assetId] : undefined));
-  if (!item || !binding) return null;
-  const model = getModel(item.modelId);
-  const slot = model.surfaces.find((s) => s.id === 'screen');
-
+  const choose = () => {
+    onActivate();
+    pickImages();
+  };
   return (
-    <Section title={t('props.image')}>
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={pickImages}
-          className={cx(
-            'group relative grid shrink-0 place-items-center self-start overflow-hidden rounded-lg bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset] transition-shadow hover:shadow-[0_0_0_1px_var(--line-strong)_inset]',
-            asset && asset.width > asset.height ? 'h-[58px] w-[92px]' : 'h-[92px] w-[58px]',
-          )}
-        >
-          {asset ? (
-            <img src={asset.url} alt="" className="h-full w-full object-cover object-top" />
-          ) : (
-            <ImageOff size={18} className="text-fg-subtle" />
-          )}
-        </button>
-        <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
-          <div className="min-w-0">
-            <div className="truncate text-[12.5px] font-medium">{asset?.name ?? t('props.noImage')}</div>
-            <div className="font-mono text-[11px] tabular-nums text-fg-subtle">
-              {asset ? `${asset.width} × ${asset.height}` : slot?.nativeSize ? `${slot.nativeSize[0]} × ${slot.nativeSize[1]}` : ''}
-            </div>
-          </div>
-          <div className="flex gap-1.5">
-            <Button size="sm" onClick={pickImages}>
-              <ImageUp size={13} />
-              {t('props.replace')}
-            </Button>
-            {asset && (
-              <Button size="sm" variant="ghost" onClick={() => setSurface(item.id, 'screen', { assetId: null })}>
-                {t('props.remove')}
-              </Button>
-            )}
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onActivate}
+      onKeyDown={(e) => e.key === 'Enter' && onActivate()}
+      className={cx(
+        'flex cursor-pointer gap-3 rounded-lg p-1.5 transition-shadow',
+        label && (active ? 'shadow-[0_0_0_1.5px_var(--accent)_inset]' : 'hover:shadow-[0_0_0_1px_var(--line-strong)_inset]'),
+      )}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          choose();
+        }}
+        className={cx(
+          'grid shrink-0 place-items-center self-start overflow-hidden rounded-md bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset]',
+          asset && asset.width > asset.height ? 'h-[46px] w-[72px]' : 'h-[72px] w-[46px]',
+        )}
+      >
+        {asset ? <img src={asset.url} alt="" className="h-full w-full object-cover object-top" /> : <ImageOff size={16} className="text-fg-subtle" />}
+      </button>
+      <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
+        <div className="min-w-0">
+          {label && <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-subtle">{label}</div>}
+          <div className="truncate text-[12.5px] font-medium">{asset?.name ?? t('props.noImage')}</div>
+          <div className="font-mono text-[11px] tabular-nums text-fg-subtle">
+            {asset ? `${asset.width} × ${asset.height}` : nativeSize ? `${nativeSize[0]} × ${nativeSize[1]}` : ''}
           </div>
         </div>
+        <div className="flex gap-1.5">
+          <Button
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              choose();
+            }}
+          >
+            <ImageUp size={13} />
+            {t('props.replace')}
+          </Button>
+          {asset && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSurface(itemId, slotId, { assetId: null });
+              }}
+            >
+              {t('props.remove')}
+            </Button>
+          )}
+        </div>
       </div>
-      <Field label={t('props.fit')}>
-        <Segmented
-          value={binding.fit}
-          onChange={(fit) => setSurface(item.id, 'screen', { fit })}
-          options={[
-            { value: 'cover', label: t('props.fit.cover') },
-            { value: 'contain', label: t('props.fit.contain') },
-          ]}
-        />
-      </Field>
-      {binding.fit === 'cover' && asset && (
-        <Field label={t('props.align')} value={`${Math.round(binding.align * 100)} %`}>
-          <Slider label={t('props.align')} value={binding.align} onChange={(align) => setSurface(item.id, 'screen', { align })} />
-        </Field>
+    </div>
+  );
+}
+
+function ImageSection() {
+  const { t, tr } = useT();
+  const item = useProject(selectSelectedItem);
+  const setSurface = useProject((s) => s.setSurface);
+  const activeSlot = useUi((s) => s.activeSlot);
+  const setActiveSlot = useUi((s) => s.setActiveSlot);
+  if (!item) return null;
+  const model = getModel(item.modelId);
+  const slots = model.surfaces;
+  const multi = slots.length > 1;
+  const current = slots.find((sl) => sl.id === activeSlot) ?? slots[0];
+  const binding = item.surfaces[current.id];
+  const asset = binding?.assetId ? useAssets.getState().assets[binding.assetId] : undefined;
+
+  return (
+    <Section title={multi ? t('props.images') : t('props.image')}>
+      <div className="-mx-1.5 flex flex-col gap-1">
+        {slots.map((sl) => (
+          <SlotCard
+            key={sl.id}
+            itemId={item.id}
+            slotId={sl.id}
+            label={multi ? tr(sl.label) : undefined}
+            nativeSize={sl.nativeSize}
+            active={multi && sl.id === current.id}
+            onActivate={() => setActiveSlot(sl.id)}
+          />
+        ))}
+      </div>
+      {multi && <p className="text-[11px] leading-snug text-fg-subtle">{t('props.slotHint')}</p>}
+      {binding && (
+        <>
+          <Field label={multi ? `${t('props.fit')} · ${tr(current.label)}` : t('props.fit')}>
+            <Segmented
+              value={binding.fit}
+              onChange={(fit) => setSurface(item.id, current.id, { fit })}
+              options={[
+                { value: 'cover', label: t('props.fit.cover') },
+                { value: 'contain', label: t('props.fit.contain') },
+              ]}
+            />
+          </Field>
+          {binding.fit === 'cover' && asset && (
+            <Field label={t('props.align')} value={`${Math.round(binding.align * 100)} %`}>
+              <Slider label={t('props.align')} value={binding.align} onChange={(align) => setSurface(item.id, current.id, { align })} />
+            </Field>
+          )}
+        </>
       )}
     </Section>
   );
@@ -109,6 +166,27 @@ function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamVal
           <span className="text-fg-muted">{tr(def.label)}</span>
           <Switch checked={value === true} onChange={onChange} label={tr(def.label)} />
         </label>
+      );
+    case 'swatch':
+      return (
+        <Field label={tr(def.label)} value={<span className="font-sans text-[11.5px]">{tr(def.options.find((o) => o.value === value)?.label ?? def.options[0].label)}</span>}>
+          <div className="flex flex-wrap gap-1.5">
+            {def.options.map((o) => (
+              <Tooltip key={o.value} label={tr(o.label)}>
+                <button
+                  type="button"
+                  aria-label={tr(o.label)}
+                  onClick={() => onChange(o.value)}
+                  className={cx(
+                    'size-7 rounded-full transition-[transform,box-shadow] duration-150 hover:scale-110',
+                    (value ?? def.default) === o.value ? 'shadow-[0_0_0_2px_var(--surface),0_0_0_3.5px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--line-strong)_inset]',
+                  )}
+                  style={{ background: o.value }}
+                />
+              </Tooltip>
+            ))}
+          </div>
+        </Field>
       );
     case 'text':
       return (
@@ -175,6 +253,8 @@ function DeviceSection() {
         </div>
       </Field>
       )}
+      {model.surfaceKind !== 'print' && (
+      <>
       <Field label={t('props.brightness')} value={`${Math.round(item.screen.brightness * 100)} %`}>
         <Slider
           label={t('props.brightness')}
@@ -191,6 +271,8 @@ function DeviceSection() {
           onChange={(reflection) => updateItem(item.id, (it) => ({ screen: { ...it.screen, reflection } }))}
         />
       </Field>
+      </>
+      )}
     </Section>
   );
 }

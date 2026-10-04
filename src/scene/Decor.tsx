@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { roundedSlab } from '@/lib/geometry/sweep';
 import { getModel } from '@/models/registry';
+import { sizeOf } from '@/models/types';
 import type { Decor, SceneItem } from '@/store/project';
 import { loadMaterialMap, useRealMaterial } from './realMaterials';
 
@@ -19,7 +20,7 @@ export function itemsRadius(items: SceneItem[]) {
   let r = 6;
   for (const it of items) {
     const model = getModel(it.modelId);
-    const [w, h, d] = model.size;
+    const [w, h, d] = sizeOf(model, it.params).size;
     const flat = it.pose === 'flat' && model.anchor !== 'bottom';
     r = Math.max(r, Math.hypot(it.position[0], it.position[2]) + Math.hypot(w / 2, flat ? h / 2 : d / 2));
   }

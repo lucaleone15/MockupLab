@@ -27,7 +27,8 @@ if (import.meta.env.DEV) {
     import('./scene/exporter'),
     import('./store/persistence'),
     import('./scene/interaction'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia]) => {
+    import('./lib/samples'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -35,6 +36,7 @@ if (import.meta.env.DEV) {
         bridge: rf.debugBridge,
         persistence: pe,
         picking: ia.picking,
+        loadSamples: sa.loadSamples,
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),

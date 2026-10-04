@@ -2,6 +2,7 @@ import { t } from '@/i18n';
 import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
+import { useUi } from '@/store/ui';
 
 const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
 
@@ -57,7 +58,13 @@ export async function importImages(files: Iterable<File>, targetItemId?: string)
     const state = useProject.getState();
     const item = (targetItemId && state.items.find((it) => it.id === targetItemId)) || selectSelectedItem(state);
     if (item) {
-      const slot = Object.keys(item.surfaces)[0] ?? 'screen';
+      // The slot chosen in the panel, else the first one without an image, else the first.
+      const slots = Object.keys(item.surfaces);
+      const active = useUi.getState().activeSlot;
+      const slot =
+        (!targetItemId || targetItemId === state.selectedId) && active && slots.includes(active)
+          ? active
+          : (slots.find((k) => !item.surfaces[k].assetId) ?? slots[0] ?? 'screen');
       state.setSurface(item.id, slot, { assetId: asset.id, align: 0 });
       if (state.selectedId !== item.id) state.selectItem(item.id);
     }
