@@ -87,6 +87,9 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
   const camera = source.clone();
   // Only the scene: helpers (selection ring…) live on layer 1.
   camera.layers.set(0);
+  // depth precision follows the distance to the subject, as in the live view (animated close-ups)
+  camera.near = THREE.MathUtils.clamp(camera.position.distanceTo(cameraState.target) * 0.15, 0.5, 600);
+  camera.far = Math.max(12000, camera.near * 2000);
   camera.aspect = rw / rh;
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();

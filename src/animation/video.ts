@@ -88,21 +88,54 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
   const ctx = canvas.getContext('2d', { willReadFrequently: v.format === 'gif' })!;
   ctx.imageSmoothingQuality = 'high';
   const encoder = v.format === 'gif' ? gifEncoder(canvas, fps, def.loop) : await videoEncoder(canvas, v.format, fps);
-  const dof = p.mode === 'scene' && p.camera.dof && p.camera.aperture > 0;
+  const cinema = v.quality === 'cinema';
 
   await inSandbox(async () => {
     const rig = makeRig(def.id);
     await ready();
+    // motion blur: each frame averages instants spread over half a frame interval (a 180° shutter)
+    const step = def.loop ? 1 / frames : 1 / (frames - 1);
+    const subAt = (t: number) => (p.mode === 'scene' && cinema ? (rig.blur?.(t) ?? 6) : 1);
+    const layer = document.createElement('canvas');
+    layer.width = width;
+    layer.height = height;
+    const lctx = layer.getContext('2d')!;
+    const instant = async (r: typeof rig, time: number) => {
+      r.at(time);
+      // moving devices: the view redraws once (contact shadows); camera moves need nothing
+      if (r.moves) await settle(1);
+      const dof = useProject.getState().camera.dof && useProject.getState().camera.aperture > 0;
+      const { canvas: f } = await composeScene({ width, height, supersample: width * height > 2.5e6 ? 1 : 1.5, samples: dof ? (cinema ? 2 : 8) : 1, opaque: true });
+      return f;
+    };
     for (let i = 0; i < frames; i++) {
       if (token !== cancelled) throw new Error('cancelled');
       // a loop ends just before its start; a move goes from start to end
       const time = def.loop ? i / frames : i / (frames - 1);
-      rig.at(time);
       if (p.mode === 'scene') {
-        await settle(1);
-        const { canvas: frame } = await composeScene({ width, height, supersample: width * height > 2.5e6 ? 1 : 1.5, samples: dof ? 8 : 1, opaque: true });
-        ctx.drawImage(frame, 0, 0);
+        const layers = rig.layers ? rig.layers(time) : [{ rig, t: time, weight: 1, scale: 1 }];
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+        const sub = subAt(time);
+        for (const [li, l] of layers.entries()) {
+          // average of the instants of this shot
+          for (let k = 0; k < sub; k++) {
+            if (token !== cancelled) throw new Error('cancelled');
+            // shutter: half a frame interval, in the shot's own time
+            let tt = l.t + (sub > 1 ? ((k + 0.5) / sub - 0.5) * 0.5 * step * l.scale : 0);
+            tt = def.loop ? ((tt % 1) + 1) % 1 : Math.min(1, Math.max(0, tt));
+            const f = await instant(l.rig, tt);
+            lctx.globalAlpha = 1 / (k + 1);
+            lctx.drawImage(f, 0, 0);
+          }
+          // shots cross-fade (montage)
+          ctx.globalAlpha = li === 0 ? 1 : Math.min(1, l.weight / (l.weight + layers[0].weight));
+          ctx.drawImage(layer, 0, 0);
+        }
+        ctx.globalAlpha = 1;
       } else {
+        rig.at(time);
         const { canvas: photo } = await composePhoto();
         // the photo fills the frame; the zoom pushes in towards the selected zone
         const zoom = rig.zoom(time);

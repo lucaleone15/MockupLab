@@ -1,4 +1,4 @@
-import { Clapperboard, Film, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, Square, Waves, ZoomIn } from 'lucide-react';
+import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Square, TrendingUp, Waves, ZoomIn } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
@@ -10,6 +10,14 @@ import { animationsFor, hasScrollable } from './animations';
 import { videoFps, videoSize } from './size';
 
 const ICONS: Record<AnimationId, ReactNode> = {
+  reveal: <Aperture size={18} />,
+  dive: <ScanEye size={18} />,
+  dutch: <Crop size={18} />,
+  flip: <RefreshCw size={18} className="rotate-90" />,
+  drop: <ArrowDownToLine size={18} />,
+  crane: <TrendingUp size={18} />,
+  vertigo: <Focus size={18} />,
+  trailer: <Clapperboard size={18} />,
   turntable: <Rotate3d size={18} />,
   swing: <RefreshCw size={18} />,
   orbit: <Move3d size={18} />,
@@ -39,25 +47,47 @@ export function VideoSection() {
   return (
     <>
       <Field label={t('video.animation')}>
-        <div className="grid grid-cols-3 gap-1.5">
-          {list.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => set({ animation: a.id })}
-              className={cx(
-                'flex h-[62px] flex-col items-center justify-center gap-1.5 rounded-lg text-[11px] font-medium transition-[background-color,color,box-shadow] duration-150',
-                current.id === a.id ? 'bg-surface-4 text-fg shadow-[0_0_0_1px_var(--accent)_inset]' : 'bg-surface-2 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
-              )}
-            >
-              <span className={current.id === a.id ? 'text-accent' : ''}>{ICONS[a.id]}</span>
-              {t(a.label)}
-            </button>
-          ))}
-        </div>
+        {(['cinematic', 'classic'] as const).map((g) => {
+          const group = list.filter((a) => a.group === g);
+          if (!group.length) return null;
+          return (
+            <div key={g} className="flex flex-col gap-1.5">
+              {mode === 'scene' && <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">{t(g === 'cinematic' ? 'video.group.cinematic' : 'video.group.classic')}</div>}
+              <div className="grid grid-cols-3 gap-1.5">
+                {group.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => set({ animation: a.id })}
+                    className={cx(
+                      'flex h-[62px] flex-col items-center justify-center gap-1.5 rounded-lg px-1 text-center text-[11px] font-medium leading-tight transition-[background-color,color,box-shadow] duration-150',
+                      current.id === a.id ? 'bg-surface-4 text-fg shadow-[0_0_0_1px_var(--accent)_inset]' : 'bg-surface-2 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
+                    )}
+                  >
+                    <span className={current.id === a.id ? 'text-accent' : ''}>{ICONS[a.id]}</span>
+                    {t(a.label)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
         <p className="text-[11px] leading-snug text-fg-subtle">{t(current.hint)}</p>
         {current.id === 'scroll' && !hasScrollable() && <p className="text-[11px] leading-snug text-accent">{t('video.scrollNone')}</p>}
       </Field>
+      {mode === 'scene' && (
+        <Field label={t('video.quality')}>
+          <Segmented
+            value={video.quality}
+            onChange={(quality) => set({ quality })}
+            options={[
+              { value: 'cinema', label: t('video.quality.cinema') },
+              { value: 'fast', label: t('video.quality.fast') },
+            ]}
+          />
+          <p className="text-[11px] leading-snug text-fg-subtle">{t(video.quality === 'cinema' ? 'video.quality.cinemaHint' : 'video.quality.fastHint')}</p>
+        </Field>
+      )}
       <Field label={t('video.duration')} value={`${video.duration} s`}>
         <Slider label={t('video.duration')} min={2} max={12} step={0.5} value={video.duration} onChange={(duration) => set({ duration })} />
       </Field>

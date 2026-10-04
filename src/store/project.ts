@@ -204,7 +204,7 @@ export type ImageFormat = 'png' | 'jpeg' | 'webp';
 export type ResolutionPreset = '1080' | '2k' | '4k';
 export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4';
 
-export type AnimationId = 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float' | 'zoom';
+export type AnimationId = 'reveal' | 'dive' | 'dutch' | 'flip' | 'drop' | 'crane' | 'vertigo' | 'trailer' | 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float' | 'zoom';
 
 export interface VideoSettings {
   animation: AnimationId;
@@ -213,6 +213,8 @@ export interface VideoSettings {
   fps: 24 | 30 | 60;
   resolution: '720' | '1080' | '4k';
   format: 'mp4' | 'webm' | 'gif';
+  /** 'cinema': motion blur (several instants per frame) and animated depth of field. */
+  quality: 'fast' | 'cinema';
 }
 
 export interface ExportSettings {
@@ -371,7 +373,7 @@ export const DEFAULT_DECOR: Decor = {
   gobo: 'window',
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
-export const DEFAULT_VIDEO: VideoSettings = { animation: 'turntable', duration: 6, fps: 30, resolution: '1080', format: 'mp4' };
+export const DEFAULT_VIDEO: VideoSettings = { animation: 'reveal', duration: 6, fps: 30, resolution: '1080', format: 'mp4', quality: 'cinema' };
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0 };
 
 export function initialProject(): Project {
