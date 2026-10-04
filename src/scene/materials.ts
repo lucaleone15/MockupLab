@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { withMicro } from './microsurface';
 
 /**
  * Shared PBR material factories. Materials are cached by their parameters so
@@ -15,18 +16,16 @@ function cached<T extends THREE.Material>(key: string, make: () => T): T {
   return m;
 }
 
-/** Bead-blasted / brushed metal (titanium, aluminium). Brushing follows the UV u direction. */
+/**
+ * Anodised / bare metal. Strong anisotropy means a brushed finish (titanium
+ * bands: fine streaks along the UV u direction, i.e. around the band);
+ * otherwise a bead-blasted one (aluminium bodies: very fine grain).
+ */
 export const brushedMetal = (color: string, roughness = 0.32, anisotropy = 0.35) =>
-  cached(`metal:${color}:${roughness}:${anisotropy}`, () =>
-    new THREE.MeshPhysicalMaterial({
-      color,
-      metalness: 1,
-      roughness,
-      anisotropy,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.4,
-    }),
-  );
+  cached(`metal:${color}:${roughness}:${anisotropy}`, () => {
+    const m = new THREE.MeshPhysicalMaterial({ color, metalness: 1, roughness, anisotropy });
+    return anisotropy >= 0.25 ? withMicro(m, 'brushed', [6, 1], 0.35) : withMicro(m, 'bead', [24, 24], 0.18);
+  });
 
 /** Polished metal (lens rings, chamfers). */
 export const polishedMetal = (color: string) =>
@@ -45,16 +44,21 @@ export const coverGlass = (color = '#030304') =>
 /** Textured matte glass (device backs). */
 export const frostedGlass = (color: string) =>
   cached(`frosted:${color}`, () =>
-    new THREE.MeshPhysicalMaterial({
-      color,
-      metalness: 0,
-      roughness: 0.48,
-      clearcoat: 0.25,
-      clearcoatRoughness: 0.55,
-      sheen: 0.15,
-      sheenRoughness: 0.6,
-      sheenColor: new THREE.Color('#ffffff'),
-    }),
+    withMicro(
+      new THREE.MeshPhysicalMaterial({
+        color,
+        metalness: 0,
+        roughness: 0.42,
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.5,
+        sheen: 0.15,
+        sheenRoughness: 0.6,
+        sheenColor: new THREE.Color('#ffffff'),
+      }),
+      'frost',
+      [10, 10],
+      0.32,
+    ),
   );
 
 /** Glossy coloured glass (camera plateau). */
