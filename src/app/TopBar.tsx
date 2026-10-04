@@ -86,6 +86,28 @@ function ProjectControls() {
   );
 }
 
+/** 3D scene ⟷ photo mock-up. */
+function ModeSwitch() {
+  const { t } = useT();
+  const mode = useProject((s) => s.mode);
+  return (
+    <div className="ml-2 w-[168px]" data-testid="mode-switch">
+      <Segmented
+        size="sm"
+        value={mode}
+        onChange={(m) => {
+          useProject.getState().setMode(m);
+          useUi.getState().setPhotoTool('select');
+        }}
+        options={[
+          { value: 'scene', label: t('mode.scene'), title: t('mode.sceneHint') },
+          { value: 'photo', label: t('mode.photo'), title: t('mode.photoHint') },
+        ]}
+      />
+    </div>
+  );
+}
+
 export function TopBar() {
   const { t } = useT();
   const lang = useLang((s) => s.lang);
@@ -101,6 +123,7 @@ export function TopBar() {
       <Logo />
       <div className="mx-1 h-5 w-px bg-line" />
       <ProjectControls />
+      <ModeSwitch />
 
       <div className="ml-auto flex items-center gap-1">
         <IconButton label={t('top.undo')} shortcut={`${MOD}Z`} disabled={!canUndo} onClick={() => useProject.temporal.getState().undo()}>

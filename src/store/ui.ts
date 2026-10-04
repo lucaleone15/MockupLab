@@ -24,6 +24,12 @@ interface UiState {
   /** Last successful autosave (ms), null before the first one. */
   savedAt: number | null;
   setSavedAt: (t: number) => void;
+  /** Photo mode: editing zones, or clicking the four corners of a new one. */
+  photoTool: 'select' | 'place';
+  setPhotoTool: (tool: 'select' | 'place') => void;
+  /** Photo mode: corner of the selected zone moved by the arrow keys (0..3). */
+  activeCorner: number | null;
+  setActiveCorner: (i: number | null) => void;
 }
 
 const initialTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -53,4 +59,8 @@ export const useUi = create<UiState>((set) => ({
   setHelpOpen: (helpOpen) => set({ helpOpen }),
   savedAt: null,
   setSavedAt: (savedAt) => set({ savedAt }),
+  photoTool: 'select',
+  setPhotoTool: (photoTool) => set({ photoTool }),
+  activeCorner: null,
+  setActiveCorner: (activeCorner) => set({ activeCorner }),
 }));

@@ -9,12 +9,12 @@ import { loadSamples } from '@/lib/samples';
 import { Stage } from '@/scene/Stage';
 import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { IconButton, Kbd, Spinner, cx } from '@/ui/primitives';
+import { IconButton, Spinner, cx } from '@/ui/primitives';
 import { MOD } from './shortcuts';
 import { OverlayLayer } from './OverlayLayer';
 
 /** Size of the largest rectangle of the given aspect fitting in the container (minus padding). */
-function useFrameSize(ratio: number) {
+export function useFrameSize(ratio: number) {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   useLayoutEffect(() => {
@@ -66,7 +66,7 @@ function EmptyHint() {
         <ImagePlus size={16} className="text-white/60" />
         <span>
           {before}
-          <Kbd inverted>{MOD}V</Kbd>
+          <kbd className="mx-1 rounded bg-white/15 px-1 font-mono text-[10.5px] leading-[16px] text-white/85">{MOD}V</kbd>
           {after}{' '}
           <button type="button" onClick={pickImages} className="font-medium text-white underline decoration-white/30 underline-offset-[3px] hover:decoration-white">
             {t('stage.browse')}
@@ -93,7 +93,7 @@ function EmptyHint() {
   );
 }
 
-function DropOverlay() {
+export function DropOverlay() {
   const { t } = useT();
   const dragging = useUi((s) => s.dragging);
   return (
@@ -114,7 +114,7 @@ function DropOverlay() {
   );
 }
 
-function ExportOverlay() {
+export function ExportOverlay() {
   const label = useUi((s) => s.exporting);
   if (!label) return null;
   return (

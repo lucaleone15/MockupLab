@@ -6,6 +6,8 @@ import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { MODEL_DRAG_TYPE } from './LibraryPanel';
 import { saveProjectFile } from './projectFiles';
+import { nudge } from '@/photo/editing';
+import { photoPicking } from '@/photo/PhotoView';
 
 export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl ';
@@ -26,6 +28,7 @@ export const SHORTCUTS: [string, string][] = [
   ['← ↑ → ↓', 'sc.nudge'],
   ['R', 'sc.rotate'],
   ['F', 'sc.frame'],
+  ['N', 'sc.zone'],
   ['Esc', 'sc.deselect'],
   ['?', 'sc.help'],
 ];
@@ -37,6 +40,8 @@ function onKey(e: KeyboardEvent) {
   const project = useProject.getState();
   const ui = useUi.getState();
   const item = selectSelectedItem(project);
+
+  if (project.mode === 'photo' && !mod && onPhotoKey(e, key)) return;
 
   if (mod && key === 'z') {
     e.preventDefault();
@@ -81,6 +86,40 @@ function onKey(e: KeyboardEvent) {
   } else if (e.key === '?') {
     ui.setHelpOpen(!ui.helpOpen);
   }
+}
+
+/** Photo mode: arrows move the active corner (or the zone), Delete removes it, Esc cancels placing. */
+function onPhotoKey(e: KeyboardEvent, key: string) {
+  const project = useProject.getState();
+  const ui = useUi.getState();
+  if (key.startsWith('arrow')) {
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    const d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[key] ?? [0, 0];
+    nudge(d[0], d[1]);
+    return true;
+  }
+  if (key === 'delete' || key === 'backspace') {
+    e.preventDefault();
+    if (ui.selectedOverlayId) {
+      project.removeOverlay(ui.selectedOverlayId);
+      ui.selectOverlay(null);
+    } else if (project.photo.selectedZoneId) project.removeZone(project.photo.selectedZoneId);
+    return true;
+  }
+  if (key === 'escape') {
+    ui.setPhotoTool('select');
+    ui.setActiveCorner(null);
+    ui.selectOverlay(null);
+    ui.setHelpOpen(false);
+    return true;
+  }
+  if (key === 'n' && !e.altKey) {
+    if (project.photo.assetId) ui.setPhotoTool(ui.photoTool === 'place' ? 'select' : 'place');
+    return true;
+  }
+  // R and F only make sense in 3D
+  return key === 'r' || key === 'f';
 }
 
 /** Global keyboard shortcuts, clipboard paste and drag & drop (files and library models). */
@@ -129,8 +168,9 @@ export function useGlobalInput() {
       e.preventDefault();
       depth = 0;
       useUi.getState().setDragging(false);
-      // An image dropped on a device goes on that device's screen.
-      const target = picking.item?.(e.clientX, e.clientY) ?? undefined;
+      // An image dropped on a device (or a photo zone) goes on that device's screen.
+      const target =
+        useProject.getState().mode === 'photo' ? photoPicking.zoneAt?.(e.clientX, e.clientY) : (picking.item?.(e.clientX, e.clientY) ?? undefined);
       if (e.dataTransfer?.files.length) importImages(e.dataTransfer.files, target);
     };
 

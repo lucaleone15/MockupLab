@@ -9,7 +9,10 @@ import {
   DEFAULT_DECOR,
   DEFAULT_GROUND,
   DEFAULT_SCREEN,
+  DEFAULT_SURFACE,
+  EMPTY_PHOTO,
   initialProject,
+  zoneDefaults,
   useProject,
   type Project,
   type ProjectState,
@@ -37,7 +40,9 @@ interface StoredAsset {
 
 export function snapshot(s: ProjectState = useProject.getState()): Project {
   return {
-    version: 4,
+    version: 5,
+    mode: s.mode,
+    photo: s.photo,
     brand: s.brand,
     name: s.name,
     items: s.items,
@@ -59,6 +64,8 @@ export function referencedAssets(p: Project): Set<string> {
   if (p.background.kind === 'image' && p.background.assetId) ids.add(p.background.assetId);
   for (const o of p.overlays) if (o.kind === 'logo' && o.assetId) ids.add(o.assetId);
   for (const id of [p.brand?.logoAssetId, p.brand?.heading.assetId, p.brand?.body.assetId]) if (id) ids.add(id);
+  if (p.photo?.assetId) ids.add(p.photo.assetId);
+  for (const z of p.photo?.zones ?? []) if (z.surface.assetId) ids.add(z.surface.assetId);
   return ids;
 }
 
@@ -83,6 +90,26 @@ export function migrateProject(raw: unknown): Project {
       })
     : base.items;
   const decor = { ...DEFAULT_DECOR, ...(r.decor ?? {}) };
+  const rawPhoto = (r.photo ?? {}) as Partial<Project['photo']>;
+  const zones = Array.isArray(rawPhoto.zones)
+    ? rawPhoto.zones
+        .filter((z) => Array.isArray(z?.corners) && z.corners.length === 4)
+        .map((z) => ({
+          ...zoneDefaults(z.kind === 'print' ? 'print' : 'screen'),
+          ...z,
+          name: z.name ?? '',
+          visible: z.visible ?? true,
+          aspect: z.aspect > 0 ? z.aspect : 1,
+          aspectAuto: z.aspectAuto ?? false,
+          surface: { ...DEFAULT_SURFACE, ...(z.surface ?? {}) },
+        }))
+    : [];
+  const photo = {
+    ...EMPTY_PHOTO,
+    ...rawPhoto,
+    zones,
+    selectedZoneId: zones.some((z) => z.id === rawPhoto.selectedZoneId) ? (rawPhoto.selectedZoneId as string) : (zones[0]?.id ?? null),
+  };
   if (!['none', 'sweep', 'podium', 'surface', 'table'].includes(decor.kind)) decor.kind = 'none';
   return {
     ...base,
@@ -97,7 +124,9 @@ export function migrateProject(raw: unknown): Project {
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
     export: { ...base.export, ...(r.export ?? {}) },
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
-    version: 4,
+    mode: r.mode === 'photo' ? 'photo' : 'scene',
+    photo,
+    version: 5,
   };
 }
 

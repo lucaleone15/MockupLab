@@ -3,6 +3,7 @@ import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
+import { importIntoPhoto } from '@/photo/importPhoto';
 
 const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
 
@@ -46,6 +47,8 @@ export async function fileToAsset(file: Blob, name: string): Promise<Asset> {
 /** Imports images (drop, paste, picker) and binds the first one to a device screen (the selected one by default). */
 export async function importImages(files: Iterable<File>, targetItemId?: string) {
   const list = [...files];
+  // photo mode: the photo itself, or the design of a zone (targetItemId is then a zone id)
+  if (useProject.getState().mode === 'photo') return importIntoPhoto(list, targetItemId);
   const images = list.filter((f) => ACCEPTED.test(f.type));
   for (const f of list) if (!ACCEPTED.test(f.type)) toast.error(t('image.unsupported', { name: f.name || 'file' }));
   if (!images.length) return;

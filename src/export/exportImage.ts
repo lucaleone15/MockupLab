@@ -3,6 +3,7 @@ import { getModel } from '@/models/registry';
 import { dither, paintBackground, prepareBackground } from '@/lib/background';
 import { paintOverlays, prepareOverlays } from '@/lib/overlays';
 import { renderFrame } from '@/scene/exporter';
+import { photoOutputSize, renderPhotoImage } from '@/photo/exportPhoto';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
@@ -36,6 +37,13 @@ export function download(blob: Blob, filename: string) {
 /** Renders the current composition and returns the encoded image. */
 export async function renderImage(): Promise<{ blob: Blob; width: number; height: number; filename: string }> {
   const project = useProject.getState();
+  if (project.mode === 'photo') {
+    const r = await renderPhotoImage();
+    if (r.blob.type === (FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0]).mime) return r;
+    toast.info(t('export.webpFallback'));
+    const blob = await toBlob(r.canvas, 'image/png', 1);
+    return { ...r, blob, filename: r.filename.replace(/\.[a-z]+$/, '.png') };
+  }
   const settings = project.export;
   const { width, height } = outputSize(settings);
   const format = FORMATS.find((f) => f.id === settings.format) ?? FORMATS[0];
@@ -96,7 +104,9 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
 export async function exportImage() {
   const ui = useUi.getState();
   if (ui.exporting) return;
-  const { width, height } = outputSize(useProject.getState().export);
+  const project = useProject.getState();
+  if (project.mode === 'photo' && !project.photo.assetId) return;
+  const { width, height } = project.mode === 'photo' ? photoOutputSize() : outputSize(project.export);
   ui.setExporting(t('export.rendering', { w: width, h: height }));
   try {
     // Let the progress overlay paint before the (synchronous) GPU work.

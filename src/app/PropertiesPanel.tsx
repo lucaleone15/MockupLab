@@ -12,6 +12,8 @@ import { CompositionSection } from './panels/CompositionSection';
 import { ScenePanel } from './panels/ScenePanel';
 import { ModelSwitcher } from './ModelSwitcher';
 import { TextPanel } from './panels/TextPanel';
+import { PhotoPanel } from '@/photo/PhotoPanel';
+import { photoOutputSize } from '@/photo/exportPhoto';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
@@ -288,7 +290,9 @@ function ExportSection() {
   const transparent = useProject((s) => s.background.kind === 'transparent');
   const dof = useProject((s) => s.camera.dof);
   const exporting = useUi((s) => s.exporting);
-  const { width, height } = outputSize(settings);
+  const photoMode = useProject((s) => s.mode === 'photo');
+  useProject((s) => s.photo.assetId);
+  const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
 
   return (
     <Section title={t('props.export')}>
@@ -301,6 +305,10 @@ function ExportSection() {
           <Slider label={t('props.quality')} min={0.6} max={1} value={settings.quality} onChange={(quality) => setExport({ quality })} />
         </Field>
       )}
+      {photoMode ? (
+        <p className="text-[11.5px] leading-snug text-fg-subtle">{t('photo.export.native')}</p>
+      ) : (
+      <>
       <Field label={t('props.size')}>
         <Segmented value={settings.resolution} onChange={(resolution) => setExport({ resolution })} options={RESOLUTIONS.map((r) => ({ value: r.id, label: r.label }))} />
       </Field>
@@ -328,6 +336,8 @@ function ExportSection() {
           ))}
         </div>
       </Field>
+      </>
+      )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
         <span className="text-fg-muted">{t('props.output')}</span>
         <span className="font-mono tabular-nums">
@@ -336,7 +346,7 @@ function ExportSection() {
         </span>
       </div>
       {dof && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('export.dofNote')}</p>}
-      <Button variant="primary" size="lg" onClick={exportImage} disabled={!!exporting}>
+      <Button variant="primary" size="lg" onClick={exportImage} disabled={!!exporting || (photoMode && !width)}>
         <Download size={16} strokeWidth={2.2} />
         {t('export.cta')}
       </Button>
@@ -344,14 +354,14 @@ function ExportSection() {
   );
 }
 
-type Tab = 'device' | 'scene' | 'text' | 'export';
+type Tab = 'device' | 'scene' | 'text' | 'export' | 'photo';
 
 export function PropertiesPanel() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>(() => {
     try {
       const v = localStorage.getItem('mockuplab:tab');
-      return v === 'scene' || v === 'export' || v === 'text' ? v : 'device';
+      return v === 'scene' || v === 'export' || v === 'text' || v === 'photo' ? v : 'device';
     } catch {
       return 'device';
     }
@@ -364,31 +374,43 @@ export function PropertiesPanel() {
       /* storage unavailable */
     }
   };
+  const photoMode = useProject((s) => s.mode === 'photo');
+  // each mode has its own first tab; brand and export are shared
+  const shown: Tab = photoMode ? (tab === 'device' || tab === 'scene' ? 'photo' : tab) : tab === 'photo' ? 'device' : tab;
   return (
     <aside className="flex w-[300px] shrink-0 flex-col border-l border-line bg-surface">
       <div className="shrink-0 border-b border-line p-2">
         <Segmented
-          value={tab}
+          value={shown}
           onChange={choose}
-          options={[
-            { value: 'device', label: t('tab.device') },
-            { value: 'scene', label: t('tab.scene') },
-            { value: 'text', label: t('tab.brand') },
-            { value: 'export', label: t('tab.export') },
-          ]}
+          options={
+            photoMode
+              ? [
+                  { value: 'photo', label: t('tab.photo') },
+                  { value: 'text', label: t('tab.brand') },
+                  { value: 'export', label: t('tab.export') },
+                ]
+              : [
+                  { value: 'device', label: t('tab.device') },
+                  { value: 'scene', label: t('tab.scene') },
+                  { value: 'text', label: t('tab.brand') },
+                  { value: 'export', label: t('tab.export') },
+                ]
+          }
         />
       </div>
-      <div className="scroll-thin flex-1 overflow-y-auto" key={tab}>
-        {tab === 'device' && (
+      <div className="scroll-thin flex-1 overflow-y-auto" key={shown}>
+        {shown === 'photo' && <PhotoPanel />}
+        {shown === 'device' && (
           <>
             <DeviceSection />
             <ImageSection />
             <CompositionSection />
           </>
         )}
-        {tab === 'scene' && <ScenePanel />}
-        {tab === 'text' && <TextPanel />}
-        {tab === 'export' && <ExportSection />}
+        {shown === 'scene' && <ScenePanel />}
+        {shown === 'text' && <TextPanel />}
+        {shown === 'export' && <ExportSection />}
       </div>
     </aside>
   );
