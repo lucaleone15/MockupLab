@@ -7,6 +7,7 @@ import { tablet11, tablet13 } from './tablet/Tablet';
 import { bottle, box, mug, tube } from './merch/Objects';
 import { tote, tshirt } from './merch/Apparel';
 import { badge } from './print/Badge';
+import { streetPoster, totem, tv } from './signage/Signage';
 import { businessCard, flyer, postcard, stationery } from './print/Cards';
 import { poster, rollUp } from './print/Posters';
 import { book, brochure, magazine } from './print/Publications';
@@ -23,6 +24,9 @@ export const MODELS: DeviceModule[] = [
   desktop24,
   display27,
   monitor27,
+  tv,
+  totem,
+  streetPoster,
   browserWindow,
   businessCard,
   postcard,

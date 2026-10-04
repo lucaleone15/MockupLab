@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { roundedSlab } from '@/lib/geometry/sweep';
 import { brushedMetal, mattePlastic } from '@/scene/materials';
 import { useRealMaterial } from '@/scene/realMaterials';
 import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
 import { cardGeometry } from './geometry';
+import { WallShadow, useWall } from '../shared/wall';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial } from './shared';
 
 const NO_FINISH: DeviceFinish[] = [{ id: 'default', name: { fr: 'Standard', en: 'Default' }, swatch: '#f4f2ec', colors: {} }];
@@ -27,16 +27,6 @@ function posterDims(params: Record<string, unknown>) {
   const fw = w + 2 * (mat + bar);
   const fh = h + 2 * (mat + bar);
   return { w, h, framed, bar, mat, fw, fh, depth: framed ? 2.4 : 0.4 };
-}
-
-function useWall(color: string) {
-  const invalidate = useThree((s) => s.invalidate);
-  const m = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.96 }), []);
-  useEffect(() => {
-    m.color.set(color);
-    invalidate();
-  }, [m, color, invalidate]);
-  return m;
 }
 
 /** Thin glass in front of a framed print: only its reflections show. */
@@ -64,32 +54,6 @@ function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: num
         <boxGeometry args={[fw - bar, fh - bar, 0.3]} />
       </mesh>
     </group>
-  );
-}
-
-let aoTex: THREE.Texture | null = null;
-/** Soft dark rounded-rect falloff: the ambient shadow an object casts on a wall right behind it. */
-function wallShadowTexture() {
-  if (aoTex) return aoTex;
-  const c = document.createElement('canvas');
-  c.width = c.height = 256;
-  const g = c.getContext('2d')!;
-  // alpha map: white = shadow
-  g.fillStyle = '#000';
-  g.fillRect(0, 0, 256, 256);
-  g.filter = 'blur(18px)';
-  g.fillStyle = '#fff';
-  g.fillRect(44, 44, 168, 168);
-  aoTex = new THREE.CanvasTexture(c);
-  return aoTex;
-}
-
-function WallShadow({ w, h, z }: { w: number; h: number; z: number }) {
-  return (
-    <mesh position={[0.8, -2.2, z]} renderOrder={1}>
-      <planeGeometry args={[w * 1.22 + 10, h * 1.22 + 10]} />
-      <meshBasicMaterial color="#000" transparent opacity={0.5} depthWrite={false} alphaMap={wallShadowTexture()} />
-    </mesh>
   );
 }
 
