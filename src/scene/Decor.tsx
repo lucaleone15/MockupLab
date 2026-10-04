@@ -64,13 +64,14 @@ function sweepGeometry(width: number) {
   const pts: { z: number; y: number; nz: number; ny: number }[] = [];
   const R = 60;
   const back = -70;
-  pts.push({ z: 260, y: 0, nz: 0, ny: 1 });
+  // floor and wall run far enough that their edges never show, even with long lenses
+  pts.push({ z: 6000, y: 0, nz: 0, ny: 1 });
   pts.push({ z: back + R, y: 0, nz: 0, ny: 1 });
   for (let i = 1; i <= 24; i++) {
     const a = (i / 24) * (Math.PI / 2);
     pts.push({ z: back + R - Math.sin(a) * R, y: R - Math.cos(a) * R, nz: Math.sin(a), ny: Math.cos(a) });
   }
-  pts.push({ z: back, y: 400, nz: 1, ny: 0 });
+  pts.push({ z: back, y: 4000, nz: 1, ny: 0 });
   const pos: number[] = [];
   const nrm: number[] = [];
   const idx: number[] = [];
@@ -107,7 +108,7 @@ export function DecorScene({ decor, items }: { decor: Decor; items: SceneItem[] 
 }
 
 function Sweep({ color }: { color: string }) {
-  const geo = useMemo(() => sweepGeometry(900), []);
+  const geo = useMemo(() => sweepGeometry(16000), []);
   return (
     <mesh geometry={geo} receiveShadow>
       <meshStandardMaterial color={color} roughness={0.92} metalness={0} />

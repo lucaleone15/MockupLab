@@ -238,7 +238,7 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
         )),
       )}
       {/* top deck, in a frame where x → right and y → back */}
-      <group position={[0, top + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <group position={[0, top + 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <mesh geometry={g.deck} material={mattePlastic('#0b0b0d', 0.7)} position={[0, kbCenter, 0]} />
         <group position={[0, kbCenter, 0]}>
           {keycaps.map((m, i) => (
@@ -246,16 +246,16 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
           ))}
           <KeyLegends spec={s} layout={params.keyboard === 'azerty' ? 'azerty' : 'qwerty'} />
         </group>
-        <mesh geometry={g.trackpadGap} material={mattePlastic('#5c5d61', 0.6)} position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.0005]} />
+        <mesh geometry={g.trackpadGap} material={mattePlastic('#5c5d61', 0.6)} position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.006]} />
         <mesh
           geometry={g.trackpad}
           material={brushedMetal(finish.colors.frame, 0.24, 0)}
-          position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.001]}
+          position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.012]}
         />
         {s.grilles && (
           <>
-            <primitive object={grille} position={[-(kb.width / 2 + (s.width - kb.width) / 4 + 0.05), kbCenter, 0.0008]} />
-            <primitive object={grilleR} position={[kb.width / 2 + (s.width - kb.width) / 4 + 0.05, kbCenter, 0.0008]} />
+            <primitive object={grille} position={[-(kb.width / 2 + (s.width - kb.width) / 4 + 0.05), kbCenter, 0.006]} />
+            <primitive object={grilleR} position={[kb.width / 2 + (s.width - kb.width) / 4 + 0.05, kbCenter, 0.006]} />
           </>
         )}
       </group>
@@ -275,11 +275,11 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
       <mesh geometry={g.hinge} material={mattePlastic('#18181b', 0.45)} position={[0, pivotY - 0.06, pivotZ]} rotation={[0, 0, Math.PI / 2]} />
       <group position={[0, pivotY, pivotZ]} rotation={[Math.PI / 2 - angle, 0, 0]}>
         <mesh geometry={g.lid} material={metal} castShadow />
-        <group position={[0, 0, s.lidThickness / 2 + 0.001]}>
+        <group position={[0, 0, s.lidThickness / 2 + 0.006]}>
           <mesh geometry={g.bezel} material={coverGlass()} position={[0, lidH / 2, 0]} />
-          <mesh geometry={g.display} material={material} position={[0, displayY, 0.0015]} />
-          {notch && <mesh geometry={g.notch} material={islandBlack()} position={[0, lidH - d.top - 0.31 + 0.01, 0.004]} />}
-          <mesh position={[0, lidH - d.top / 2 - (notch ? 0.25 : 0), 0.005]}>
+          <mesh geometry={g.display} material={material} position={[0, displayY, 0.006]} />
+          {notch && <mesh geometry={g.notch} material={islandBlack()} position={[0, lidH - d.top - 0.31 + 0.01, 0.012]} />}
+          <mesh position={[0, lidH - d.top / 2 - (notch ? 0.25 : 0), 0.016]}>
             <circleGeometry args={[0.07, 24]} />
             <primitive object={lensGlass()} attach="material" />
           </mesh>
@@ -305,6 +305,13 @@ function defineLaptop(spec: LaptopSpec, view: DeviceModule['view']): DeviceModul
     category: 'laptop',
     anchor: 'bottom',
     size: [spec.width, spec.depth * 0.95, spec.depth],
+    // The open lid rises and leans back behind the hinge.
+    sizeFor: (p) => {
+      const a = THREE.MathUtils.degToRad(Number(p.angle ?? 108));
+      const lid = spec.depth - 0.2;
+      const behind = Math.max(0, -Math.cos(a) * lid);
+      return { size: [spec.width, spec.baseThickness + 0.1 + Math.max(0.6, Math.sin(a) * lid), spec.depth + behind * 2] };
+    },
     surfaces: [
       {
         id: 'screen',

@@ -4,7 +4,10 @@ import { Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { useProject } from '@/store/project';
 import { AMBIENCES, KEY_AZIMUTH, KEY_ELEVATION, goboTexture, type LoadedAmbience } from '../ambiences';
-import { TABLE_BACK } from '../Decor';
+import { TABLE_BACK, decorLayout } from '../Decor';
+import { footprint } from '@/lib/arrange';
+import { getModel } from '@/models/registry';
+import { sizeOf } from '@/models/types';
 import { screenUniforms } from '../screenMaterial';
 import { LIGHT_PRESETS } from './presets';
 
@@ -19,11 +22,35 @@ const SHADOW_PROPS = {
   'shadow-bias': -0.0005,
 };
 
-const direction = (azimuth: number, elevation: number, distance: number): [number, number, number] => {
+const direction = (azimuth: number, elevation: number, distance: number, from: THREE.Vector3 = new THREE.Vector3()): [number, number, number] => {
   const az = deg(azimuth);
   const el = deg(Math.max(5, Math.min(89, elevation)));
-  return [Math.sin(az) * Math.cos(el) * distance, Math.sin(el) * distance, Math.cos(az) * Math.cos(el) * distance];
+  return [from.x + Math.sin(az) * Math.cos(el) * distance, from.y + Math.sin(el) * distance, from.z + Math.cos(az) * Math.cos(el) * distance];
 };
+
+/**
+ * Centre and radius of the composition (devices may hang on a wall or stand
+ * on a podium): the key light and its shadow map follow it, so tall or high
+ * objects (posters, banners, desktops) always receive and cast shadows.
+ */
+function useCompositionBounds() {
+  const items = useProject((s) => s.items);
+  const decor = useProject((s) => s.decor);
+  return useMemo(() => {
+    const floorY = decorLayout(decor, items).floorY;
+    const box = new THREE.Box3();
+    for (const it of items) {
+      const f = footprint(it);
+      const { y0 } = sizeOf(getModel(it.modelId), it.params);
+      const r = Math.hypot(f.w, f.d) / 2;
+      box.expandByPoint(new THREE.Vector3(it.position[0] - r, floorY + y0, it.position[2] - r));
+      box.expandByPoint(new THREE.Vector3(it.position[0] + r, floorY + y0 + f.h, it.position[2] + r));
+    }
+    const center = box.getCenter(new THREE.Vector3());
+    const radius = Math.max(40, box.getSize(new THREE.Vector3()).length() / 2);
+    return { center, radius };
+  }, [items, decor]);
+}
 
 /**
  * Scene lighting.
@@ -41,6 +68,11 @@ export function Lighting({ ambience }: { ambience: LoadedAmbience | null }) {
   const preset = LIGHT_PRESETS[lighting.preset];
   const table = decor.kind === 'table';
   const spotTarget = useMemo(() => new THREE.Object3D(), []);
+  const keyTarget = useMemo(() => new THREE.Object3D(), []);
+  const { center, radius } = useCompositionBounds();
+  // Shadow frustum: the composition plus room for shadows cast behind it.
+  const extent = radius * 1.6;
+  const keyDistance = Math.max(KEY_DISTANCE, radius * 2.5);
 
   useEffect(() => {
     // (environmentIntensity is passed to <Environment>, which would otherwise reset it to 1)
@@ -75,20 +107,22 @@ export function Lighting({ ambience }: { ambience: LoadedAmbience | null }) {
           />
         ) : (
           <directionalLight
-            position={direction(KEY_AZIMUTH, KEY_ELEVATION, KEY_DISTANCE)}
+            position={direction(KEY_AZIMUTH, KEY_ELEVATION, keyDistance, center)}
+            target={keyTarget}
             color={spec.key.color}
             intensity={intensity}
             castShadow
             shadow-radius={18}
-            shadow-camera-left={-120}
-            shadow-camera-right={120}
-            shadow-camera-top={120}
-            shadow-camera-bottom={-120}
+            shadow-camera-left={-Math.max(120, extent)}
+            shadow-camera-right={Math.max(120, extent)}
+            shadow-camera-top={Math.max(120, extent)}
+            shadow-camera-bottom={-Math.max(120, extent)}
             shadow-camera-near={1}
-            shadow-camera-far={300}
+            shadow-camera-far={keyDistance + extent * 2}
             {...SHADOW_PROPS}
           />
         )}
+        <primitive object={keyTarget} position={center.toArray()} />
       </>
     );
   }
@@ -116,18 +150,20 @@ export function Lighting({ ambience }: { ambience: LoadedAmbience | null }) {
           />
         ))}
       </Environment>
+      <primitive object={keyTarget} position={center.toArray()} />
       <directionalLight
-        position={direction(lighting.azimuth, lighting.elevation, KEY_DISTANCE)}
+        position={direction(lighting.azimuth, lighting.elevation, keyDistance, center)}
+        target={keyTarget}
         intensity={lighting.intensity}
         color={lighting.color}
         castShadow={castShadow}
         shadow-radius={2 + lighting.softness * 34}
-        shadow-camera-left={-80}
-        shadow-camera-right={80}
-        shadow-camera-top={80}
-        shadow-camera-bottom={-80}
+        shadow-camera-left={-extent}
+        shadow-camera-right={extent}
+        shadow-camera-top={extent}
+        shadow-camera-bottom={-extent}
         shadow-camera-near={1}
-        shadow-camera-far={200}
+        shadow-camera-far={keyDistance + extent * 2}
         {...SHADOW_PROPS}
         shadow-mapSize={[1024, 1024]}
       />

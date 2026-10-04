@@ -130,11 +130,11 @@ function Panel({ p, colors, bezel, surfaces, screen }: { p: PanelSpec; colors: {
   return (
     <group position={[0, p.bottom + p.height / 2, p.front - p.depth / 2]}>
       <mesh geometry={g.body} material={brushedMetal(colors.body, 0.36, 0.1)} castShadow />
-      <group position={[0, 0, p.depth / 2 + 0.002]}>
+      <group position={[0, 0, p.depth / 2 + 0.008]}>
         <mesh geometry={g.glass} material={coverGlass(bezel)} position={[0, glassCenterY, 0]} />
         {g.chin && <mesh geometry={g.chin} material={brushedMetal(colors.chin, 0.4, 0.05)} position={[0, -p.height / 2 + p.chin / 2 + 0.03, 0]} />}
-        <mesh geometry={g.display} material={material} position={[0, displayCenterY, 0.0015]} />
-        <mesh position={[0, p.height / 2 - sideBezel / 2, 0.003]}>
+        <mesh geometry={g.display} material={material} position={[0, displayCenterY, 0.006]} />
+        <mesh position={[0, p.height / 2 - sideBezel / 2, 0.01]}>
           <circleGeometry args={[0.08, 24]} />
           <primitive object={lensGlass()} attach="material" />
         </mesh>

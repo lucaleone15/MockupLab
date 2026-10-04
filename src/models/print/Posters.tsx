@@ -40,7 +40,7 @@ function useWall(color: string) {
 }
 
 /** Thin glass in front of a framed print: only its reflections show. */
-const glass = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: 0.06, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false });
+const glass = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: 0.035, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false });
 
 function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: number; depth: number; color: string }) {
   const oak = useRealMaterial('oak', fw, fh);
@@ -64,6 +64,32 @@ function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: num
         <boxGeometry args={[fw - bar, fh - bar, 0.3]} />
       </mesh>
     </group>
+  );
+}
+
+let aoTex: THREE.Texture | null = null;
+/** Soft dark rounded-rect falloff: the ambient shadow an object casts on a wall right behind it. */
+function wallShadowTexture() {
+  if (aoTex) return aoTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  // alpha map: white = shadow
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, 256, 256);
+  g.filter = 'blur(18px)';
+  g.fillStyle = '#fff';
+  g.fillRect(44, 44, 168, 168);
+  aoTex = new THREE.CanvasTexture(c);
+  return aoTex;
+}
+
+function WallShadow({ w, h, z }: { w: number; h: number; z: number }) {
+  return (
+    <mesh position={[0.8, -2.2, z]} renderOrder={1}>
+      <planeGeometry args={[w * 1.22 + 10, h * 1.22 + 10]} />
+      <meshBasicMaterial color="#000" transparent opacity={0.5} depthWrite={false} alphaMap={wallShadowTexture()} />
+    </mesh>
   );
 }
 
@@ -99,10 +125,13 @@ function Poster({ surfaces, params }: DeviceProps) {
   if (onWall) {
     return (
       <group>
-        <group position={[0, HANG_BOTTOM + d.fh / 2, 0]}>{art}</group>
+        <group position={[0, HANG_BOTTOM + d.fh / 2, 0]}>
+          {art}
+          {showWall && <WallShadow w={d.fw} h={d.fh} z={-d.depth / 2 - 0.03} />}
+        </group>
         {showWall && (
-          <mesh material={wall} position={[0, 160, -d.depth / 2 - 0.05]} receiveShadow>
-            <planeGeometry args={[700, 320]} />
+          <mesh material={wall} position={[0, 60, -d.depth / 2 - 0.05]} receiveShadow>
+            <planeGeometry args={[900, 520]} />
           </mesh>
         )}
       </group>
@@ -116,8 +145,8 @@ function Poster({ surfaces, params }: DeviceProps) {
         {art}
       </group>
       {showWall && (
-        <mesh material={wall} position={[0, 160, wallZ]} receiveShadow>
-          <planeGeometry args={[700, 320]} />
+        <mesh material={wall} position={[0, 60, wallZ]} receiveShadow>
+          <planeGeometry args={[900, 520]} />
         </mesh>
       )}
     </group>

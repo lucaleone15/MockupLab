@@ -262,10 +262,10 @@ export function useAdaptiveNear() {
     const cam = camera as THREE.PerspectiveCamera;
     cam.getWorldDirection(cameraState.forward);
     const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target ?? cameraState.target;
-    const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.12, 0.5, 60);
+    const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.15, 0.5, 600);
     if (Math.abs(near - cam.near) / cam.near > 0.05) {
       cam.near = near;
-      cam.far = Math.max(8000, near * 4000);
+      cam.far = Math.max(12000, near * 2000);
       cam.updateProjectionMatrix();
     }
   }, -1);
