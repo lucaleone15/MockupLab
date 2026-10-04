@@ -1,10 +1,14 @@
 import type { ReactNode } from 'react';
+import { Plus } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { modelsByCategory } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { cx } from '@/ui/primitives';
+import { Tooltip, cx } from '@/ui/primitives';
+
+/** MIME type used when a model card is dragged onto the scene. */
+export const MODEL_DRAG_TYPE = 'application/x-mockuplab-model';
 
 const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   phone: 'library.phones',
@@ -76,6 +80,7 @@ export function LibraryPanel() {
   const { t, tr } = useT();
   const selected = useProject(selectSelectedItem);
   const replaceModel = useProject((s) => s.replaceModel);
+  const addItem = useProject((s) => s.addItem);
   const resetView = useUi((s) => s.resetView);
 
   return (
@@ -91,24 +96,45 @@ export function LibraryPanel() {
               {models.map((m) => {
                 const active = selected?.modelId === m.id;
                 return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => {
-                      if (!selected) return;
-                      if (active) resetView();
-                      else replaceModel(selected.id, m.id);
-                    }}
-                    className={cx(
-                      'group flex flex-col items-center gap-1 rounded-xl bg-surface-2 px-1.5 pb-2 pt-1.5 text-[11.5px] leading-tight transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',
-                      active
-                        ? 'text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]'
-                        : 'text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:bg-surface-3 hover:text-fg',
-                    )}
-                  >
-                    <Silhouette model={m} />
-                    <span className="text-center">{tr(m.name)}</span>
-                  </button>
+                  <div key={m.id} className="group relative">
+                    <Tooltip label={t('library.replace')}>
+                      <button
+                        type="button"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData(MODEL_DRAG_TYPE, m.id);
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }}
+                        onClick={() => {
+                          if (!selected) return;
+                          if (active) resetView();
+                          else replaceModel(selected.id, m.id);
+                        }}
+                        className={cx(
+                          'flex w-full flex-col items-center gap-1 rounded-xl bg-surface-2 px-1.5 pb-2 pt-1.5 text-[11.5px] leading-tight transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',
+                          active
+                            ? 'text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]'
+                            : 'text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:bg-surface-3 hover:text-fg',
+                        )}
+                      >
+                        <Silhouette model={m} />
+                        <span className="text-center">{tr(m.name)}</span>
+                      </button>
+                    </Tooltip>
+                    <Tooltip label={t('library.add')}>
+                      <button
+                        type="button"
+                        aria-label={t('library.add')}
+                        onClick={() => {
+                          addItem(m.id);
+                          resetView();
+                        }}
+                        className="absolute right-1.5 top-1.5 grid size-6 scale-90 place-items-center rounded-full bg-accent text-accent-fg opacity-0 shadow-md transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100"
+                      >
+                        <Plus size={14} strokeWidth={2.5} />
+                      </button>
+                    </Tooltip>
+                  </div>
                 );
               })}
             </div>

@@ -12,6 +12,7 @@ import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { IconButton, Kbd, Spinner, cx } from '@/ui/primitives';
 import { MOD } from './shortcuts';
+import { OverlayLayer } from './OverlayLayer';
 
 /** Bundled sample matching the device: a phone app for tall screens, a web page otherwise. */
 function sampleFor(aspect: number, landscape: boolean) {
@@ -143,6 +144,7 @@ export function Viewport() {
   const hasImage = useProject((s) => Object.values(selectSelectedItem(s)?.surfaces ?? {}).some((b) => b.assetId));
   const resetView = useUi((s) => s.resetView);
   const { ref, width, height } = useFrameSize(ratioValue(ratio));
+  const frame = useRef<HTMLDivElement>(null);
   const out = outputSize(exportSettings);
 
   return (
@@ -151,9 +153,11 @@ export function Viewport() {
         className="relative overflow-hidden rounded-[3px] transition-[width,height] duration-300 ease-[var(--ease-out-quart)]"
         style={{ width, height, boxShadow: 'var(--frame-shadow)' }}
         data-testid="frame"
+        ref={frame}
       >
         <BackgroundCanvas width={width} height={height} />
         {width > 0 && <Stage />}
+        <OverlayLayer width={width} height={height} frame={frame} />
         {!hasImage && <EmptyHint />}
       </div>
 

@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { getModel } from '@/models/registry';
 import { isLandscape } from '@/models/types';
 import { configureTextureLimits } from '@/store/assets';
-import { useProject, type SceneItem } from '@/store/project';
+import { selectSelectedItem, useProject, type SceneItem } from '@/store/project';
 import { CameraRig, DofPreview, lensFor } from './camera';
 import { ContactShadow } from './ContactShadow';
 import { DecorScene, decorLayout } from './Decor';
@@ -12,6 +12,7 @@ import { setExportBridge } from './exporter';
 import { Lighting } from './lighting/Lighting';
 import { ReflectiveFloor } from './ReflectiveFloor';
 import { useAmbience } from './ambiences';
+import { InteractionBridge, Interactive, SelectionRing } from './interaction';
 
 /** Resting height of a device lying on its back (camera bumps included). */
 const FLAT_CLEARANCE = 0.12;
@@ -26,12 +27,14 @@ function Device({ item }: { item: SceneItem }) {
   // Centre-anchored devices are lifted so they rest on the floor.
   const lift = !upright ? 0 : flat ? model.size[2] / 2 + FLAT_CLEARANCE : (landscape ? model.size[0] : model.size[1]) / 2;
   return (
-    <group position={item.position} rotation={item.rotation} scale={item.scale}>
-      <group position={[0, lift, 0]} rotation={[flat ? -Math.PI / 2 : 0, 0, 0]}>
-        <group rotation={[0, 0, landscape ? Math.PI / 2 : 0]}>
-          <Component finish={finish} surfaces={item.surfaces} screen={item.screen} params={item.params} />
+    <group position={item.position} rotation={item.rotation} scale={item.scale} visible={item.visible}>
+      <Interactive item={item}>
+        <group position={[0, lift, 0]} rotation={[flat ? -Math.PI / 2 : 0, 0, 0]}>
+          <group rotation={[0, 0, landscape ? Math.PI / 2 : 0]}>
+            <Component finish={finish} surfaces={item.surfaces} screen={item.screen} params={item.params} />
+          </group>
         </group>
-      </group>
+      </Interactive>
     </group>
   );
 }
@@ -86,6 +89,7 @@ function Ground({ floorY, top }: { floorY: number; top: THREE.BufferGeometry | n
 
 function Scene() {
   const items = useProject((s) => s.items);
+  const selected = useProject(selectSelectedItem);
   const decor = useProject((s) => s.decor);
   const dof = useProject((s) => s.camera.dof);
   const layout = useMemo(() => decorLayout(decor, items), [decor, items]);
@@ -99,6 +103,8 @@ function Scene() {
           <Device key={item.id} item={item} />
         ))}
       </group>
+      {items.length > 1 && selected && selected.visible && <SelectionRing item={selected} floorY={layout.floorY} />}
+      <InteractionBridge floorY={layout.floorY} />
       <Ground floorY={layout.floorY} top={layout.top} />
       <CameraRig floorY={layout.floorY} />
       {dof && <DofPreview />}

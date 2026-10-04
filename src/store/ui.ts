@@ -13,6 +13,14 @@ interface UiState {
   setExporting: (label: string | null) => void;
   dragging: boolean;
   setDragging: (v: boolean) => void;
+  /** Selected text / logo layer (null: the selected device has focus). */
+  selectedOverlayId: string | null;
+  selectOverlay: (id: string | null) => void;
+  helpOpen: boolean;
+  setHelpOpen: (v: boolean) => void;
+  /** Last successful autosave (ms), null before the first one. */
+  savedAt: number | null;
+  setSavedAt: (t: number) => void;
 }
 
 const initialTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -34,4 +42,10 @@ export const useUi = create<UiState>((set) => ({
   setExporting: (exporting) => set({ exporting }),
   dragging: false,
   setDragging: (dragging) => set({ dragging }),
+  selectedOverlayId: null,
+  selectOverlay: (selectedOverlayId) => set({ selectedOverlayId }),
+  helpOpen: false,
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
+  savedAt: null,
+  setSavedAt: (savedAt) => set({ savedAt }),
 }));

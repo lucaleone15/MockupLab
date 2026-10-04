@@ -27,6 +27,7 @@ const url = process.env.URL ?? 'http://localhost:5173/';
 mkdirSync('out/scenes', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+await page.addInitScript(() => { if (!sessionStorage.getItem('mockuplab:keep')) indexedDB.deleteDatabase('mockuplab'); });
 const logs = [];
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
 page.on('console', (m) => m.type() === 'error' && logs.push(`[error] ${m.text()}`));

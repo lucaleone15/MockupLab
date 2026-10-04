@@ -13,6 +13,7 @@ const browser = await chromium.launch({
   args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'],
 });
 const page = await browser.newPage({ viewport: { width: 1600, height: Number(process.env.HEIGHT ?? 1000) }, deviceScaleFactor: 2 });
+await page.addInitScript(() => { if (!sessionStorage.getItem('mockuplab:keep')) indexedDB.deleteDatabase('mockuplab'); });
 const logs = [];
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));

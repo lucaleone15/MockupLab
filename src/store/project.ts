@@ -4,6 +4,7 @@ import type { Fit } from '@/scene/screenMaterial';
 import { getModel } from '@/models/registry';
 import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
+import { arrangeItems, besideOthers } from '@/lib/arrange';
 
 /* ------------------------------------------------------------------ types */
 
@@ -36,7 +37,43 @@ export interface SceneItem {
   scale: number;
   /** Upright on its edge, or lying flat on its back (phones, tablets, browser). */
   pose: 'standing' | 'flat';
+  visible: boolean;
+  /** Locked devices cannot be moved with the mouse. */
+  locked: boolean;
 }
+
+export type OverlayFont = 'sans' | 'serif' | 'mono';
+
+/** 2D layers painted over the render: titles, captions, logos. Positions are fractions of the frame. */
+export type Overlay =
+  | {
+      id: string;
+      kind: 'text';
+      text: string;
+      font: OverlayFont;
+      weight: 400 | 500 | 700 | 800;
+      /** Font size as a fraction of the frame height. */
+      size: number;
+      color: string;
+      align: 'left' | 'center' | 'right';
+      /** Anchor point (fraction of width / height); the text aligns around it. */
+      x: number;
+      y: number;
+      /** Letter spacing in em. */
+      tracking: number;
+      visible: boolean;
+    }
+  | {
+      id: string;
+      kind: 'logo';
+      assetId: string | null;
+      /** Height as a fraction of the frame height. */
+      size: number;
+      x: number;
+      y: number;
+      opacity: number;
+      visible: boolean;
+    };
 
 export interface GradientStop {
   color: string;
@@ -128,10 +165,11 @@ export interface ExportSettings {
 }
 
 export interface Project {
-  version: 2;
+  version: 3;
   name: string;
   items: SceneItem[];
   selectedId: string | null;
+  overlays: Overlay[];
   background: Background;
   decor: Decor;
   lighting: Lighting;
@@ -145,7 +183,7 @@ export interface Project {
 export const DEFAULT_SURFACE: SurfaceBinding = { assetId: null, fit: 'cover', align: 0 };
 export const DEFAULT_SCREEN: ScreenSettings = { brightness: 1, reflection: 0.5 };
 
-const uid = () => Math.random().toString(36).slice(2, 10);
+export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function makeItem(model: DeviceModule): SceneItem {
   return {
@@ -159,6 +197,8 @@ export function makeItem(model: DeviceModule): SceneItem {
     rotation: [0, model.yaw ?? -0.32, 0],
     scale: 1,
     pose: 'standing',
+    visible: true,
+    locked: false,
   };
 }
 
@@ -176,13 +216,14 @@ export const DEFAULT_DECOR: Decor = {
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0 };
 
-function initialProject(): Project {
+export function initialProject(): Project {
   const item = makeItem(getModel('phone-pro'));
   return {
-    version: 2,
+    version: 3,
     name: 'Untitled',
     items: [item],
     selectedId: item.id,
+    overlays: [],
     background: {
       kind: 'gradient',
       type: 'radial',
@@ -212,7 +253,20 @@ interface ProjectActions {
   applyLightPreset: (id: LightPresetId) => void;
   setCamera: (patch: Partial<CameraSettings>) => void;
   setGround: (patch: Partial<Ground>) => void;
-  setPose: (pose: SceneItem['pose']) => void;
+  /** Pose of one item, or of every item (camera presets). */
+  setPose: (pose: SceneItem['pose'], itemId?: string) => void;
+  selectItem: (id: string | null) => void;
+  /** Adds a device next to the others (or at `position`) and selects it. */
+  addItem: (modelId: string, position?: Vec3) => void;
+  duplicateItem: (id: string) => void;
+  removeItem: (id: string) => void;
+  /** Lays out every device in a balanced composition. */
+  arrange: () => void;
+  addOverlay: (overlay: Overlay) => void;
+  updateOverlay: (id: string, patch: Partial<Overlay>) => void;
+  removeOverlay: (id: string) => void;
+  /** Replaces the whole project (load, import, new). */
+  loadProject: (project: Project) => void;
   setExport: (patch: Partial<ExportSettings>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
@@ -239,6 +293,7 @@ const historyOf = (s: ProjectState): Project => ({
   name: s.name,
   items: s.items,
   selectedId: s.selectedId,
+  overlays: s.overlays,
   background: s.background,
   decor: s.decor,
   lighting: s.lighting,
@@ -269,7 +324,42 @@ export const useProject = create<ProjectState>()(
       applyLightPreset: (id) => set({ lighting: { ...LIGHT_PRESETS[id].manual, preset: id } }),
       setCamera: (patch) => set((s) => ({ camera: { ...s.camera, ...patch } })),
       setGround: (patch) => set((s) => ({ ground: { ...s.ground, ...patch } })),
-      setPose: (pose) => set((s) => ({ items: s.items.map((it) => ({ ...it, pose })) })),
+      setPose: (pose, itemId) => set((s) => ({ items: s.items.map((it) => (!itemId || it.id === itemId ? { ...it, pose } : it)) })),
+      selectItem: (selectedId) => set({ selectedId }),
+      addItem: (modelId, position) =>
+        set((s) => {
+          const item = makeItem(getModel(modelId));
+          item.position = position ?? besideOthers(s.items, getModel(modelId).size[0]);
+          // A new device starts with the image of the selected one when the screens look alike.
+          const selected = s.items.find((it) => it.id === s.selectedId);
+          const source = selected && Object.values(selected.surfaces).find((b) => b.assetId);
+          const slot = getModel(modelId).surfaces[0];
+          const sourceSlot = selected && getModel(selected.modelId).surfaces[0];
+          if (source && slot && sourceSlot && (slot.aspect < 1) === (sourceSlot.aspect < 1)) item.surfaces[slot.id] = { ...source };
+          return { items: [...s.items, item], selectedId: item.id };
+        }),
+      duplicateItem: (id) =>
+        set((s) => {
+          const src = s.items.find((it) => it.id === id);
+          if (!src) return {};
+          const w = getModel(src.modelId).size[0];
+          const copy: SceneItem = structuredClone(src);
+          copy.id = uid();
+          copy.position = [src.position[0] + w * 0.7 + 4, src.position[1], src.position[2] + 4];
+          return { items: [...s.items, copy], selectedId: copy.id };
+        }),
+      removeItem: (id) =>
+        set((s) => {
+          if (s.items.length <= 1) return {};
+          const items = s.items.filter((it) => it.id !== id);
+          return { items, selectedId: s.selectedId === id ? items[items.length - 1].id : s.selectedId };
+        }),
+      arrange: () => set((s) => ({ items: arrangeItems(s.items) })),
+      addOverlay: (overlay) => set((s) => ({ overlays: [...s.overlays, overlay] })),
+      updateOverlay: (id, patch) =>
+        set((s) => ({ overlays: s.overlays.map((o) => (o.id === id ? ({ ...o, ...patch } as Overlay) : o)) })),
+      removeOverlay: (id) => set((s) => ({ overlays: s.overlays.filter((o) => o.id !== id) })),
+      loadProject: (project) => set({ ...project }),
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
       setParam: (itemId, id, value) =>
         set((s) => ({ items: s.items.map((it) => (it.id === itemId ? { ...it, params: { ...it.params, [id]: value } } : it)) })),

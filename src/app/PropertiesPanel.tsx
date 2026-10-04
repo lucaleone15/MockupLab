@@ -8,7 +8,9 @@ import { pickImages } from '@/lib/importImage';
 import { useState } from 'react';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
+import { CompositionSection } from './panels/CompositionSection';
 import { ScenePanel } from './panels/ScenePanel';
+import { TextPanel } from './panels/TextPanel';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
@@ -140,7 +142,7 @@ function DeviceSection() {
         <Field label={t('props.pose')}>
           <Segmented
             value={item.pose}
-            onChange={(pose) => setPose(pose)}
+            onChange={(pose) => setPose(pose, item.id)}
             options={[
               { value: 'standing', label: t('props.pose.standing') },
               { value: 'flat', label: t('props.pose.flat') },
@@ -256,14 +258,14 @@ function ExportSection() {
   );
 }
 
-type Tab = 'device' | 'scene' | 'export';
+type Tab = 'device' | 'scene' | 'text' | 'export';
 
 export function PropertiesPanel() {
   const { t } = useT();
   const [tab, setTab] = useState<Tab>(() => {
     try {
       const v = localStorage.getItem('mockuplab:tab');
-      return v === 'scene' || v === 'export' ? v : 'device';
+      return v === 'scene' || v === 'export' || v === 'text' ? v : 'device';
     } catch {
       return 'device';
     }
@@ -285,6 +287,7 @@ export function PropertiesPanel() {
           options={[
             { value: 'device', label: t('tab.device') },
             { value: 'scene', label: t('tab.scene') },
+            { value: 'text', label: t('tab.text') },
             { value: 'export', label: t('tab.export') },
           ]}
         />
@@ -292,11 +295,13 @@ export function PropertiesPanel() {
       <div className="scroll-thin flex-1 overflow-y-auto" key={tab}>
         {tab === 'device' && (
           <>
+            <CompositionSection />
             <ImageSection />
             <DeviceSection />
           </>
         )}
         {tab === 'scene' && <ScenePanel />}
+        {tab === 'text' && <TextPanel />}
         {tab === 'export' && <ExportSection />}
       </div>
     </aside>
