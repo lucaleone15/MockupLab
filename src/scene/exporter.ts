@@ -58,6 +58,17 @@ export async function settle(frames = 4) {
   }
 }
 
+/** Resolves once the live renderer exists (the 3D view mounts a moment after the app, or after a mode switch). */
+export async function waitForRenderer(timeout = 10000) {
+  const start = performance.now();
+  while (!bridge) {
+    if (performance.now() - start > timeout) throw new Error('renderer not ready');
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  // and the scene has drawn at least once
+  await settle(2);
+}
+
 export function hasRenderer() {
   return bridge !== null;
 }
@@ -73,6 +84,7 @@ export function renderLimits() {
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
 export async function renderFrame({ width, height, supersample, samples = 1, onProgress }: RenderRequest): Promise<RenderResult> {
+  if (!bridge) await waitForRenderer();
   if (!bridge) throw new Error('renderer not ready');
   const { gl, scene } = bridge;
   const source = bridge.camera as THREE.PerspectiveCamera;

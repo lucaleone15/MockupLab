@@ -131,6 +131,7 @@ export function zoneStats(px: Pixels, quad: Quad): ZoneStats {
     const k = (Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))) * 4;
     return 0.299 * data[k] + 0.587 * data[k + 1] + 0.114 * data[k + 2];
   };
+  const soft = (x: number, y: number) => (grey(x, y) + grey(x + 1, y) + grey(x, y + 1) + grey(x + 1, y + 1)) / 4;
   let ar = 0;
   let ag = 0;
   let ab = 0;
@@ -161,7 +162,8 @@ export function zoneStats(px: Pixels, quad: Quad): ZoneStats {
         ys.push(Math.log(L + LIGHT_EPS));
         chroma.push(Math.max(R, G, B) - Math.min(R, G, B));
         // fine detail (text, interface, print) — a blurry reflection has none
-        if (Math.abs(4 * grey(x, y) - grey(x - 1, y) - grey(x + 1, y) - grey(x, y - 1) - grey(x, y + 1)) > 14) sharp++;
+        // on 2×2 averages, two pixels apart: sensor grain cancels out, text and UI edges remain
+        if (Math.abs(4 * soft(x, y) - soft(x - 2, y) - soft(x + 2, y) - soft(x, y - 2) - soft(x, y + 2)) > 14) sharp++;
       } else if (u < -0.02 || u > 1.02 || v < -0.02 || v > 1.02) {
         ar += R;
         ag += G;

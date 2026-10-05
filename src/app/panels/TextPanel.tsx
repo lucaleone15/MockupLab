@@ -283,6 +283,7 @@ function BrandKit() {
               <input
                 value={c.name}
                 onChange={(e) => setColor(i, { name: e.target.value })}
+                aria-label={t('brand.colorName')}
                 className="h-7 min-w-0 flex-1 rounded-md bg-transparent px-1.5 text-[12.5px] text-fg outline-none hover:bg-surface-2 focus:bg-surface-2"
               />
               <span className="font-mono text-[11px] uppercase text-fg-subtle">{c.hex}</span>

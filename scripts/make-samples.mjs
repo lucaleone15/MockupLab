@@ -149,8 +149,28 @@ p{font-size:19px;line-height:1.65;color:#4a443d;columns:2;column-gap:36px}
 </style></head><body><div class="l"></div><div class="r"><small>DOSSIER · N°12</small><h1>Le design qui ralentit</h1>
 <p>${'Dans un monde saturé d’images, certains studios choisissent la lenteur : moins de projets, plus de soin, et des objets qui durent. Nous avons rencontré six d’entre eux pour comprendre comment ils travaillent. '.repeat(4)}</p></div></body></html>`;
 
+const watch = /* html */ `<!doctype html><html><head><meta charset="utf-8"><style>${base}
+body{width:198px;height:242px;background:#000;color:#f4f2ee;position:relative}
+.date{position:absolute;left:16px;top:16px;font-size:12px;font-weight:600;color:#ff6b3d;letter-spacing:.2px}
+.time{position:absolute;left:14px;top:30px;font-size:62px;font-weight:300;letter-spacing:-3px;line-height:1}
+.rings{position:absolute;left:14px;bottom:16px;width:68px;height:68px}
+.side{position:absolute;right:16px;bottom:22px;text-align:right}
+.side b{display:block;font-size:22px;font-weight:600;letter-spacing:-.5px}
+.side span{font-size:11px;opacity:.6}
+</style></head><body><div class="date">SAM. 21 JUIN</div><div class="time">10:09</div>
+<svg class="rings" viewBox="0 0 68 68"><circle cx="34" cy="34" r="30" fill="none" stroke="#ff6b3d" stroke-opacity=".25" stroke-width="7"/><circle cx="34" cy="34" r="30" fill="none" stroke="#ff6b3d" stroke-width="7" stroke-linecap="round" stroke-dasharray="147.0 188.5" transform="rotate(-90 34 34)"/><circle cx="34" cy="34" r="21" fill="none" stroke="#ffb547" stroke-opacity=".25" stroke-width="7"/><circle cx="34" cy="34" r="21" fill="none" stroke="#ffb547" stroke-width="7" stroke-linecap="round" stroke-dasharray="72.6 131.9" transform="rotate(-90 34 34)"/><circle cx="34" cy="34" r="12" fill="none" stroke="#7b5cff" stroke-opacity=".25" stroke-width="7"/><circle cx="34" cy="34" r="12" fill="none" stroke="#7b5cff" stroke-width="7" stroke-linecap="round" stroke-dasharray="67.9 75.4" transform="rotate(-90 34 34)"/></svg>
+<div class="side"><b>24°</b><span>Lyon · ensoleillé</span></div></body></html>`;
+
 mkdirSync('public/samples', { recursive: true });
 const browser = await chromium.launch();
+// ONLY=watch regenerates a single sample
+if (process.env.ONLY === 'watch') {
+  const pg = await browser.newPage({ viewport: { width: 198, height: 242 }, deviceScaleFactor: 2 });
+  await pg.setContent(watch);
+  await pg.screenshot({ path: 'public/samples/sample-watch.png' });
+  await browser.close();
+  process.exit(0);
+}
 const page = await browser.newPage({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
 await page.setContent(phone);
 await page.screenshot({ path: 'public/samples/sample-app.png' });
@@ -165,6 +185,7 @@ const shots = [
   ['sample-label.png', label, 900, 1000, 1.5, false],
   ['sample-logo.png', logo, 900, 1000, 1.5, true],
   ['sample-spread.png', spread, 1400, 917, 2, false],
+  ['sample-watch.png', watch, 198, 242, 2, false],
 ];
 for (const [name, html, w, h, dpr, transparent] of shots) {
   const pg = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: dpr });

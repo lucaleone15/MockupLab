@@ -13,5 +13,17 @@ export default defineConfig(({ command, isPreview }) => ({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        // stable vendor chunks: an app update does not invalidate the cached 3D engine
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]three[\\/]/.test(id)) return 'three';
+          if (/@react-three|three-stdlib|maath|camera-controls/.test(id)) return 'r3f';
+          if (/[\\/](react|react-dom|scheduler|zustand|zundo|radix-ui|@radix-ui)[\\/]/.test(id)) return 'react';
+          return undefined;
+        },
+      },
+    },
   },
 }));

@@ -42,7 +42,9 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste — en 3D ou posé e
 | **Variantes** : 6, 9 ou 12 mises en scène générées à partir de ta scène (décor, fond, lumière, angle, finition — tu choisis ce qui varie), galerie pour sélectionner, agrandir, **comparer** deux variantes, **affiner** autour de celle qui te plaît, régénérer en gardant la sélection, appliquer à la scène (annulable) ; export de la sélection en **ZIP** | ✅ |
 | **Traitement par lot** : plusieurs designs passés sur le même écran (ou la même zone d'une photo), avec la scène actuelle ou chaque variante sélectionnée — un ZIP de mock-ups | ✅ |
 | **Vidéo & GIF** : **plans cinéma** — révélation (gros plan rasant qui recule jusqu'au plan héros), plongée dans l'écran, zoom en biais (caméra penchée), pirouette, arrivée avec rebond, grue, effet Vertigo, bande-annonce montée en fondus ; classiques — rotation 360°, balancement, travelling, défilement d'une capture longue, flottement (mode 3D) ; qualité **Cinéma** (flou de mouvement, profondeur de champ animée) ou Rapide ; défilement et zoom lent (mode photo) ; 2 à 12 s, 24/30/60 i/s, 720p/1080p/4K ; **MP4** (H.264), **WebM** (VP9) ou **GIF** en boucle ; aperçu en direct | ✅ |
-| Import de modèles `.glb` | 🔜 jalon i |
+| **Montre** : boîtier aluminium (4 finitions), verre bombé, couronne, bracelet sport en boucle (6 coloris) | ✅ |
+| **Import de modèles `.glb`** : ton propre modèle 3D dans la bibliothèque, remis à l'échelle et posé au sol ; son maillage nommé « screen » reçoit tes images ; gardé dans le navigateur et inclus dans les fichiers projet | ✅ |
+| Robustesse : écran de démarrage, vue 3D protégée contre les plantages, message si WebGL est indisponible ou perdu, accessibilité vérifiée (noms de tous les contrôles), mouvements réduits respectés | ✅ |
 
 ## Démarrer
 
@@ -126,7 +128,10 @@ src/
   i18n/         dictionnaires FR / EN
   store/        état du projet (zustand + historique zundo), assets, UI, toasts
   scene/        Stage R3F, environnement studio, matériaux, matériau d'écran, exporteur
-  models/       un dossier par appareil + registre
+  models/       un dossier par appareil + registre ; glb/ pour les modèles importés
+  photo/        mode photo : homographie, détection, compositeur WebGL2, modèles de photos
+  variants/     variantes, rendu en bac à sable, traitement par lot, ZIP
+  animation/    animations (fonctions du temps), export vidéo / GIF, aperçu
   lib/geometry  contours squircle, sweep de profil, lathe
   export/       réglages (résolutions, ratios, formats) et pipeline d'export
 scripts/        captures de vérification Playwright, génération des exemples
@@ -173,6 +178,16 @@ Puis ajoute-le à `MODELS` dans `src/models/registry.ts`. Conventions :
 - `sizeFor(params)` donne l'encombrement selon les réglages (format, présentation) pour le cadrage automatique ;
 - les géométries sont construites une seule fois et partagées entre instances.
 
+### Importer un modèle `.glb` (sans coder)
+
+Dans la bibliothèque, **Importer un modèle .glb** (ou glisse le fichier sur la fenêtre). Pour que l'écran reçoive tes images :
+
+- nomme **`screen`** (ou `display`, `écran`) le maillage de l'écran, ou son matériau ;
+- déplie ses UV sur toute l'image (0 → 1) — l'export glTF de Blender les met dans le bon sens ;
+- exporte en **glTF binaire (.glb)** : un seul fichier, textures incluses (60 Mo max).
+
+Les unités glTF (mètres) sont converties en centimètres ; un modèle d'une taille invraisemblable est ramené à 15 cm. Le modèle reste dans ton navigateur et voyage dans les fichiers projet `.mockuplab.json`.
+
 ## Vérification visuelle
 
 ```bash
@@ -191,6 +206,9 @@ node scripts/check-variants.mjs                # variantes : aperçus, projet in
 node scripts/check-batch-photo.mjs             # lot en mode photo
 node scripts/check-video.mjs                   # vidéos : chaque animation, MP4/WebM/GIF vérifiés avec ffprobe, aperçu
 SCENE=table node scripts/check-cinema.mjs      # plans cinéma : rendu Cinéma de chaque plan + bandes d'images
+node scripts/check-glb.mjs                     # import .glb : écran, rechargement, fichier projet, suppression
+node scripts/check-a11y.mjs                    # accessibilité : nom de chaque contrôle, onglet par onglet
+npm run build && npx vite preview --port 4173 & node scripts/check-prod.mjs   # build de production servi sous /MockupLab/
 THEME=light node scripts/shoot.mjs             # thème clair
 EXPORT='{"resolution":"4k","ratio":"1:1","format":"png"}' node scripts/shoot.mjs
 ```

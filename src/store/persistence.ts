@@ -213,6 +213,8 @@ interface ProjectFile {
   format: 1;
   project: Project;
   assets: { id: string; name: string; width: number; height: number; data: string }[];
+  /** Imported 3D models used by the project (.glb as data URLs). */
+  models?: { id: string; name: string; createdAt: number; meta: unknown; data: string }[];
 }
 
 const toDataUrl = (blob: Blob) =>
@@ -231,7 +233,17 @@ export async function exportProjectFile(): Promise<{ blob: Blob; filename: strin
       .filter((id) => all[id])
       .map(async (id) => ({ id, name: all[id].name, width: all[id].width, height: all[id].height, data: await toDataUrl(all[id].blob) })),
   );
-  const file: ProjectFile = { app: 'MockupLab', format: 1, project, assets };
+  const { userModelRecord } = await import('@/models/glb/userModels');
+  const modelIds = [...new Set(project.items.map((it) => it.modelId).filter((id) => id.startsWith('glb:')))];
+  const models = (
+    await Promise.all(
+      modelIds.map(async (id) => {
+        const rec = await userModelRecord(id);
+        return rec && { id: rec.id, name: rec.name, createdAt: rec.createdAt, meta: rec.meta, data: await toDataUrl(rec.blob) };
+      }),
+    )
+  ).filter((m): m is NonNullable<typeof m> => !!m);
+  const file: ProjectFile = { app: 'MockupLab', format: 1, project, assets, models };
   const slug = (project.name || 'projet').toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'projet';
   return { blob: new Blob([JSON.stringify(file)], { type: 'application/json' }), filename: `${slug}.mockuplab.json` };
 }
@@ -247,6 +259,17 @@ export async function importProjectFile(file: File) {
   if (parsed?.app !== 'MockupLab' || !parsed.project) {
     toast.error(t('project.invalid'));
     return;
+  }
+  if (parsed.models?.length) {
+    const { adoptUserModel } = await import('@/models/glb/userModels');
+    for (const m of parsed.models) {
+      try {
+        const blob = await (await fetch(m.data)).blob();
+        await adoptUserModel({ id: m.id, name: m.name, createdAt: m.createdAt, meta: m.meta as never, blob });
+      } catch {
+        /* the device falls back to the default phone */
+      }
+    }
   }
   for (const a of parsed.assets ?? []) {
     try {

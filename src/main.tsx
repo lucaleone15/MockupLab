@@ -7,8 +7,12 @@ import { restoreProject, startAutosave } from './store/persistence';
 
 document.documentElement.lang = useLang.getState().lang;
 
-// Restore the autosaved project before the first render, then keep saving.
-void restoreProject().finally(() => {
+// Imported 3D models, then the autosaved project, before the first render; then keep saving.
+void import('./models/glb/userModels')
+  .then((m) => m.loadUserModels())
+  .catch(() => undefined)
+  .then(() => restoreProject())
+  .finally(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
