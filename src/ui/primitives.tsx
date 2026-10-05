@@ -227,6 +227,7 @@ export function Slider({
         <RSlider.Range className="absolute h-full rounded-full bg-fg-muted group-hover:bg-fg transition-colors" />
       </RSlider.Track>
       <RSlider.Thumb
+        aria-label={label}
         className="block size-3.5 rounded-full bg-fg shadow-[0_1px_4px_rgb(0_0_0/0.4)] transition-transform duration-150 hover:scale-115 active:scale-125 focus-visible:outline-2 focus-visible:outline-accent"
       />
     </RSlider.Root>

@@ -22,10 +22,14 @@ import {
   CaseSensitive,
   ShoppingBag,
   Wine,
+  Watch,
+  Box,
+  Upload,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { getModel, modelsByCategory } from '@/models/registry';
+import { getModel, modelsByCategory, useUserModules } from '@/models/registry';
 import { switchModel } from '@/lib/switchModel';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
 import { selectSelectedItem, useProject } from '@/store/project';
@@ -38,6 +42,7 @@ export const MODEL_DRAG_TYPE = 'application/x-mockuplab-model';
 export const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   phone: 'library.phones',
   tablet: 'library.tablets',
+  wearable: 'library.wearables',
   laptop: 'library.laptops',
   desktop: 'library.desktops',
   browser: 'library.browser',
@@ -49,6 +54,7 @@ export const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
 
 /** Line icons for print and objects (no proportional silhouette makes sense there). */
 const OBJECT_ICONS: Record<string, LucideIcon> = {
+  watch: Watch,
   tv: Tv,
   totem: GalleryVertical,
   'street-poster': Signpost,
@@ -77,7 +83,7 @@ const SCREEN = 'fill-surface-2';
 
 /** Line-art silhouette drawn from the model's real proportions. */
 function Silhouette({ model }: { model: DeviceModule }) {
-  const Icon = OBJECT_ICONS[model.id];
+  const Icon = model.category === 'custom' ? Box : OBJECT_ICONS[model.id];
   if (Icon)
     return (
       <span className="grid h-14 w-14 place-items-center text-fg-subtle">
@@ -137,30 +143,13 @@ function Silhouette({ model }: { model: DeviceModule }) {
   );
 }
 
-export function LibraryPanel() {
+function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () => void }) {
   const { t, tr } = useT();
   const selected = useProject(selectSelectedItem);
   const addItem = useProject((s) => s.addItem);
   const resetView = useUi((s) => s.resetView);
-
+  const active = selected?.modelId === m.id;
   return (
-    <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
-      <div className="shrink-0 px-4 pb-2 pt-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">{t('library.title')}</div>
-        {selected && (
-          <p className="mt-1.5 text-[11px] leading-snug text-fg-subtle">
-            {t('library.hint', { name: tr(getModel(selected.modelId).name) })}
-          </p>
-        )}
-      </div>
-      <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
-        {modelsByCategory().map(([cat, models]) => (
-          <div key={cat} className="mb-4">
-            <div className="mb-2 px-1 text-[12px] font-medium text-fg">{CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}</div>
-            <div className="grid grid-cols-2 gap-2">
-              {models.map((m) => {
-                const active = selected?.modelId === m.id;
-                return (
                   <div key={m.id} className="group relative">
                     <Tooltip label={t('library.replace')}>
                       <button
@@ -199,15 +188,82 @@ export function LibraryPanel() {
                         <Plus size={14} strokeWidth={2.5} />
                       </button>
                     </Tooltip>
+                    {onDelete && (
+                      <Tooltip label={t('glb.delete')}>
+                        <button
+                          type="button"
+                          aria-label={t('glb.delete')}
+                          onClick={onDelete}
+                          className="absolute left-1.5 top-1.5 grid size-6 scale-90 place-items-center rounded-full bg-black/60 text-white opacity-0 shadow-md transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </Tooltip>
+                    )}
                   </div>
                 );
-              })}
+}
+
+function UserModels() {
+  const { t } = useT();
+  const modules = useUserModules((s) => s.modules);
+  const load = () => import('@/models/glb/userModels');
+  return (
+    <div className="mb-2">
+      <div className="mb-2 px-1 text-[12px] font-medium text-fg">{t('library.custom')}</div>
+      {modules.length > 0 && (
+        <div className="mb-2 grid grid-cols-2 gap-2">
+          {modules.map((m) => (
+            <ModelCard
+              key={m.id}
+              model={m}
+              onDelete={() => {
+                if (window.confirm(t('glb.deleteConfirm', { name: m.name.fr }))) void load().then((x) => x.deleteUserModel(m.id));
+              }}
+            />
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => void load().then((x) => x.pickModelFile())}
+        className="flex w-full items-center gap-2.5 rounded-xl border border-dashed border-line-strong px-3 py-2.5 text-left text-[12px] font-medium text-fg-muted transition-colors hover:border-accent hover:text-fg"
+        data-testid="import-glb"
+      >
+        <Upload size={15} className="shrink-0 text-accent" />
+        {t('glb.import')}
+      </button>
+      <p className="mx-1 mt-2 text-[11px] leading-snug text-fg-subtle">{t('glb.hint')}</p>
+    </div>
+  );
+}
+
+export function LibraryPanel() {
+  const { t, tr } = useT();
+  const selected = useProject(selectSelectedItem);
+
+  return (
+    <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
+      <div className="shrink-0 px-4 pb-2 pt-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">{t('library.title')}</div>
+        {selected && (
+          <p className="mt-1.5 text-[11px] leading-snug text-fg-subtle">
+            {t('library.hint', { name: tr(getModel(selected.modelId).name) })}
+          </p>
+        )}
+      </div>
+      <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
+        {modelsByCategory().map(([cat, models]) => (
+          <div key={cat} className="mb-4">
+            <div className="mb-2 px-1 text-[12px] font-medium text-fg">{CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}</div>
+            <div className="grid grid-cols-2 gap-2">
+              {models.map((m) => (
+                <ModelCard key={m.id} model={m} />
+              ))}
             </div>
           </div>
         ))}
-        <p className="mx-1 rounded-lg border border-dashed border-line-strong p-3 text-[11.5px] leading-relaxed text-fg-subtle">
-          {t('library.more')}
-        </p>
+        <UserModels />
       </div>
     </aside>
   );

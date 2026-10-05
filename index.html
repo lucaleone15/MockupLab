@@ -6,7 +6,16 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="description" content="MockupLab — générateur de mock-ups 3D gratuit et open source, 100 % dans le navigateur." />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta property="og:title" content="MockupLab — mock-ups 3D gratuits dans le navigateur" />
+    <meta property="og:description" content="Appareils 3D réalistes, print, mode photo en perspective, variantes, vidéos. Gratuit, open source, rien n'est envoyé sur un serveur." />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#0a0a0c" />
     <title>MockupLab</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; }
+      html { background: #0a0a0c; }
+      html[data-theme='light'] { background: #f3f2ef; }
+    </style>
     <script>
       try {
         const t = localStorage.getItem('mockuplab:theme');
@@ -15,7 +24,15 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- shown while the project and the 3D engine load; React replaces it -->
+      <div style="height:100%;display:grid;place-items:center;font:500 13px system-ui,sans-serif;color:var(--splash-fg,#8a8a92)">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+          <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#ff5c35"/><rect x="21" y="10" width="22" height="44" rx="7" fill="none" stroke="#fff" stroke-width="4"/></svg>
+          <span>MockupLab</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

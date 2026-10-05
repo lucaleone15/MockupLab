@@ -181,6 +181,11 @@ export function useGlobalInput() {
       e.preventDefault();
       depth = 0;
       useUi.getState().setDragging(false);
+      const glb = [...(e.dataTransfer?.files ?? [])].find((f) => /\.(glb|gltf)$/i.test(f.name));
+      if (glb) {
+        void import('@/models/glb/userModels').then((m) => m.importModelFile(glb));
+        return;
+      }
       // An image dropped on a device (or a photo zone) goes on that device's screen.
       const target =
         useProject.getState().mode === 'photo' ? photoPicking.zoneAt?.(e.clientX, e.clientY) : (picking.item?.(e.clientX, e.clientY) ?? undefined);

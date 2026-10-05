@@ -9,6 +9,7 @@ import { useAssets } from '@/store/assets';
  */
 
 const BY_MODEL: Record<string, Record<string, string>> = {
+  watch: { screen: 'watch' },
   totem: { screen: 'poster' },
   'street-poster': { screen: 'poster' },
   'business-card': { front: 'card-front', back: 'card-back' },

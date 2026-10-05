@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { toast } from '@/store/toasts';
+import { t } from '@/i18n';
 import { getModel } from '@/models/registry';
 import { isLandscape } from '@/models/types';
 import { configureTextureLimits } from '@/store/assets';
@@ -172,6 +174,14 @@ export function Stage() {
         gl.toneMappingExposure = 1;
         gl.setClearColor(0x000000, 0);
         configureTextureLimits(gl.capabilities.getMaxAnisotropy(), gl.capabilities.maxTextureSize);
+        // the GPU can drop the context (driver reset, too many tabs): say so instead of a frozen view
+        gl.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault();
+          // the view releases its context on purpose when it closes (mode switch): not an incident
+          setTimeout(() => {
+            if (gl.domElement.isConnected) toast.error(t('webgl.lost'));
+          }, 300);
+        });
       }}
     >
       <Scene />

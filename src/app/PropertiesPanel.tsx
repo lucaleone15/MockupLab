@@ -40,6 +40,7 @@ function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { i
     >
       <button
         type="button"
+        aria-label={t('props.replace')}
         onClick={(e) => {
           e.stopPropagation();
           choose();

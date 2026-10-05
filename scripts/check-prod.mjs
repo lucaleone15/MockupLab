@@ -1,0 +1,38 @@
+// The production build served under /MockupLab/ (as on GitHub Pages): loads, finds every asset,
+// renders a table set, a photo template and exports, with no failed request.
+import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+mkdirSync('out/prod', { recursive: true });
+const url = process.argv[2] ?? 'http://localhost:4173/MockupLab/';
+const b = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu'] });
+const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+await p.addInitScript(() => localStorage.setItem('mockuplab:lang', 'fr'));
+const failed = [];
+const errors = [];
+p.on('requestfailed', (r) => failed.push(r.url()));
+p.on('response', (r) => r.status() >= 400 && failed.push(`${r.status()} ${r.url()}`));
+p.on('pageerror', (e) => errors.push(e.message));
+const t0 = Date.now();
+await p.goto(url);
+await p.getByTestId('frame').waitFor();
+console.log('first view in', Date.now() - t0, 'ms');
+await p.getByRole('button', { name: 'Essayer un exemple' }).click();
+await p.getByRole('radio', { name: 'Scène', exact: true }).click();
+await p.getByRole('button', { name: /Chêne · mur blanc/ }).click();
+await p.waitForTimeout(3500);
+await p.screenshot({ path: 'out/prod/table.png' });
+await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
+await p.getByTestId('photo-library').getByRole('button', { name: /Tablette et téléphone/ }).click();
+await p.waitForTimeout(2500);
+await p.screenshot({ path: 'out/prod/photo.png' });
+await p.getByTestId('mode-switch').getByRole('radio', { name: '3D' }).click();
+await p.getByRole('radio', { name: 'Export', exact: true }).click();
+await p.getByRole('radio', { name: '1080p', exact: true }).click();
+const t1 = Date.now();
+const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 240000 }), p.getByRole('button', { name: /^Exporter l’image|^Exporter$/ }).last().click()]);
+console.log('export took', Date.now() - t1, 'ms');
+await dl.saveAs('out/prod/' + dl.suggestedFilename());
+console.log('export:', dl.suggestedFilename());
+console.log('failed requests:', failed.join('\n') || 'none');
+console.log('errors:', errors.join('\n') || 'none');
+await b.close();
