@@ -8,6 +8,7 @@ import { MODEL_DRAG_TYPE } from './LibraryPanel';
 import { saveProjectFile } from './projectFiles';
 import { nudge } from '@/photo/editing';
 import { photoPicking } from '@/photo/PhotoView';
+import { importFromHome } from '@/home/Home';
 
 export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl ';
@@ -145,7 +146,8 @@ export function useGlobalInput() {
       const files = [...(e.clipboardData?.files ?? [])];
       if (files.length) {
         e.preventDefault();
-        importImages(files);
+        if (useUi.getState().screen === 'home') importFromHome(files);
+        else importImages(files);
       }
     };
 
@@ -186,6 +188,10 @@ export function useGlobalInput() {
       const glb = [...(e.dataTransfer?.files ?? [])].find((f) => /\.(glb|gltf)$/i.test(f.name));
       if (glb) {
         void import('@/models/glb/userModels').then((m) => m.importModelFile(glb));
+        return;
+      }
+      if (useUi.getState().screen === 'home') {
+        if (e.dataTransfer?.files.length) importFromHome(e.dataTransfer.files);
         return;
       }
       // An image dropped on a device (or a photo zone) goes on that device's screen.
