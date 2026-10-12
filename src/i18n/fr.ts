@@ -523,4 +523,5 @@ export const fr = {
   'support.watch': 'Montre',
   'support.print': 'Print',
   'support.objects': 'Objets',
+  'pdf.error': 'Impossible de lire « {name} » (PDF protégé ou abîmé).',
 } as const;

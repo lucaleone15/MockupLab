@@ -66,6 +66,8 @@ if (import.meta.env.DEV) {
         library: pe.library,
         exports: lx,
         quick: qk.quick,
+        importFiles: im.importImages,
+        asset: (id: string) => as.useAssets.getState().assets[id],
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         photo: {
