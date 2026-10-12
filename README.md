@@ -5,6 +5,15 @@ Glisse un screenshot, obtiens un rendu d'appareil réaliste — en 3D ou posé e
 
 > *English summary: free, open-source, in-browser 3D mock-up generator. Drop a screenshot, get a photoreal device render, export PNG/JPG/WebP up to 4K. No backend, no upload. UI available in French and English.*
 
+## Télécharger l'app
+
+- **Navigateur** : https://lucaleone15.github.io/MockupLab/ — installable comme une app (Chrome / Edge : icône « Installer » dans la barre d'adresse ; Safari : Fichier › Ajouter au Dock). Fonctionne hors ligne et propose les nouvelles versions.
+- **Mac et Windows** : la dernière version est sur la page [Releases](https://github.com/lucaleone15/MockupLab/releases/latest) (`.dmg` pour macOS Apple Silicon et Intel, installeur `.exe` pour Windows). L'app propose elle-même les mises à jour.
+  - macOS : l'app n'est pas encore signée par Apple ; au premier lancement, clic droit › Ouvrir. Les mises à jour ouvrent la page de téléchargement.
+  - Windows : SmartScreen peut afficher un avertissement au premier lancement (« Informations complémentaires › Exécuter quand même ») ; les mises à jour s'installent en un clic.
+
+Publier une version : augmenter `version` dans `desktop/package.json`, puis pousser un tag `vX.Y.Z` — GitHub Actions construit et publie les apps.
+
 ---
 
 ## Fonctionnalités

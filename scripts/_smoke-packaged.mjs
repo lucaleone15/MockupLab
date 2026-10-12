@@ -1,0 +1,12 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { _electron as electron } from 'playwright';
+const env = { ...process.env, MOCKUPLAB_USER_DATA: mkdtempSync(join(tmpdir(), 'ml-pack-')), MOCKUPLAB_NO_UPDATES: '1' };
+delete env.ELECTRON_RUN_AS_NODE;
+const app = await electron.launch({ executablePath: 'release/mac-arm64/MockupLab.app/Contents/MacOS/MockupLab', env });
+const win = await app.firstWindow();
+await win.waitForSelector('[data-testid=home]', { timeout: 20000 });
+console.log('packaged app OK:', await win.title(), await win.evaluate(() => location.href));
+await win.screenshot({ path: process.argv[2] });
+await app.close();

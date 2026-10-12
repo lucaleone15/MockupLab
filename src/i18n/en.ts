@@ -544,4 +544,5 @@ export const en: Record<keyof typeof fr, string> = {
   'update.available': 'A new version of MockupLab is available.',
   'update.apply': 'Update',
   'update.later': 'Later',
+  'home.leadDesktop': 'Drop a screenshot, a website or a poster: MockupLab puts it on realistic 3D devices and objects, or on real photos. Everything stays on your computer.',
 };

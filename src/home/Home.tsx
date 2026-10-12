@@ -113,7 +113,7 @@ export function Home() {
       <main className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col justify-center gap-9 px-6 pb-10">
         <section className="flex flex-col items-center gap-4 text-center">
           <h1 className="font-display text-balance text-[clamp(40px,5.4vw,68px)] font-bold leading-[1.02] tracking-[-0.035em]">{t('home.title')}</h1>
-          <p className="max-w-[600px] text-[16px] leading-relaxed text-fg-muted">{t('home.lead')}</p>
+          <p className="max-w-[600px] text-[16px] leading-relaxed text-fg-muted">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
           <button
             type="button"
             data-testid="home-drop"

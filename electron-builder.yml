@@ -1,0 +1,37 @@
+# Desktop builds: macOS (.dmg, Intel + Apple Silicon) and Windows (installer).
+# The app folder is desktop/ (its own package.json: only electron-updater ships).
+appId: app.mockuplab
+productName: MockupLab
+copyright: Copyright © 2026 Luca Leone
+directories:
+  app: desktop
+  output: release
+  buildResources: build
+files:
+  - main.cjs
+  - preload.cjs
+  - web/**
+  - package.json
+mac:
+  category: public.app-category.graphics-design
+  icon: public/icons/icon-1024.png
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+    - target: zip
+      arch: [x64, arm64]
+  # not signed yet: set to a Developer ID identity (and notarize) when an Apple account exists
+  identity: null
+win:
+  icon: public/icons/icon-512.png
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: true
+  perMachine: false
+publish:
+  provider: github
+  owner: lucaleone15
+  repo: MockupLab
+  releaseType: release
