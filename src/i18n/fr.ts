@@ -479,4 +479,6 @@ export const fr = {
   'photo.pickZone': 'Sélectionne une zone sur la photo (ou crée-en une dans Zones).',
   'export.title': 'Exporter l’image',
   'export.download': 'Télécharger',
+  'library.copyOf': '{name} (copie)',
+  'library.storageFull': 'Espace presque plein : les exports les plus anciens ont été supprimés.',
 } as const;

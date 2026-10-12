@@ -61,6 +61,8 @@ if (import.meta.env.DEV) {
         overlays: ov,
         ui: ui.useUi,
         assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
+        assetUrl: (id: string) => as.useAssets.getState().assets[id]?.url,
+        library: pe.library,
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         photo: {

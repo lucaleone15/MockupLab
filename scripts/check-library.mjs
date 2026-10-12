@@ -1,0 +1,72 @@
+// scripts/check-library.mjs — several projects in IndexedDB: migration of the old single project,
+// create / duplicate / rename / remove, images shared between projects, current project restored.
+import { openApp, check, done } from './lib/app.mjs';
+const { browser, page, errors } = await openApp({ hash: '#/studio' });
+const idb = (fn, arg) => page.evaluate(fn, arg);
+// raw IndexedDB access, independent from the app's code
+const RAW = `
+  window.idbOpen = () => new Promise((res, rej) => { const r = indexedDB.open('mockuplab'); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  window.idbTx = async (mode, fn) => { const db = await idbOpen(); return new Promise((res, rej) => { const t = db.transaction('kv', mode); const out = fn(t.objectStore('kv')); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+`;
+// 1. build an old-format autosave: key 'project' + 'asset:<id>'
+await page.getByRole('button', { name: 'Essayer un exemple' }).click();
+await page.waitForTimeout(1500);
+const legacy = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const project = { ...api.persistence.snapshot(), name: 'Ancien projet' };
+  const id = project.items[0].surfaces.screen.assetId;
+  const blob = await (await fetch(api.assetUrl(id))).blob();
+  return { project, asset: { id, name: 'legacy.png', width: 10, height: 20 }, bytes: [...new Uint8Array(await blob.arrayBuffer())], type: blob.type };
+});
+await page.evaluate(
+  async ({ RAW, l }) => {
+    eval(RAW);
+    // stop the app from writing while we rebuild the database
+    window.__mockuplab.persistence.pauseAutosave(true);
+    // empty the store in place (deleting the database would block on the app's open connection)
+    await idbTx('readwrite', (s) => s.clear());
+    const blob = new Blob([new Uint8Array(l.bytes)], { type: l.type });
+    await idbTx('readwrite', (s) => { s.put(l.project, 'project'); s.put({ ...l.asset, blob }, 'asset:' + l.asset.id); });
+    localStorage.removeItem('mockuplab:current');
+  },
+  { RAW, l: legacy },
+);
+await page.reload();
+await page.waitForFunction(() => window.__mockuplab?.library);
+await page.waitForTimeout(1200);
+const lib = () => page.evaluate(() => { const s = window.__mockuplab.library.state(); return { ids: s.list.map((p) => p.id), names: s.list.map((p) => p.name), current: s.currentId }; });
+let L = await lib();
+check(L.ids.length === 1 && L.names[0] === 'Ancien projet', `old autosave migrated into the library (${JSON.stringify(L.names)})`);
+const assetOk = await page.evaluate((id) => !!window.__mockuplab.assetUrl(id), legacy.asset.id);
+check(assetOk, 'its image is loaded');
+const keys = () => idb(async (RAW) => { eval(RAW); const db = await idbOpen(); return new Promise((res) => { const r = db.transaction('kv').objectStore('kv').getAllKeys(); r.onsuccess = () => res(r.result.map(String)); }); }, RAW);
+check(!(await keys()).includes('project'), 'old key removed after migration');
+const oldId = L.ids[0];
+// 2. create a new project, the old one stays
+await page.evaluate(() => window.__mockuplab.library.create());
+await page.waitForTimeout(400);
+await page.evaluate(() => window.__mockuplab.project.setState({ name: 'Nouveau' }));
+await page.waitForTimeout(1200);
+L = await lib();
+check(L.ids.length === 2 && L.current !== oldId && L.names.includes('Nouveau'), `new project created next to the old one (${JSON.stringify(L.names)})`);
+// 3. duplicate + rename
+const dupId = await page.evaluate((id) => window.__mockuplab.library.duplicate(id), oldId);
+await page.evaluate((id) => window.__mockuplab.library.rename(id, 'Copie test'), dupId);
+await page.waitForTimeout(300);
+L = await lib();
+check(L.ids.length === 3 && L.names.includes('Copie test'), `duplicate + rename (${JSON.stringify(L.names)})`);
+// 4. removing one project keeps an image another project still uses
+await page.evaluate((id) => window.__mockuplab.library.remove(id), oldId);
+await page.waitForTimeout(1200);
+check((await keys()).includes('asset:' + legacy.asset.id), 'shared image kept after removing one of its projects');
+await page.evaluate((id) => window.__mockuplab.library.remove(id), dupId);
+await page.waitForTimeout(1200);
+check(!(await keys()).includes('asset:' + legacy.asset.id), 'image deleted once no project uses it');
+// 5. the current project comes back after a reload
+const cur = (await lib()).current;
+await page.reload();
+await page.waitForFunction(() => window.__mockuplab?.library);
+await page.waitForTimeout(1000);
+L = await lib();
+check(L.current === cur && (await page.evaluate(() => window.__mockuplab.project.getState().name)) === 'Nouveau', 'current project restored after reload');
+await done(browser, errors);
