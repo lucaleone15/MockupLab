@@ -502,7 +502,7 @@ export function PhotoView() {
   const origin = selected ? `${(selected.corners.reduce((a, c) => a + c[0], 0) / 4) * 100}% ${(selected.corners.reduce((a, c) => a + c[1], 0) / 4) * 100}%` : '50% 50%';
 
   return (
-    <main ref={ref} className="stage-dots relative flex min-w-0 flex-1 items-center justify-center overflow-hidden" data-testid="photo-view">
+    <main ref={ref} className="stage-bg relative flex min-w-0 flex-1 items-center justify-center overflow-hidden" data-testid="photo-view">
       {asset ? (
         <div className="relative overflow-hidden rounded-[3px]" style={{ width, height, boxShadow: 'var(--frame-shadow)' }} data-testid="frame" ref={frame}>
           <div className="absolute inset-0" style={previewZoom !== 1 ? { transform: `scale(${previewZoom})`, transformOrigin: origin } : undefined}>

@@ -173,7 +173,7 @@ export function Viewport() {
   const out = exportSettings.kind === 'video' ? videoSize() : outputSize(exportSettings);
 
   return (
-    <main ref={ref} className="stage-dots relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">
+    <main ref={ref} className="stage-bg relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">
       <div
         className="relative overflow-hidden rounded-[3px] transition-[width,height] duration-300 ease-[var(--ease-out-quart)]"
         style={{ width, height, boxShadow: 'var(--frame-shadow)' }}
