@@ -5,3 +5,4 @@ dist
 out/
 test-results/
 node_modules
+.superpowers/
