@@ -184,3 +184,16 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Reduced transparency: frosted surfaces become solid. */
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-theme='dark'] {
+    --surface: #26262b;
+    --menu-bg: #2c2c32;
+  }
+  .glass,
+  .menu-surface {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

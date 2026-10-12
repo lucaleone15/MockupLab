@@ -139,7 +139,7 @@ export const fr = {
   'ground.reflection': 'Réflexion au sol',
   'ground.reflectivity': 'Intensité du reflet',
   'export.dofNote': 'Profondeur de champ active : le rendu accumule 64 passes, il prend quelques secondes.',
-  'ui.more': 'Plus d’options',
+  'ui.more': 'Réglages fins',
   'ui.less': 'Moins d’options',
   'scene.moods': 'Ambiances',
   'scene.customize': 'Personnaliser',
