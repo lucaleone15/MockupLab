@@ -50,8 +50,10 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // build outputs (web, desktop, packaged apps) are not sources: never reload the dev page for them
+  server: { watch: { ignored: ['**/dist/**', '**/desktop/**', '**/release/**'] } },
   // loaded on demand (video export): pre-bundled so the dev server never reloads mid-session
-  optimizeDeps: { include: ['mediabunny', 'gifenc'] },
+  optimizeDeps: { entries: ['index.html'], include: ['mediabunny', 'gifenc'] },
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 2000,

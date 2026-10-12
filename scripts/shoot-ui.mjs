@@ -33,6 +33,21 @@ for (const scheme of ['light', 'dark']) {
     await page.waitForTimeout(400);
     await shot(`photo-${tab}`);
   }
+  await page.evaluate(() => (location.hash = '#/rapide'));
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 8, null, { timeout: 120000 }).catch(() => {});
+  await shot('quick');
+  await page.evaluate(() => (location.hash = '#/projet'));
+  await page.evaluate(async () => {
+    for (const n of ['sample-web.png', 'sample-app.png', 'sample-poster.png']) {
+      const blob = await (await fetch('/samples/' + n)).blob();
+      await window.__mockuplab.pack.add([new File([blob], n, { type: 'image/png' })]);
+    }
+  });
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid=pack-item] img').length >= 5, null, { timeout: 200000 }).catch(() => {});
+  await shot('project');
+  await page.evaluate(() => (location.hash = '#/'));
+  await page.waitForTimeout(1000);
+  await shot('home-recents');
   await browser.close();
 }
 console.log('out/ui written');
