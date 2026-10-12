@@ -3,7 +3,7 @@ import { Download, FileJson, ImagePlus, Trash2 } from 'lucide-react';
 import { useT } from '@/i18n';
 import { download } from '@/export/exportImage';
 import { useProject } from '@/store/project';
-import { Spinner, Tooltip, cx } from '@/ui/primitives';
+import { GroupTitle, Spinner, Tooltip, cx } from '@/ui/primitives';
 import { pickPhoto } from './importPhoto';
 import { PHOTO_TEMPLATES, applyTemplate, applyUserTemplate, deleteUserTemplate, importTemplateFile, loadUserTemplates, templateFile, templateUrl, useTemplates } from './templates';
 
@@ -40,7 +40,7 @@ function pickTemplateFile() {
 }
 
 /** Left panel in photo mode: bundled templates, the user's saved templates, photo import. */
-export function PhotoLibrary() {
+export function PhotoLibraryPage() {
   const { t, tr } = useT();
   const templateId = useProject((s) => s.photo.templateId);
   const mine = useTemplates((s) => s.list);
@@ -58,12 +58,7 @@ export function PhotoLibrary() {
   };
 
   return (
-    <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface" data-testid="photo-library">
-      <div className="shrink-0 px-4 pb-2 pt-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">{t('photo.library')}</div>
-        <p className="mt-1.5 text-[11px] leading-snug text-fg-subtle">{t('photo.library.hint')}</p>
-      </div>
-      <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
+    <div className="flex flex-col px-5 pt-3" data-testid="photo-library">
         <button
           type="button"
           onClick={pickPhoto}
@@ -73,15 +68,15 @@ export function PhotoLibrary() {
           {t('photo.import')}
         </button>
 
-        <div className="mb-2 px-1 text-[12px] font-medium text-fg">{t('photo.templates')}</div>
-        <div className="mb-4 grid grid-cols-1 gap-2">
+        <div className="mb-2"><GroupTitle>{t('photo.templates')}</GroupTitle></div>
+        <div className="mb-5 grid grid-cols-2 gap-2">
           {PHOTO_TEMPLATES.map((tpl) => (
             <Card key={tpl.id} active={templateId === tpl.id} loading={loading === tpl.id} src={templateUrl(tpl.thumb)} label={tr(tpl.name)} onClick={() => run(tpl.id, () => applyTemplate(tpl))} />
           ))}
         </div>
 
-        <div className="mb-2 flex items-center justify-between px-1">
-          <span className="text-[12px] font-medium text-fg">{t('photo.myTemplates')}</span>
+        <div className="mb-2 flex items-center justify-between">
+          <GroupTitle>{t('photo.myTemplates')}</GroupTitle>
           <Tooltip label={t('photo.template.importFile')}>
             <button type="button" aria-label={t('photo.template.importFile')} onClick={pickTemplateFile} className="grid size-6 place-items-center rounded-md text-fg-muted hover:bg-surface-3 hover:text-fg">
               <FileJson size={14} />
@@ -89,9 +84,9 @@ export function PhotoLibrary() {
           </Tooltip>
         </div>
         {mine.length === 0 ? (
-          <p className="mx-1 rounded-lg border border-dashed border-line-strong p-3 text-[11.5px] leading-relaxed text-fg-subtle">{t('photo.myTemplates.empty')}</p>
+          <p className="rounded-lg border border-dashed border-line-strong p-3 text-[11.5px] leading-relaxed text-fg-subtle">{t('photo.myTemplates.empty')}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {mine.map((tpl) => (
               <Card key={tpl.id} active={templateId === `user:${tpl.id}`} loading={loading === tpl.id} src={tpl.url} label={tpl.name} onClick={() => run(tpl.id, () => applyUserTemplate(tpl))}>
                 <div className="absolute right-1.5 top-1.5 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -125,8 +120,7 @@ export function PhotoLibrary() {
             ))}
           </div>
         )}
-        <p className="mx-1 mt-4 text-[10.5px] leading-relaxed text-fg-subtle">{t('photo.credits')}</p>
-      </div>
-    </aside>
+        <p className="mt-4 text-[11.5px] leading-relaxed text-fg-subtle">{t('photo.credits')}</p>
+    </div>
   );
 }
