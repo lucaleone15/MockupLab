@@ -157,6 +157,12 @@ body {
     transform: translateY(8px) scale(0.98);
   }
 }
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
 @keyframes fade-in {
   from {
     opacity: 0;

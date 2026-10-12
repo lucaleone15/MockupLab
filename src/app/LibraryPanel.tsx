@@ -15,7 +15,6 @@ import {
   Mails,
   Newspaper,
   Package,
-  Plus,
   RectangleVertical,
   Shirt,
   SwatchBook,
@@ -29,10 +28,9 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { getModel, modelsByCategory, useUserModules } from '@/models/registry';
-import { switchModel } from '@/lib/switchModel';
+import { useUserModules } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
-import { selectSelectedItem, useProject } from '@/store/project';
+import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Tooltip, cx } from '@/ui/primitives';
 
@@ -82,7 +80,7 @@ const SHELL = 'fill-surface-4 stroke-fg-subtle';
 const SCREEN = 'fill-surface-2';
 
 /** Line-art silhouette drawn from the model's real proportions. */
-function Silhouette({ model }: { model: DeviceModule }) {
+export function Silhouette({ model }: { model: DeviceModule }) {
   const Icon = model.category === 'custom' ? Box : OBJECT_ICONS[model.id];
   if (Icon)
     return (
@@ -143,15 +141,13 @@ function Silhouette({ model }: { model: DeviceModule }) {
   );
 }
 
-function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () => void }) {
+export function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () => void }) {
   const { t, tr } = useT();
-  const selected = useProject(selectSelectedItem);
   const addItem = useProject((s) => s.addItem);
   const resetView = useUi((s) => s.resetView);
-  const active = selected?.modelId === m.id;
   return (
                   <div key={m.id} className="group relative">
-                    <Tooltip label={t('library.replace')}>
+                    <Tooltip label={t('library.add')}>
                       <button
                         type="button"
                         draggable
@@ -160,32 +156,15 @@ function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () 
                           e.dataTransfer.effectAllowed = 'copy';
                         }}
                         onClick={() => {
-                          if (!selected) return;
-                          if (active) resetView();
-                          else void switchModel(selected.id, m.id);
+                          addItem(m.id);
+                          resetView();
                         }}
                         className={cx(
-                          'flex w-full flex-col items-center gap-1 rounded-xl bg-surface-2 px-1.5 pb-2 pt-1.5 text-[11.5px] leading-tight transition-[box-shadow,background-color,transform] duration-150 active:scale-[0.97]',
-                          active
-                            ? 'text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]'
-                            : 'text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:bg-surface-3 hover:text-fg',
+                          'flex w-full flex-col items-center gap-1 rounded-[12px] bg-surface-2 px-1.5 pb-2 pt-1.5 text-[12px] leading-tight text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color,color,transform] duration-150 hover:bg-surface-3 hover:text-fg active:scale-[0.97]',
                         )}
                       >
                         <Silhouette model={m} />
                         <span className="text-center">{tr(m.name)}</span>
-                      </button>
-                    </Tooltip>
-                    <Tooltip label={t('library.add')}>
-                      <button
-                        type="button"
-                        aria-label={t('library.add')}
-                        onClick={() => {
-                          addItem(m.id);
-                          resetView();
-                        }}
-                        className="absolute right-1.5 top-1.5 grid size-6 scale-90 place-items-center rounded-full bg-accent text-accent-fg opacity-0 shadow-md transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100"
-                      >
-                        <Plus size={14} strokeWidth={2.5} />
                       </button>
                     </Tooltip>
                     {onDelete && (
@@ -204,7 +183,7 @@ function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () 
                 );
 }
 
-function UserModels() {
+export function UserModels() {
   const { t } = useT();
   const modules = useUserModules((s) => s.modules);
   const load = () => import('@/models/glb/userModels');
@@ -235,36 +214,5 @@ function UserModels() {
       </button>
       <p className="mx-1 mt-2 text-[11px] leading-snug text-fg-subtle">{t('glb.hint')}</p>
     </div>
-  );
-}
-
-export function LibraryPanel() {
-  const { t, tr } = useT();
-  const selected = useProject(selectSelectedItem);
-
-  return (
-    <aside className="flex w-[232px] shrink-0 flex-col border-r border-line bg-surface">
-      <div className="shrink-0 px-4 pb-2 pt-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted">{t('library.title')}</div>
-        {selected && (
-          <p className="mt-1.5 text-[11px] leading-snug text-fg-subtle">
-            {t('library.hint', { name: tr(getModel(selected.modelId).name) })}
-          </p>
-        )}
-      </div>
-      <div className="scroll-thin flex-1 overflow-y-auto px-3 pb-4">
-        {modelsByCategory().map(([cat, models]) => (
-          <div key={cat} className="mb-4">
-            <div className="mb-2 px-1 text-[12px] font-medium text-fg">{CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}</div>
-            <div className="grid grid-cols-2 gap-2">
-              {models.map((m) => (
-                <ModelCard key={m.id} model={m} />
-              ))}
-            </div>
-          </div>
-        ))}
-        <UserModels />
-      </div>
-    </aside>
   );
 }
