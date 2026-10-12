@@ -1,7 +1,6 @@
-import { Download, ImageOff, ImageUp, Layers } from 'lucide-react';
+import { ImageOff, ImageUp, Layers } from 'lucide-react';
 import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
-import { exportImage } from '@/export/exportImage';
 import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import type { ParamDef, ParamValue } from '@/models/types';
@@ -324,7 +323,6 @@ export function ExportForm() {
   const setExport = useProject((s) => s.setExport);
   const transparent = useProject((s) => s.background.kind === 'transparent');
   const dof = useProject((s) => s.camera.dof);
-  const exporting = useUi((s) => s.exporting);
   const photoMode = useProject((s) => s.mode === 'photo');
   useProject((s) => s.photo.assetId);
   const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
@@ -357,10 +355,6 @@ export function ExportForm() {
         </span>
       </div>
       {dof && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('export.dofNote')}</p>}
-      <Button variant="primary" size="lg" onClick={exportImage} disabled={!!exporting || (photoMode && !width)}>
-        <Download size={16} strokeWidth={2.2} />
-        {t('export.cta')}
-      </Button>
     </div>
   );
 }

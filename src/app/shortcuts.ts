@@ -64,7 +64,8 @@ function onKey(e: KeyboardEvent) {
     useProject.temporal.getState().redo();
   } else if (mod && key === 'e') {
     e.preventDefault();
-    exportImage();
+    if (project.export.kind === 'video') exportImage();
+    else ui.setExportOpen(true);
   } else if (mod && key === 's') {
     e.preventDefault();
     void saveProjectFile();
