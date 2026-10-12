@@ -69,4 +69,17 @@ await page.waitForFunction(() => window.__mockuplab?.library);
 await page.waitForTimeout(1000);
 L = await lib();
 check(L.current === cur && (await page.evaluate(() => window.__mockuplab.project.getState().name)) === 'Nouveau', 'current project restored after reload');
+// 6. exports are kept with the project (10 at most) and the project gets a thumbnail
+await page.getByTestId('top-export').click();
+await page.getByTestId('export-sheet').getByRole('radio', { name: '1080p', exact: true }).click();
+await Promise.all([page.waitForEvent('download', { timeout: 240000 }), page.getByTestId('export-sheet').getByRole('button', { name: /Télécharger/ }).click()]);
+await page.waitForTimeout(1500);
+const exp = () => page.evaluate(async () => { const id = window.__mockuplab.library.state().currentId; const list = await window.__mockuplab.exports.listExports(id); const blob = list[0] && (await window.__mockuplab.exports.getExport(id, list[0].id)); return { n: list.length, size: blob?.size ?? 0, count: window.__mockuplab.library.state().list.find((p) => p.id === id)?.exportCount }; });
+let E = await exp();
+check(E.n === 1 && E.size > 1000 && E.count === 1, `downloaded image kept with the project (${JSON.stringify(E)})`);
+await page.evaluate(async () => { for (let i = 0; i < 11; i++) await window.__mockuplab.exports.recordExport(new Blob(['x'.repeat(10)], { type: 'image/png' }), `extra-${i}.png`); });
+E = await exp();
+check(E.n === 10 && E.count === 10, `only the last 10 exports are kept (${E.n})`);
+await page.waitForFunction(() => { const s = window.__mockuplab.library.state(); return s.list.find((p) => p.id === s.currentId)?.hasThumb; }, null, { timeout: 15000 }).catch(() => {});
+check(await page.evaluate(() => { const s = window.__mockuplab.library.state(); return !!s.thumbs[s.currentId]; }), 'the project has a thumbnail');
 await done(browser, errors);

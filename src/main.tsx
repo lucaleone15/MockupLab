@@ -22,6 +22,7 @@ void import('./models/glb/userModels')
     </StrictMode>,
   );
   startAutosave();
+  void import('./library/thumbs').then((m) => m.startThumbs());
 });
 
 if (import.meta.env.DEV) {
@@ -46,7 +47,8 @@ if (import.meta.env.DEV) {
     import('./photo/source'),
     import('./photo/editing'),
     import('./variants/store'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va]) => {
+    import('./library/exports'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -63,6 +65,7 @@ if (import.meta.env.DEV) {
         assetName: (id: string) => as.useAssets.getState().assets[id]?.name,
         assetUrl: (id: string) => as.useAssets.getState().assets[id]?.url,
         library: pe.library,
+        exports: lx,
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         photo: {
