@@ -1,0 +1,12 @@
+{
+  "name": "mockuplab-desktop",
+  "productName": "MockupLab",
+  "version": "1.0.0",
+  "description": "MockupLab — mock-ups 3D et photo, en application de bureau.",
+  "author": "Luca Leone",
+  "license": "MIT",
+  "main": "main.cjs",
+  "dependencies": {
+    "electron-updater": "^6.6.2"
+  }
+}

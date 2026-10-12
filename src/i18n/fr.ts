@@ -542,4 +542,5 @@ export const fr = {
   'update.available': 'Une nouvelle version de MockupLab est disponible.',
   'update.apply': 'Mettre à jour',
   'update.later': 'Plus tard',
+  'home.leadDesktop': 'Dépose une capture d’écran, un site ou une affiche : MockupLab la place sur des appareils et des objets réalistes en 3D, ou sur de vraies photos. Tout reste sur ton ordinateur.',
 } as const;

@@ -5,8 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
 // GitHub Pages serves the app from /<repo>/ — keep it overridable for forks.
-export default defineConfig(({ command, isPreview }) => ({
-  base: command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/MockupLab/') : '/',
+export default defineConfig(({ command, isPreview, mode }) => ({
+  // the desktop app serves the build from app://mockuplab/ (mode "desktop")
+  base: mode === 'desktop' ? '/' : command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/MockupLab/') : '/',
   // a new id per build: the app can tell which version runs (update checks, tests)
   define: { __BUILD_ID__: JSON.stringify(process.env.BUILD_ID ?? Date.now().toString(36)) },
   plugins: [

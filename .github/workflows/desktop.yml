@@ -1,0 +1,32 @@
+name: Desktop app
+
+# Pushing a tag like v1.0.0 builds the macOS and Windows apps and publishes
+# them (with the update metadata electron-updater reads) on GitHub Releases.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm ci
+        working-directory: desktop
+      - run: npm run desktop:web
+      - run: npx electron-builder --config electron-builder.yml --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

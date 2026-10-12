@@ -11,7 +11,10 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "shoot": "node scripts/shoot.mjs",
-    "samples": "node scripts/make-samples.mjs"
+    "samples": "node scripts/make-samples.mjs",
+    "desktop:web": "vite build --mode desktop --outDir desktop/web --emptyOutDir",
+    "desktop": "npm run desktop:web && electron desktop",
+    "desktop:dist": "npm run desktop:web && electron-builder --config electron-builder.yml"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -38,6 +41,8 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
     "playwright": "^1.63.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
