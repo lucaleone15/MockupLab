@@ -8,7 +8,7 @@ await p.addInitScript(() => indexedDB.deleteDatabase('mockuplab'));
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/studio');
 await p.waitForFunction(() => window.__mockuplab);
 await p.waitForTimeout(800);
 const render = async (name) => {

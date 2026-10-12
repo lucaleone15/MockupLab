@@ -36,7 +36,7 @@ const SCENARIOS = [
 
 
 const only = process.argv[2]?.split(',');
-const url = process.env.URL ?? 'http://localhost:5173/';
+const url = process.env.URL ?? 'http://localhost:5173/#/studio';
 mkdirSync('out/scenes', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });

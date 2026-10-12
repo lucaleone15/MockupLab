@@ -185,19 +185,19 @@ export function VariantsDialog() {
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && variants.close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[3px] animate-[fade-in_150ms_ease-out]" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[3px] animate-[fade-in_150ms_ease-out]" />
         <Dialog.Content
-          className="fixed inset-4 z-40 flex flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl ring-1 ring-line-strong animate-[toast-in_200ms_var(--ease-out-quart)]"
+          className="menu-surface fixed inset-4 z-40 flex flex-col overflow-hidden rounded-[18px] animate-[toast-in_200ms_var(--ease-out-quart)]"
           onEscapeKeyDown={(e) => viewer && e.preventDefault()}
           data-testid="variants"
         >
           <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3.5">
             <div className="mr-2 flex items-center gap-2.5">
-              <span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-fg">
+              <span className="grid size-8 place-items-center rounded-[10px] bg-fg text-bg">
                 <Sparkles size={16} />
               </span>
               <div>
-                <Dialog.Title className="text-[15px] font-semibold leading-tight">{t('variants.title')}</Dialog.Title>
+                <Dialog.Title className="font-display text-[20px] font-bold leading-tight">{t('variants.title')}</Dialog.Title>
                 <Dialog.Description className="text-[11.5px] text-fg-subtle">{t('variants.subtitle')}</Dialog.Description>
               </div>
             </div>

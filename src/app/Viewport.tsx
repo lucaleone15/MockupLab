@@ -127,7 +127,7 @@ export function DropOverlay() {
       )}
     >
       <div className={cx('flex flex-col items-center gap-2 transition-transform duration-200 ease-[var(--ease-spring)]', dragging ? 'scale-100' : 'scale-95')}>
-        <div className="grid size-12 place-items-center rounded-2xl bg-accent text-accent-fg shadow-xl">
+        <div className="grid size-12 place-items-center rounded-[14px] bg-fg text-bg shadow-xl">
           <ImagePlus size={22} />
         </div>
         <div className="text-[15px] font-semibold">{t('stage.dropTitle')}</div>

@@ -25,17 +25,29 @@ const sweep = (where) =>
     return { where, bad };
   }, where);
 const report = [];
-for (const tab of ['Appareil', 'Scène', 'Marque', 'Export']) {
-  await p.getByRole('radio', { name: tab, exact: true }).first().click();
-  await p.waitForTimeout(300);
-  report.push(await sweep(`3D · ${tab}`));
-}
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
-await p.evaluate(async () => {
-  const api = window.__mockuplab;
-  await api.photo.applyTemplate(api.photo.templates[0]);
-});
+await p.goto('http://localhost:5173/#/');
+await p.waitForTimeout(500);
+report.push(await sweep('Accueil'));
+await p.goto('http://localhost:5173/#/studio');
 await p.waitForTimeout(800);
-report.push(await sweep('Photo'));
-for (const r of report) console.log(r.where.padEnd(14), r.bad.length ? `${r.bad.length} sans nom: ${[...new Set(r.bad)].join(', ')}` : 'ok');
+for (const tab of ['Appareils', 'Réglages', 'Ambiance', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
+  await p.getByTestId('studio-rail').getByRole('tab', { name: tab, exact: true }).click();
+  await p.waitForTimeout(300);
+  report.push(await sweep(`Studio · ${tab}`));
+}
+await p.getByTestId('top-export').click();
+await p.waitForTimeout(300);
+report.push(await sweep('Exporter'));
+await p.keyboard.press('Escape');
+await p.goto('http://localhost:5173/#/photo');
+await p.waitForTimeout(500);
+await p.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[0]));
+await p.waitForTimeout(800);
+for (const tab of ['Photos', 'Zones', 'Design', 'Rendu', 'Vidéo']) {
+  await p.getByTestId('photo-rail').getByRole('tab', { name: tab, exact: true }).click();
+  await p.waitForTimeout(300);
+  report.push(await sweep(`Photo · ${tab}`));
+}
+for (const r of report) console.log(r.where.padEnd(20), r.bad.length ? `${r.bad.length} sans nom: ${[...new Set(r.bad)].join(', ')}` : 'ok');
+if (report.some((r) => r.bad.length)) process.exitCode = 1;
 await b.close();

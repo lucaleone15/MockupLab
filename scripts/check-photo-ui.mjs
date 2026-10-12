@@ -17,10 +17,9 @@ await p.addInitScript(() => {
   }
   localStorage.setItem('mockuplab:lang', 'fr');
 });
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/photo');
 await p.waitForFunction(() => window.__mockuplab?.photo);
 await p.waitForTimeout(600);
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
 // import our own photo: the marble one, through the file input
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByRole('button', { name: 'Importer ma photo' }).first().click()]);
 await chooser.setFiles('public/assets/photo/marble-duo.jpg');
@@ -87,7 +86,8 @@ await chooser2.setFiles(file);
 await p.waitForTimeout(1500);
 console.log('after template import:', await p.getByTestId('photo-library').getByText('Duo marbre').count(), 'entries;', JSON.stringify((await state()).zones.length), 'zones');
 // export the image
-const [dl2] = await Promise.all([p.waitForEvent('download'), p.keyboard.press('Meta+e')]);
+await p.keyboard.press('Meta+e');
+const [dl2] = await Promise.all([p.waitForEvent('download'), p.getByTestId('export-sheet').getByRole('button', { name: /Télécharger/ }).click()]);
 await dl2.saveAs('out/photo/ui-export.png');
 console.log('export:', dl2.suggestedFilename());
 // reload: autosave restores the photo mock-up
@@ -98,7 +98,7 @@ await p.waitForTimeout(1500);
 console.log('after reload:', JSON.stringify({ ...(await state()), zones: (await state()).zones.length }));
 await p.screenshot({ path: 'out/photo/ui-reload.png' });
 // back to 3D
-await p.getByTestId('mode-switch').getByRole('radio', { name: '3D' }).click();
+await p.getByTestId('mode-switch').getByRole('radio', { name: 'Studio' }).click();
 await p.waitForTimeout(1200);
 await p.screenshot({ path: 'out/photo/ui-3d.png' });
 console.log('3D mode:', (await state()).mode);

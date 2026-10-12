@@ -13,13 +13,13 @@ export function ModelSwitcher() {
   const item = useProject(selectSelectedItem);
   if (!item) return null;
   const current = getModel(item.modelId);
-  const row = 'flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-[12.5px] text-fg outline-none data-[highlighted]:bg-surface-4';
+  const row = 'flex cursor-pointer items-center gap-2 rounded-[8px] px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-fg';
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
           type="button"
-          className="flex h-9 w-full items-center gap-2 rounded-lg bg-surface-2 px-3 text-left text-[13px] font-medium shadow-[0_0_0_1px_var(--line)_inset] transition-shadow hover:shadow-[0_0_0_1px_var(--line-strong)_inset]"
+          className="flex h-9 w-full items-center gap-2 rounded-[10px] bg-surface-2 px-3 text-left text-[13px] font-medium shadow-[0_0_0_1px_var(--line)_inset] transition-shadow hover:shadow-[0_0_0_1px_var(--line-strong)_inset]"
         >
           <span className="flex-1 truncate">{tr(current.name)}</span>
           <span className="text-[11.5px] font-normal text-fg-subtle">{t('switch.change')}</span>
@@ -30,11 +30,11 @@ export function ModelSwitcher() {
         <DropdownMenu.Content
           sideOffset={6}
           align="end"
-          className="z-50 max-h-[70vh] w-[260px] overflow-y-auto rounded-xl bg-surface-3 p-1 shadow-2xl ring-1 ring-line-strong animate-[fade-in_120ms_ease-out]"
+          className="z-50 max-h-[70vh] w-[260px] overflow-y-auto menu-surface rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]"
         >
           {modelsByCategory().map(([cat, models]) => (
             <DropdownMenu.Group key={cat}>
-              <DropdownMenu.Label className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">
+              <DropdownMenu.Label className="px-2.5 pb-1 pt-2 text-[11.5px] font-medium text-fg-subtle">
                 {CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}
               </DropdownMenu.Label>
               {models.map((m) => (

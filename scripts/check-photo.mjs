@@ -12,10 +12,9 @@ await p.addInitScript(() => {
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/photo');
 await p.waitForFunction(() => window.__mockuplab?.photo);
 await p.waitForTimeout(800);
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
 await p.waitForTimeout(500);
 await p.screenshot({ path: 'out/photo/empty.png' });
 

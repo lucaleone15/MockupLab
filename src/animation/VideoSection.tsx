@@ -52,7 +52,7 @@ export function VideoSection() {
           if (!group.length) return null;
           return (
             <div key={g} className="flex flex-col gap-1.5">
-              {mode === 'scene' && <div className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">{t(g === 'cinematic' ? 'video.group.cinematic' : 'video.group.classic')}</div>}
+              {mode === 'scene' && <div className="text-[12px] font-medium text-fg-muted">{t(g === 'cinematic' ? 'video.group.cinematic' : 'video.group.classic')}</div>}
               <div className="grid grid-cols-3 gap-1.5">
                 {group.map((a) => (
                   <button

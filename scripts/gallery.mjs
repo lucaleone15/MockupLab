@@ -3,7 +3,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const url = process.argv[2] ?? 'http://localhost:5173/';
+const url = process.argv[2] ?? 'http://localhost:5173/#/studio';
 const out = process.env.OUT ?? 'out/models';
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] });

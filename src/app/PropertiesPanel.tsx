@@ -48,7 +48,7 @@ function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { i
       </button>
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
         <div className="min-w-0">
-          {label && <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-fg-subtle">{label}</div>}
+          {label && <div className="text-[12px] font-medium text-fg-muted">{label}</div>}
           <div className="truncate text-[12.5px] font-medium">{asset?.name ?? t('props.noImage')}</div>
           <div className="font-mono text-[11px] tabular-nums text-fg-subtle">
             {asset ? `${asset.width} × ${asset.height}` : nativeSize ? `${nativeSize[0]} × ${nativeSize[1]}` : ''}
