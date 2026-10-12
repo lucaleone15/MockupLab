@@ -120,6 +120,7 @@ function dropThumbs() {
 export const labelOf = (tile: QuickTile) => (typeof tile.label === 'string' ? tile.label : tile.label[useLang.getState().lang]);
 
 export const quick = {
+  state: get,
   detectSupport,
   /** Starts (or resumes) rendering; called when the Quick screen shows. */
   start() {

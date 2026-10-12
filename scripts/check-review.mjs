@@ -26,7 +26,7 @@ await page.evaluate(() => window.__mockuplab.project.getState().setMode('photo')
 await page.waitForTimeout(300);
 s = await st();
 check(s.screen === 'photo' && s.hash === '#/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
-// 2. a paste on home with a photo-mode project lands on the studio device
+// 2. a paste on home with a photo-mode project opens Quick with that image (the photo project is untouched)
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(200);
 await page.evaluate(async () => {
@@ -42,10 +42,12 @@ await page.evaluate(async () => {
 await page.waitForTimeout(1000);
 const landed = await page.evaluate(() => {
   const api = window.__mockuplab;
-  const p = api.project.getState();
-  return p.items.some((it) => Object.values(it.surfaces).some((b) => b.assetId && api.assetName(b.assetId) === 'home-paste.png'));
+  const q = api.quick.state();
+  return { screen: api.ui.getState().screen, image: q.assetId && api.assetName(q.assetId), zones: api.project.getState().photo.zones.map((z) => z.surface.assetId && api.assetName(z.surface.assetId)) };
 });
-check(landed, 'paste on home with a photo project → image on the studio device');
+check(landed.screen === 'quick' && landed.image === 'home-paste.png' && !landed.zones.includes('home-paste.png'), `paste on home → Quick with the image, photo zones untouched (${JSON.stringify(landed)})`);
+await page.evaluate(() => (location.hash = '#/studio'));
+await page.waitForTimeout(300);
 // 3. a leftover video kind does not hijack the image export
 await page.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video' }));
 await page.getByTestId('studio-rail').getByRole('tab', { name: 'Lumière', exact: true }).click();
