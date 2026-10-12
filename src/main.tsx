@@ -47,7 +47,8 @@ if (import.meta.env.DEV) {
     import('./variants/store'),
     import('./library/exports'),
     import('./quick/store'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk]) => {
+    import('./project/store'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk, pk]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -66,6 +67,7 @@ if (import.meta.env.DEV) {
         library: pe.library,
         exports: lx,
         quick: qk.quick,
+        pack: pk.pack,
         importFiles: im.importImages,
         asset: (id: string) => as.useAssets.getState().assets[id],
         variants: va.useVariants,
