@@ -124,10 +124,11 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   return { blob, width, height, filename: `mockuplab-${slug}-${width}x${height}.${ext}` };
 }
 
-export async function exportImage() {
+/** Exports what is asked (default: the project's current kind, i.e. a video on the Video page). */
+export async function exportImage(kind: 'image' | 'video' = useProject.getState().export.kind) {
   const ui = useUi.getState();
   if (ui.exporting) return;
-  if (useProject.getState().export.kind === 'video') {
+  if (kind === 'video') {
     const { exportVideo } = await import('@/animation/actions');
     return exportVideo();
   }

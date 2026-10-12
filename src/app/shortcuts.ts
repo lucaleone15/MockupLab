@@ -35,7 +35,7 @@ export const SHORTCUTS: [string, string][] = [
 ];
 
 function onKey(e: KeyboardEvent) {
-  if (isEditable(e.target)) return;
+  if (isEditable(e.target) || e.defaultPrevented) return;
   // the home page shows no project: only the help shortcut works there
   if (useUi.getState().screen === 'home' && e.key !== '?') return;
   // an animation preview: only Escape (or space) to stop it
@@ -64,7 +64,9 @@ function onKey(e: KeyboardEvent) {
     useProject.temporal.getState().redo();
   } else if (mod && key === 'e') {
     e.preventDefault();
-    if (project.export.kind === 'video') exportImage();
+    // on a Video page ⌘E exports the video; anywhere else it opens the image export sheet
+    const onVideo = (ui.screen === 'studio' && ui.studioPage === 'video') || (ui.screen === 'photo' && ui.photoPage === 'video');
+    if (onVideo) void exportImage('video');
     else ui.setExportOpen(true);
   } else if (mod && key === 's') {
     e.preventDefault();

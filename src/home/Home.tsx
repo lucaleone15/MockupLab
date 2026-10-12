@@ -67,9 +67,9 @@ const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
 /** Opens the studio, then puts the files on the selected device (same path as a drop in the studio). */
 export function importFromHome(files: Iterable<File>) {
   const list = [...files];
+  // navigate sets the project to 3D synchronously, so the image lands on the device
   navigate('studio');
-  // the screen switch sets the project to 3D first, so the image lands on the device
-  queueMicrotask(() => void importImages(list));
+  void importImages(list);
 }
 
 function Resume() {
