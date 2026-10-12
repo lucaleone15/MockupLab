@@ -15,7 +15,7 @@ await p.addInitScript(() => {
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/studio');
 await p.waitForFunction(() => window.__mockuplab?.renderVideo);
 // a tall capture on the phone, so that the scroll has something to show
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.evaluate(() => {
@@ -65,6 +65,7 @@ await p.evaluate(() => window.__mockuplab.project.getState().setMode('scene'));
 await p.waitForTimeout(800);
 const before2 = await scene();
 await p.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video', video: { ...window.__mockuplab.project.getState().export.video, animation: 'turntable' } }));
+await p.getByTestId('studio-rail').getByRole('tab', { name: 'Vidéo', exact: true }).click();
 await p.getByTestId('video-preview').click();
 await p.waitForTimeout(1200);
 await p.screenshot({ path: 'out/video/preview.png' });

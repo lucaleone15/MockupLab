@@ -211,7 +211,7 @@ export const fr = {
   'help.open': 'Aide & raccourcis',
   'sc.undo': 'Annuler',
   'sc.redo': 'Rétablir',
-  'sc.export': 'Exporter l’image',
+  'sc.export': 'Exporter (ouvre la fenêtre, ou exporte la vidéo sur la page Vidéo)',
   'sc.open': 'Importer une image',
   'sc.paste': 'Coller une image',
   'sc.save': 'Enregistrer le projet',
@@ -530,4 +530,6 @@ export const fr = {
   'batch.apply': 'Appliquer à plusieurs designs',
   'photo.seeProvided': 'Voir les photos fournies',
   'photo.pickZone': 'Sélectionne une zone sur la photo (ou crée-en une dans Zones).',
+  'export.title': 'Exporter l’image',
+  'export.download': 'Télécharger',
 } as const;

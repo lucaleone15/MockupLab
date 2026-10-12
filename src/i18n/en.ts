@@ -213,7 +213,7 @@ export const en: Record<keyof typeof fr, string> = {
   'help.open': 'Help & shortcuts',
   'sc.undo': 'Undo',
   'sc.redo': 'Redo',
-  'sc.export': 'Export the image',
+  'sc.export': 'Export (opens the dialog, or exports the video on the Video page)',
   'sc.open': 'Import an image',
   'sc.paste': 'Paste an image',
   'sc.save': 'Save the project',
@@ -532,4 +532,6 @@ export const en: Record<keyof typeof fr, string> = {
   'batch.apply': 'Apply to several designs',
   'photo.seeProvided': 'See the provided photos',
   'photo.pickZone': 'Select a zone on the photo (or create one in Zones).',
+  'export.title': 'Export the image',
+  'export.download': 'Download',
 };
