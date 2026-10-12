@@ -141,7 +141,7 @@ export const en: Record<keyof typeof fr, string> = {
   'ground.reflection': 'Floor reflection',
   'ground.reflectivity': 'Reflection strength',
   'export.dofNote': 'Depth of field is on: the render accumulates 64 passes and takes a few seconds.',
-  'ui.more': 'More options',
+  'ui.more': 'Fine-tuning',
   'ui.less': 'Fewer options',
   'scene.moods': 'Looks',
   'scene.customize': 'Customise',

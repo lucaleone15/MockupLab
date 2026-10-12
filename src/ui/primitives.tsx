@@ -1,6 +1,6 @@
-import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { Slider as RSlider, Tooltip as RTooltip } from 'radix-ui';
-import { ChevronDown } from 'lucide-react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Dialog, Slider as RSlider, Tooltip as RTooltip } from 'radix-ui';
+import { X } from 'lucide-react';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -8,9 +8,8 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 const variants: Record<Variant, string> = {
-  primary:
-    'bg-accent text-accent-fg hover:bg-accent-hover shadow-[0_1px_0_rgb(255_255_255/0.25)_inset,0_6px_20px_-6px_var(--accent)]',
-  secondary: 'bg-surface-3 text-fg hover:bg-surface-4 shadow-[0_0_0_1px_var(--line)_inset]',
+  primary: 'bg-accent text-accent-fg hover:bg-accent-hover shadow-[0_1px_2px_rgb(0_0_0/0.12)]',
+  secondary: 'bg-surface-2 text-fg hover:bg-surface-3 shadow-[0_0_0_1px_var(--line)_inset]',
   ghost: 'text-fg-muted hover:text-fg hover:bg-surface-3',
 };
 
@@ -24,12 +23,12 @@ export function Button({
     <button
       type="button"
       className={cx(
-        'inline-flex items-center justify-center gap-1.5 rounded-lg font-medium select-none whitespace-nowrap',
-        'transition-[background-color,color,transform,box-shadow] duration-150 ease-out active:scale-[0.97]',
-        'disabled:opacity-40 disabled:pointer-events-none',
-        size === 'sm' && 'h-7 px-2.5 text-[12px]',
-        size === 'md' && 'h-8 px-3 text-[12.5px]',
-        size === 'lg' && 'h-10 px-4 text-[13px]',
+        'inline-flex items-center justify-center gap-1.5 font-medium select-none whitespace-nowrap',
+        'transition-[background-color,color,transform,box-shadow,opacity] duration-150 ease-out active:scale-[0.97]',
+        'disabled:opacity-35 disabled:saturate-0 disabled:pointer-events-none',
+        size === 'sm' && 'h-7 rounded-full px-3 text-[12px]',
+        size === 'md' && 'h-8 rounded-full px-3.5 text-[13px]',
+        size === 'lg' && 'h-10 rounded-full px-5 text-[13.5px]',
         variants[variant],
         className,
       )}
@@ -51,7 +50,7 @@ export function IconButton({
         type="button"
         aria-label={label}
         className={cx(
-          'inline-grid place-items-center size-8 rounded-lg text-fg-muted hover:text-fg hover:bg-surface-3',
+          'inline-grid place-items-center size-8 rounded-[10px] text-fg-muted hover:text-fg hover:bg-surface-3',
           'transition-[background-color,color,transform] duration-150 active:scale-[0.94] disabled:opacity-30 disabled:pointer-events-none',
           className,
         )}
@@ -72,7 +71,7 @@ export function Tooltip({ label, shortcut, children }: { label: string; shortcut
       <RTooltip.Portal>
         <RTooltip.Content
           sideOffset={6}
-          className="z-50 flex items-center gap-2 rounded-md bg-fg px-2 py-1 text-[11.5px] font-medium text-bg shadow-lg animate-[fade-in_120ms_ease-out]"
+          className="menu-surface z-50 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[12px] font-medium text-fg animate-[fade-in_120ms_ease-out]"
         >
           {label}
           {shortcut && <Kbd inverted>{shortcut}</Kbd>}
@@ -86,8 +85,8 @@ export function Kbd({ children, inverted }: { children: ReactNode; inverted?: bo
   return (
     <kbd
       className={cx(
-        'rounded px-1 font-mono text-[10.5px] leading-[16px]',
-        inverted ? 'bg-bg/15 text-bg/80' : 'bg-surface-3 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset]',
+        'rounded-md px-1.5 font-mono text-[11px] leading-[18px]',
+        inverted ? 'bg-black/10 text-current/80 dark:bg-black/15' : 'bg-surface-3 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset]',
       )}
     >
       {children}
@@ -97,45 +96,25 @@ export function Kbd({ children, inverted }: { children: ReactNode; inverted?: bo
 
 /* ------------------------------------------------------------- Section */
 
-export function Section({
-  title,
-  aside,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  aside?: ReactNode;
-  children: ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
+/** Title of a group inside a rail page: plain text, never collapsible. */
+export function GroupTitle({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   return (
-    <section className="border-b border-line">
-      <div className="flex h-10 items-center gap-2 px-4">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          className="group flex flex-1 items-center gap-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-muted hover:text-fg"
-          aria-expanded={open}
-        >
-          <ChevronDown
-            size={13}
-            className={cx('transition-transform duration-200 ease-[var(--ease-out-quart)]', !open && '-rotate-90')}
-          />
-          {title}
-        </button>
-        {aside}
-      </div>
-      <div
-        className={cx(
-          'grid transition-[grid-template-rows,opacity] duration-250 ease-[var(--ease-out-quart)]',
-          open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="flex flex-col gap-3.5 px-4 pb-4">{children}</div>
-        </div>
-      </div>
+    <div className="flex items-baseline justify-between gap-2">
+      <h3 className="text-[13px] font-semibold text-fg">{children}</h3>
+      {aside}
+    </div>
+  );
+}
+
+/**
+ * A group of controls in a rail page. Kept under its historical name so every
+ * panel picks up the new look; `defaultOpen` is ignored (nothing collapses).
+ */
+export function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
+  return (
+    <section className="flex flex-col gap-3.5 border-t border-line px-5 py-5 first:border-t-0">
+      <GroupTitle aside={aside}>{title}</GroupTitle>
+      {children}
     </section>
   );
 }
@@ -143,7 +122,7 @@ export function Section({
 export function Field({ label, value, children }: { label: string; value?: ReactNode; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between text-[12px]">
+      <div className="flex items-baseline justify-between text-[12.5px]">
         <span className="text-fg-muted">{label}</span>
         {value !== undefined && <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{value}</span>}
       </div>
@@ -168,7 +147,7 @@ export function Segmented<T extends string>({
   return (
     <div
       role="radiogroup"
-      className="relative flex rounded-lg bg-surface-2 p-0.5 shadow-[0_0_0_1px_var(--line)_inset]"
+      className="relative flex rounded-[10px] bg-surface-3 p-[3px]"
     >
       {options.map((o) => {
         const active = o.value === value;
@@ -181,10 +160,10 @@ export function Segmented<T extends string>({
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(
-              'relative flex-1 rounded-md px-2 font-medium transition-[background-color,color,box-shadow] duration-150',
-              size === 'md' ? 'h-7 text-[12px]' : 'h-6 text-[11.5px]',
+              'relative flex-1 rounded-[8px] px-2 font-medium transition-[background-color,color,box-shadow] duration-150',
+              size === 'md' ? 'h-7 text-[12.5px]' : 'h-6 text-[12px]',
               active
-                ? 'bg-surface-4 text-fg shadow-[0_1px_2px_rgb(0_0_0/0.25),0_0_0_1px_var(--line-strong)_inset]'
+                ? 'bg-white text-fg shadow-[0_1px_3px_rgb(0_0_0/0.12),0_0_0_0.5px_var(--line-strong)] dark:bg-white/18'
                 : 'text-fg-muted hover:text-fg',
             )}
           >
@@ -223,12 +202,12 @@ export function Slider({
       onValueChange={([v]) => onChange(v)}
       aria-label={label}
     >
-      <RSlider.Track className="relative h-[3px] grow overflow-hidden rounded-full bg-surface-4">
-        <RSlider.Range className="absolute h-full rounded-full bg-fg-muted group-hover:bg-fg transition-colors" />
+      <RSlider.Track className="relative h-1 grow overflow-hidden rounded-full bg-surface-4">
+        <RSlider.Range className="absolute h-full rounded-full bg-accent transition-colors" />
       </RSlider.Track>
       <RSlider.Thumb
         aria-label={label}
-        className="block size-3.5 rounded-full bg-fg shadow-[0_1px_4px_rgb(0_0_0/0.4)] transition-transform duration-150 hover:scale-115 active:scale-125 focus-visible:outline-2 focus-visible:outline-accent"
+        className="block size-[18px] rounded-full bg-white shadow-[0_1px_4px_rgb(0_0_0/0.25),0_0_0_0.5px_rgb(0_0_0/0.12)] transition-transform duration-150 hover:scale-110 active:scale-115 focus-visible:outline-2 focus-visible:outline-accent"
       />
     </RSlider.Root>
   );
@@ -238,7 +217,7 @@ export function Slider({
 
 export function ColorField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
   return (
-    <label className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface-2 pl-1 pr-2.5 shadow-[0_0_0_1px_var(--line)_inset] hover:shadow-[0_0_0_1px_var(--line-strong)_inset]">
+    <label className="flex h-8 cursor-pointer items-center gap-2 rounded-[10px] bg-surface-2 pl-1 pr-2.5 shadow-[0_0_0_1px_var(--line)_inset] hover:shadow-[0_0_0_1px_var(--line-strong)_inset]">
       <span className="relative size-6 overflow-hidden rounded-md shadow-[0_0_0_1px_var(--line-strong)_inset]" style={{ background: value }}>
         <input
           type="color"
@@ -273,14 +252,14 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cx(
-        'relative h-[18px] w-[30px] shrink-0 rounded-full transition-colors duration-200',
-        checked ? 'bg-accent' : 'bg-surface-4 shadow-[0_0_0_1px_var(--line-strong)_inset]',
+        'relative h-[22px] w-[38px] shrink-0 rounded-full transition-colors duration-200',
+        checked ? 'bg-[#34c759]' : 'bg-surface-4 shadow-[0_0_0_1px_var(--line-strong)_inset]',
       )}
     >
       <span
         className={cx(
-          'absolute top-[2px] left-[2px] size-[14px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-[var(--ease-spring)]',
-          checked && 'translate-x-[12px]',
+          'absolute top-[2px] left-[2px] size-[18px] rounded-full bg-white shadow-sm transition-transform duration-200 ease-[var(--ease-spring)]',
+          checked && 'translate-x-[16px]',
         )}
       />
     </button>
@@ -289,21 +268,89 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
 
 /* ------------------------------------------------------------ Advanced */
 
-/** "More options" disclosure: keeps sections short, details one click away. */
-export function Advanced({ children, more, less }: { children: ReactNode; more: string; less: string }) {
-  const [open, setOpen] = useState(false);
+/** Fine-tuning controls, always visible under a small heading (no more hidden "More options"). */
+export function Advanced({ children, more }: { children: ReactNode; more: string; less?: string }) {
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex items-center gap-1 self-start rounded-md text-[11.5px] font-medium text-fg-muted transition-colors hover:text-fg"
-      >
-        <ChevronDown size={13} className={cx('transition-transform duration-200', !open && '-rotate-90')} />
-        {open ? less : more}
-      </button>
-      {open && <div className="flex flex-col gap-3.5 border-l border-line pl-3 animate-[fade-in_160ms_ease-out]">{children}</div>}
+    <div className="flex flex-col gap-3.5 pt-1">
+      <div className="text-[12px] font-medium text-fg-subtle">{more}</div>
+      {children}
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Chip */
+
+export function Chip({
+  active,
+  onClick,
+  children,
+  disabled,
+  title,
+  ...rest
+}: { active?: boolean; onClick?: () => void; children: ReactNode; disabled?: boolean; title?: string; 'data-testid'?: string }) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      disabled={disabled}
+      title={title}
+      onClick={onClick}
+      className={cx(
+        'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none',
+        active ? 'bg-fg text-bg' : 'bg-surface-3 text-fg-muted hover:text-fg',
+      )}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* --------------------------------------------------------------- Sheet */
+
+/** A centred dialog with a title, a scrolling body and an optional footer. */
+export function Sheet({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  footer,
+  testId,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  footer?: ReactNode;
+  testId?: string;
+}) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[3px] animate-[fade-in_160ms_ease-out]" />
+        <Dialog.Content
+          data-testid={testId}
+          className="menu-surface fixed left-1/2 top-1/2 z-50 flex max-h-[86vh] w-[440px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 flex-col rounded-[18px] text-fg animate-[toast-in_220ms_var(--ease-out-quart)]"
+        >
+          <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
+            <div>
+              <Dialog.Title className="font-display text-[20px] font-bold">{title}</Dialog.Title>
+              {description ? (
+                <Dialog.Description className="mt-1 text-[13px] text-fg-muted">{description}</Dialog.Description>
+              ) : (
+                <Dialog.Description className="sr-only">{title}</Dialog.Description>
+              )}
+            </div>
+            <Dialog.Close className="grid size-8 place-items-center rounded-full text-fg-muted hover:bg-surface-3 hover:text-fg" aria-label="Fermer">
+              <X size={16} />
+            </Dialog.Close>
+          </div>
+          <div className="scroll-thin flex flex-col gap-4 overflow-y-auto px-6 py-3">{children}</div>
+          {footer && <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">{footer}</div>}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
