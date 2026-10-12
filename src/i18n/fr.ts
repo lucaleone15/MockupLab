@@ -539,4 +539,7 @@ export const fr = {
   'project.boardToggle': 'Ajouter la planche de présentation',
   'project.openStudio': 'Ouvrir dans le Studio',
   'project.downloadPack': 'Télécharger le pack (.zip)',
+  'update.available': 'Une nouvelle version de MockupLab est disponible.',
+  'update.apply': 'Mettre à jour',
+  'update.later': 'Plus tard',
 } as const;

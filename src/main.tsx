@@ -21,6 +21,7 @@ void import('./models/glb/userModels')
   );
   startAutosave();
   void import('./library/thumbs').then((m) => m.startThumbs());
+  void import('./pwa/update').then((m) => m.startUpdates());
 });
 
 if (import.meta.env.DEV) {

@@ -13,6 +13,7 @@ import { Toaster } from './Toaster';
 import { TopBar } from '@/shell/TopBar';
 import { ExportSheet } from '@/shell/ExportSheet';
 import { AllProjectsSheet } from '@/library/AllProjectsSheet';
+import { UpdateBanner } from '@/pwa/UpdateBanner';
 import { PreviewOverlay } from './Viewport';
 import { useUi } from '@/store/ui';
 import { Home } from '@/home/Home';
@@ -87,6 +88,7 @@ export function App() {
       <BatchDialog />
       <ExportSheet />
       <AllProjectsSheet />
+      <UpdateBanner />
     </Tooltip.Provider>
   );
 }

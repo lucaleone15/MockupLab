@@ -541,4 +541,7 @@ export const en: Record<keyof typeof fr, string> = {
   'project.boardToggle': 'Add the presentation board',
   'project.openStudio': 'Open in the Studio',
   'project.downloadPack': 'Download the pack (.zip)',
+  'update.available': 'A new version of MockupLab is available.',
+  'update.apply': 'Update',
+  'update.later': 'Later',
 };
