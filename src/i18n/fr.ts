@@ -528,4 +528,6 @@ export const fr = {
   'stage.fullscreen': 'Aperçu',
   'stage.ideas': 'Idées',
   'batch.apply': 'Appliquer à plusieurs designs',
+  'photo.seeProvided': 'Voir les photos fournies',
+  'photo.pickZone': 'Sélectionne une zone sur la photo (ou crée-en une dans Zones).',
 } as const;

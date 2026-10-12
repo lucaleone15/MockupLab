@@ -12,7 +12,6 @@ import { isConvex, type Quad, type Vec2 } from './homography';
 import { loadPhotoSamples, pickPhoto } from './importPhoto';
 import { PhotoRenderer, type ZoneDraw } from './renderer';
 import { statsFor } from './source';
-import { PHOTO_TEMPLATES, applyTemplate, templateUrl } from './templates';
 
 /** Lets global handlers (drop) find the zone under the pointer. */
 export const photoPicking: { zoneAt?: (clientX: number, clientY: number) => string | undefined } = {};
@@ -396,50 +395,23 @@ function ZoneEditor({ width, height }: { width: number; height: number }) {
 /* ------------------------------------------------------------ empty states */
 
 function PhotoEmpty() {
-  const { t, tr } = useT();
-  const [loading, setLoading] = useState<string | null>(null);
+  const { t } = useT();
   return (
-    <div className="flex max-w-[640px] flex-col items-center gap-6 px-6 text-center animate-[fade-in_250ms_ease-out]">
-      <div className="grid size-14 place-items-center rounded-2xl bg-accent text-accent-fg shadow-xl">
+    <div className="flex max-w-[560px] flex-col items-center gap-5 px-6 text-center animate-[fade-in_250ms_ease-out]">
+      <div className="grid size-14 place-items-center rounded-[16px] bg-fg text-bg shadow-xl">
         <ImagePlus size={24} />
       </div>
       <div>
-        <h2 className="text-[19px] font-semibold tracking-[-0.01em]">{t('photo.empty.title')}</h2>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-fg-muted">{t('photo.empty.body')}</p>
+        <h2 className="font-display text-[24px] font-bold">{t('photo.empty.title')}</h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-fg-muted">{t('photo.empty.body')}</p>
       </div>
       <Button variant="primary" size="lg" onClick={pickPhoto}>
         <ImagePlus size={16} />
         {t('photo.import')}
       </Button>
-      <div className="w-full">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">{t('photo.empty.templates')}</div>
-        <div className="grid grid-cols-4 gap-2">
-          {PHOTO_TEMPLATES.map((tpl) => (
-            <button
-              key={tpl.id}
-              type="button"
-              disabled={!!loading}
-              onClick={async () => {
-                setLoading(tpl.id);
-                try {
-                  await applyTemplate(tpl);
-                } finally {
-                  setLoading(null);
-                }
-              }}
-              className="group relative overflow-hidden rounded-lg bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset] transition-transform hover:scale-[1.03]"
-            >
-              <img src={templateUrl(tpl.thumb)} alt="" className="aspect-[3/2] w-full object-cover" />
-              <div className="truncate px-2 py-1.5 text-left text-[11.5px] font-medium">{tr(tpl.name)}</div>
-              {loading === tpl.id && (
-                <div className="absolute inset-0 grid place-items-center bg-black/40">
-                  <Spinner />
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      <button type="button" className="text-[13px] font-medium text-accent hover:underline" onClick={() => useUi.getState().setPhotoPage('photos')}>
+        {t('photo.seeProvided')}
+      </button>
     </div>
   );
 }

@@ -530,4 +530,6 @@ export const en: Record<keyof typeof fr, string> = {
   'stage.fullscreen': 'Preview',
   'stage.ideas': 'Ideas',
   'batch.apply': 'Apply to several designs',
+  'photo.seeProvided': 'See the provided photos',
+  'photo.pickZone': 'Select a zone on the photo (or create one in Zones).',
 };

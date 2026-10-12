@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Eye, EyeOff, ImageOff, ImageUp, Plus, RotateCcw, Save, Trash2, Wand2 } from 'lucide-react';
+import { Eye, EyeOff, ImageOff, ImageUp, Layers, Plus, RotateCcw, Save, Trash2, Wand2 } from 'lucide-react';
+import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
 import { useProject, zoneDefaults, type PhotoZone } from '@/store/project';
@@ -30,7 +31,7 @@ function useBlankness(zone: PhotoZone) {
 
 const pct = (v: number) => `${Math.round(v * 100)} %`;
 
-function PhotoSection() {
+export function PhotoSection() {
   const { t } = useT();
   const assetId = useProject((s) => s.photo.assetId);
   const hasZones = useProject((s) => s.photo.zones.length > 0);
@@ -87,7 +88,7 @@ function PhotoSection() {
   );
 }
 
-function ZonesSection() {
+export function ZonesSection() {
   const { t } = useT();
   const zones = useProject((s) => s.photo.zones);
   const selectedId = useProject((s) => s.photo.selectedZoneId);
@@ -149,7 +150,7 @@ function ZoneThumb({ zone }: { zone: PhotoZone }) {
   );
 }
 
-function DesignSection({ zone }: { zone: PhotoZone }) {
+export function DesignSection({ zone }: { zone: PhotoZone }) {
   const { t } = useT();
   const asset = useAssets((s) => (zone.surface.assetId ? s.assets[zone.surface.assetId] : undefined));
   const setZoneSurface = useProject((s) => s.setZoneSurface);
@@ -199,11 +200,15 @@ function DesignSection({ zone }: { zone: PhotoZone }) {
           <Slider label={t('props.align')} value={zone.surface.align} onChange={(align) => setZoneSurface(zone.id, { align })} />
         </Field>
       )}
+      <Button size="sm" className="self-start" onClick={() => batch.open()} data-testid="open-batch">
+        <Layers size={13} />
+        {t('batch.apply')}
+      </Button>
     </Section>
   );
 }
 
-function BlendSection({ zone }: { zone: PhotoZone }) {
+export function BlendSection({ zone }: { zone: PhotoZone }) {
   const { t } = useT();
   const updateZone = useProject((s) => s.updateZone);
   const blank = useBlankness(zone);
@@ -308,7 +313,7 @@ function CornerInput({ value, max, onChange, label }: { value: number; max: numb
   );
 }
 
-function GeometrySection({ zone }: { zone: PhotoZone }) {
+export function GeometrySection({ zone }: { zone: PhotoZone }) {
   const { t } = useT();
   const updateZone = useProject((s) => s.updateZone);
   const activeCorner = useUi((s) => s.activeCorner);
@@ -377,26 +382,5 @@ function GeometrySection({ zone }: { zone: PhotoZone }) {
         <p className="text-[11px] leading-snug text-fg-subtle">{t('photo.corners.hint')}</p>
       </Field>
     </Section>
-  );
-}
-
-/** Right panel content in photo mode. */
-export function PhotoPanel() {
-  const zone = useProject((s) => s.photo.zones.find((z) => z.id === s.photo.selectedZoneId));
-  const hasPhoto = useProject((s) => !!s.photo.assetId);
-  const { t } = useT();
-  if (!hasPhoto) return <p className="p-4 text-[12px] leading-relaxed text-fg-subtle">{t('photo.panel.empty')}</p>;
-  return (
-    <>
-      <ZonesSection />
-      {zone && (
-        <>
-          <DesignSection zone={zone} />
-          <BlendSection zone={zone} />
-          <GeometrySection zone={zone} />
-        </>
-      )}
-      <PhotoSection />
-    </>
   );
 }
