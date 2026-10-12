@@ -48,6 +48,20 @@ for (const tab of ['Photos', 'Zones', 'Design', 'Rendu', 'Vidéo']) {
   await p.waitForTimeout(300);
   report.push(await sweep(`Photo · ${tab}`));
 }
+await p.goto('http://localhost:5173/#/rapide');
+await p.waitForTimeout(2500);
+report.push(await sweep('Rapide'));
+await p.goto('http://localhost:5173/#/projet');
+await p.waitForTimeout(500);
+await p.evaluate(async () => {
+  const blob = await (await fetch('/samples/sample-web.png')).blob();
+  await window.__mockuplab.pack.add([new File([blob], 'site.png', { type: 'image/png' })]);
+});
+await p.waitForTimeout(2500);
+report.push(await sweep('Projet'));
+await p.goto('http://localhost:5173/#/');
+await p.waitForTimeout(800);
+report.push(await sweep('Accueil + récents'));
 for (const r of report) console.log(r.where.padEnd(20), r.bad.length ? `${r.bad.length} sans nom: ${[...new Set(r.bad)].join(', ')}` : 'ok');
 if (report.some((r) => r.bad.length)) process.exitCode = 1;
 await b.close();
