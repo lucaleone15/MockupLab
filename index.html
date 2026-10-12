@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-theme="dark">
+<html lang="fr" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,17 +9,19 @@
     <meta property="og:title" content="MockupLab — mock-ups 3D gratuits dans le navigateur" />
     <meta property="og:description" content="Appareils 3D réalistes, print, mode photo en perspective, variantes, vidéos. Gratuit, open source, rien n'est envoyé sur un serveur." />
     <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#0a0a0c" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f7" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0e" />
     <title>MockupLab</title>
     <style>
       html, body, #root { height: 100%; margin: 0; }
-      html { background: #0a0a0c; }
-      html[data-theme='light'] { background: #f3f2ef; }
+      html { background: #f5f5f7; --splash-fg: #6e6e73; }
+      html[data-theme='dark'] { background: #0b0b0e; --splash-fg: #98989d; }
     </style>
     <script>
       try {
-        const t = localStorage.getItem('mockuplab:theme');
-        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+        const p = localStorage.getItem('mockuplab:theme');
+        const dark = p === 'dark' || (p !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
       } catch {}
     </script>
   </head>

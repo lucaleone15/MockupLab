@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 
 export type Theme = 'dark' | 'light';
+/** What the user picked: follow the system, or force one theme. */
+export type ThemePref = 'auto' | 'light' | 'dark';
 
 interface UiState {
+  /** The theme in use (resolved from the preference and the system). */
   theme: Theme;
-  setTheme: (t: Theme) => void;
+  themePref: ThemePref;
+  setThemePref: (p: ThemePref) => void;
   /** Incremented to ask the camera rig to return to the default view. */
   viewResetToken: number;
   resetView: () => void;
@@ -44,18 +48,36 @@ interface UiState {
   setSuggestions: (s: UiState['suggestions']) => void;
 }
 
-const initialTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
+
+function readPref(): ThemePref {
+  try {
+    const v = localStorage.getItem('mockuplab:theme');
+    return v === 'light' || v === 'dark' ? v : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+const resolve = (p: ThemePref): Theme => (p === 'auto' ? (systemDark() ? 'dark' : 'light') : p);
+
+function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+}
 
 export const useUi = create<UiState>((set) => ({
-  theme: initialTheme(),
-  setTheme: (theme) => {
-    document.documentElement.dataset.theme = theme;
+  theme: resolve(readPref()),
+  themePref: readPref(),
+  setThemePref: (themePref) => {
     try {
-      localStorage.setItem('mockuplab:theme', theme);
+      if (themePref === 'auto') localStorage.removeItem('mockuplab:theme');
+      else localStorage.setItem('mockuplab:theme', themePref);
     } catch {
       /* storage unavailable */
     }
-    set({ theme });
+    const theme = resolve(themePref);
+    applyTheme(theme);
+    set({ themePref, theme });
   },
   viewResetToken: 0,
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),
@@ -84,3 +106,14 @@ export const useUi = create<UiState>((set) => ({
   suggestions: null,
   setSuggestions: (suggestions) => set({ suggestions }),
 }));
+
+// Auto: follow the system theme live.
+if (typeof matchMedia === 'function') {
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const { themePref } = useUi.getState();
+    if (themePref !== 'auto') return;
+    const theme = resolve('auto');
+    applyTheme(theme);
+    useUi.setState({ theme });
+  });
+}

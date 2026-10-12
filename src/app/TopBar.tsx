@@ -115,7 +115,7 @@ export function TopBar() {
   const lang = useLang((s) => s.lang);
   const setLang = useLang((s) => s.setLang);
   const theme = useUi((s) => s.theme);
-  const setTheme = useUi((s) => s.setTheme);
+  const setThemePref = useUi((s) => s.setThemePref);
   const exporting = useUi((s) => s.exporting);
   const mode = useProject((s) => s.mode);
   const canUndo = useStore(useProject.temporal, (s) => s.pastStates.length > 0);
@@ -151,7 +151,7 @@ export function TopBar() {
         <IconButton label={t('help.open')} shortcut="?" onClick={() => useUi.getState().setHelpOpen(true)}>
           <CircleHelp size={16} />
         </IconButton>
-        <IconButton label={t('top.theme')} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+        <IconButton label={t('top.theme')} onClick={() => setThemePref(theme === 'dark' ? 'light' : 'dark')}>
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </IconButton>
         <div className="mx-2 h-5 w-px bg-line" />
