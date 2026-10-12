@@ -1,4 +1,4 @@
-import { createStore, del, get, keys, set } from 'idb-keyval';
+import { del, get, keys, set } from 'idb-keyval';
 import { t } from '@/i18n';
 import { getModel } from '@/models/registry';
 import { defaultParams } from '@/models/types';
@@ -26,9 +26,23 @@ import { useUi } from './ui';
  * images embedded. Nothing ever leaves the browser.
  */
 
-const db = createStore('mockuplab', 'kv');
-const PROJECT_KEY = 'project';
-const assetKey = (id: string) => `asset:${id}`;
+import { db } from '@/library/db';
+import {
+  LEGACY_KEY,
+  assetKey,
+  collectUnusedAssets,
+  loadThumbs,
+  newId,
+  projectKey,
+  readIndex,
+  rememberCurrent,
+  storedCurrent,
+  thumbKey,
+  upsertMeta,
+  useLibrary,
+  writeIndex,
+  type ProjectMeta,
+} from '@/library/store';
 
 interface StoredAsset {
   id: string;
@@ -149,20 +163,55 @@ function load(project: Project) {
   useUi.getState().resetView();
 }
 
-/** Restores the autosaved project, if any. */
+async function loadAssets(project: Project) {
+  const have = useAssets.getState().assets;
+  await Promise.all(
+    [...referencedAssets(project)].map(async (id) => {
+      if (have[id]) return;
+      const a = (await get(assetKey(id), db)) as StoredAsset | undefined;
+      if (a) addAsset(a);
+    }),
+  );
+}
+
+/** Moves the old single autosave (key 'project') into the library, once. */
+async function migrateLegacy() {
+  const raw = await get(LEGACY_KEY, db);
+  if (!raw) return;
+  const project = migrateProject(raw);
+  const id = newId();
+  await set(projectKey(id), project, db);
+  await upsertMeta(metaOf(id, project, 0, false));
+  await del(LEGACY_KEY, db);
+  rememberCurrent(id);
+}
+
+function metaOf(id: string, project: Project, exportCount: number, hasThumb: boolean): ProjectMeta {
+  return { id, name: project.name, mode: project.mode, updatedAt: Date.now(), assets: [...referencedAssets(project)], exportCount, hasThumb };
+}
+
+/** Loads one stored project into the editor and makes it the current one. */
+async function openStored(id: string): Promise<boolean> {
+  const raw = await get(projectKey(id), db);
+  if (!raw) return false;
+  const project = migrateProject(raw);
+  await loadAssets(project);
+  rememberCurrent(id);
+  withoutSave(() => load(project));
+  return true;
+}
+
+/** Reads the library and restores the current project (true if there was one). */
 export async function restoreProject(): Promise<boolean> {
   try {
-    const raw = await get(PROJECT_KEY, db);
-    if (!raw) return false;
-    const project = migrateProject(raw);
-    await Promise.all(
-      [...referencedAssets(project)].map(async (id) => {
-        const a = (await get(assetKey(id), db)) as StoredAsset | undefined;
-        if (a) addAsset(a);
-      }),
-    );
-    load(project);
-    return true;
+    await migrateLegacy();
+    const list = await readIndex();
+    useLibrary.setState({ list });
+    void loadThumbs();
+    const wanted = storedCurrent();
+    const id = list.find((p) => p.id === wanted)?.id ?? list[0]?.id;
+    if (!id) return false;
+    return await openStored(id);
   } catch {
     return false;
   }
@@ -170,6 +219,8 @@ export async function restoreProject(): Promise<boolean> {
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 let paused = false;
+/** Changes not saved yet. */
+let dirty = false;
 
 /** Suspends autosave while the project is changed temporarily (variants, batches); resuming saves. */
 export function pauseAutosave(v: boolean) {
@@ -180,27 +231,58 @@ export function pauseAutosave(v: boolean) {
   }
 }
 
+/** Runs `fn` (a load) without scheduling an autosave for it. */
+let silent = false;
+function withoutSave(fn: () => void) {
+  silent = true;
+  try {
+    fn();
+  } finally {
+    silent = false;
+  }
+}
+
 async function save() {
   const project = snapshot();
+  let id = useLibrary.getState().currentId;
+  if (!id) {
+    id = newId();
+    rememberCurrent(id);
+  }
   const needed = referencedAssets(project);
   const assets = useAssets.getState().assets;
-  await set(PROJECT_KEY, project, db);
+  await set(projectKey(id), project, db);
+  const previous = (await readIndex()).find((p) => p.id === id);
+  await upsertMeta(metaOf(id, project, previous?.exportCount ?? 0, previous?.hasThumb ?? false));
   const stored = new Set((await keys(db)).map(String).filter((k) => k.startsWith('asset:')).map((k) => k.slice(6)));
-  for (const id of needed) {
-    const a = assets[id];
-    if (a && !stored.has(id)) await set(assetKey(id), { id, name: a.name, width: a.width, height: a.height, blob: a.blob } satisfies StoredAsset, db);
+  for (const aid of needed) {
+    const a = assets[aid];
+    if (a && !stored.has(aid)) await set(assetKey(aid), { id: aid, name: a.name, width: a.width, height: a.height, blob: a.blob } satisfies StoredAsset, db);
   }
-  // Forget images no longer used by the project.
-  for (const id of stored) if (!needed.has(id)) await del(assetKey(id), db);
+  // Forget images no project uses any more.
+  await collectUnusedAssets(needed);
   useUi.getState().setSavedAt(Date.now());
+}
+
+/** Saves the current project now (before switching to another one). */
+export async function flushSave() {
+  clearTimeout(timer);
+  if (paused) return;
+  if (!dirty) return;
+  dirty = false;
+  await save().catch(() => undefined);
 }
 
 /** Saves shortly after every change. */
 export function startAutosave() {
   const schedule = () => {
-    if (paused) return;
+    if (paused || silent) return;
+    dirty = true;
     clearTimeout(timer);
-    timer = setTimeout(() => void save().catch(() => undefined), 700);
+    timer = setTimeout(() => {
+      dirty = false;
+      void save().catch(() => undefined);
+    }, 700);
   };
   useProject.subscribe(schedule);
   useAssets.subscribe(schedule);
@@ -279,10 +361,70 @@ export async function importProjectFile(file: File) {
       /* a broken image must not block the rest of the project */
     }
   }
+  await flushSave();
+  rememberCurrent(null);
   load(migrateProject(parsed.project));
   toast.success(t('project.opened', { name: parsed.project.name || file.name }));
 }
 
 export function newProject() {
-  load(initialProject());
+  void library.create();
 }
+
+/* ------------------------------------------------------------ library */
+
+export const library = {
+  state: () => useLibrary.getState(),
+  /** Opens a stored project (the current one is saved first). */
+  async open(id: string) {
+    await flushSave();
+    return openStored(id);
+  },
+  /** Starts a fresh project; it is stored at its first change. */
+  async create() {
+    await flushSave();
+    rememberCurrent(null);
+    load(initialProject());
+  },
+  async duplicate(id: string): Promise<string> {
+    if (id === useLibrary.getState().currentId) await flushSave();
+    const raw = await get(projectKey(id), db);
+    if (!raw) return '';
+    const project = migrateProject(raw);
+    const copy = { ...project, name: t('library.copyOf', { name: project.name === 'Untitled' ? t('project.untitled') : project.name }) };
+    const nid = newId();
+    await set(projectKey(nid), copy, db);
+    const thumb = (await get(thumbKey(id), db)) as Blob | undefined;
+    if (thumb) await set(thumbKey(nid), thumb, db);
+    await upsertMeta(metaOf(nid, copy, 0, !!thumb));
+    void loadThumbs();
+    return nid;
+  },
+  async rename(id: string, name: string) {
+    if (id === useLibrary.getState().currentId) {
+      useProject.setState({ name: name || 'Untitled' });
+      return;
+    }
+    const raw = await get(projectKey(id), db);
+    if (!raw) return;
+    await set(projectKey(id), { ...(raw as Project), name }, db);
+    const list = await readIndex();
+    await writeIndex(list.map((p) => (p.id === id ? { ...p, name } : p)));
+  },
+  async remove(id: string) {
+    clearTimeout(timer);
+    const current = useLibrary.getState().currentId === id;
+    await del(projectKey(id), db);
+    await del(thumbKey(id), db);
+    const { deleteAllExports } = await import('@/library/exports');
+    await deleteAllExports(id);
+    const url = useLibrary.getState().thumbs[id];
+    if (url) URL.revokeObjectURL(url);
+    await writeIndex((await readIndex()).filter((p) => p.id !== id));
+    if (current) {
+      rememberCurrent(null);
+      withoutSave(() => load(initialProject()));
+    }
+    await collectUnusedAssets(current ? [] : referencedAssets(snapshot()));
+  },
+};

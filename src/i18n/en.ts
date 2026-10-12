@@ -481,4 +481,6 @@ export const en: Record<keyof typeof fr, string> = {
   'photo.pickZone': 'Select a zone on the photo (or create one in Zones).',
   'export.title': 'Export the image',
   'export.download': 'Download',
+  'library.copyOf': '{name} (copy)',
+  'library.storageFull': 'Storage almost full: the oldest exports were removed.',
 };
