@@ -17,7 +17,7 @@ export const SCREEN_HASH: Record<Screen, string> = {
 };
 
 /** Screens that can be opened in this version. */
-export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: false, project: false, studio: true, photo: true };
+export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: true, project: false, studio: true, photo: true };
 
 export function screenFromHash(hash: string): Screen {
   const found = (Object.keys(SCREEN_HASH) as Screen[]).find((s) => SCREEN_HASH[s] === hash);
