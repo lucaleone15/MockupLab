@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useProject } from '@/store/project';
 import { useUi, type Screen } from '@/store/ui';
+import { sandbox } from '@/store/sandboxFlag';
 
 /*
  * The screen lives in the URL hash so the browser's back button works and a
@@ -64,6 +65,11 @@ export function useRouteSync() {
       if (s.mode === prev.mode) return;
       const screen = useUi.getState().screen;
       if (screen !== 'studio' && screen !== 'photo') return;
+      // a render sandbox putting the project back: keep the screen, restore its mode
+      if (sandbox.restoring) {
+        queueMicrotask(() => apply(useUi.getState().screen));
+        return;
+      }
       const target: Screen = s.mode === 'photo' ? 'photo' : 'studio';
       if (screen === target) return;
       history.replaceState(null, '', SCREEN_HASH[target]);

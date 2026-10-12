@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { importImages, pickImages } from '@/lib/importImage';
+import { pickImages } from '@/lib/importImage';
 import { MOD } from '@/app/shortcuts';
 import { templateUrl } from '@/photo/templates';
 import { Logo } from '@/shell/Logo';
@@ -65,12 +65,17 @@ const PREVIEWS: Record<Screen, ReactNode> = {
 
 const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
 
-/** Opens the studio, then puts the files on the selected device (same path as a drop in the studio). */
+/** One file opens Quick with it; several open Project with all of them. */
 export function importFromHome(files: Iterable<File>) {
   const list = [...files];
-  // navigate sets the project to 3D synchronously, so the image lands on the device
-  navigate('studio');
-  void importImages(list);
+  if (!list.length) return;
+  if (list.length > 1) {
+    navigate('project');
+    void import('@/project/store').then((m) => m.pack.add(list));
+  } else {
+    navigate('quick');
+    void import('@/quick/store').then((m) => m.quick.setImage(list[0]));
+  }
 }
 
 function Recents() {

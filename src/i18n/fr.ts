@@ -441,7 +441,7 @@ export const fr = {
   'home.title': 'Tes designs, mis en scène.',
   'home.lead': 'Dépose une capture d’écran, un site ou une affiche : MockupLab la place sur des appareils et des objets réalistes en 3D, ou sur de vraies photos. Gratuit, et tout se passe dans ton navigateur.',
   'home.drop': 'Dépose tes images ici, colle-les ({paste}) ou parcours tes fichiers',
-  'home.dropHint': 'PNG, JPG, WebP ou GIF. Elles restent sur ton appareil.',
+  'home.dropHint': 'PNG, JPG, WebP, GIF ou PDF. Une image ouvre Rapide, plusieurs ouvrent Projet. Tout reste sur ton appareil.',
   'home.modes': 'Ou choisis un mode',
   'home.quick': 'Une image → des mock-ups prêts.',
   'home.project': 'Site + mobile + print → un pack cohérent.',

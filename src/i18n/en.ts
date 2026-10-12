@@ -443,7 +443,7 @@ export const en: Record<keyof typeof fr, string> = {
   'home.title': 'Your designs, staged.',
   'home.lead': 'Drop a screenshot, a website or a poster: MockupLab puts it on realistic 3D devices and objects, or on real photos. Free, and it all happens in your browser.',
   'home.drop': 'Drop your images here, paste them ({paste}) or browse your files',
-  'home.dropHint': 'PNG, JPG, WebP or GIF. They stay on your device.',
+  'home.dropHint': 'PNG, JPG, WebP, GIF or PDF. One image opens Quick, several open Project. Everything stays on your device.',
   'home.modes': 'Or pick a mode',
   'home.quick': 'One image → ready-made mock-ups.',
   'home.project': 'Website + mobile + print → one consistent pack.',
