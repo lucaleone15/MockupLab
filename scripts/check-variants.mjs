@@ -14,7 +14,7 @@ await p.addInitScript(() => {
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/studio');
 await p.waitForFunction(() => window.__mockuplab?.variants);
 await p.evaluate(async () => {
   const api = window.__mockuplab;
@@ -80,6 +80,7 @@ const undone = JSON.parse(await state());
 const orig = JSON.parse(vb);
 console.log('undo restores:', JSON.stringify(undone.decor) === JSON.stringify(orig.decor) && JSON.stringify(undone.bg) === JSON.stringify(orig.bg));
 // batch: current scene, then the selected variants
+await p.getByTestId('studio-rail').getByRole('tab', { name: 'Réglages', exact: true }).click();
 await p.getByTestId('open-batch').click();
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByTestId('batch').getByRole('button', { name: /Glisse tes images/ }).click()]);
 await chooser.setFiles(['public/samples/sample-app.png', 'public/samples/sample-poster.png', 'public/samples/sample-card-front.png']);

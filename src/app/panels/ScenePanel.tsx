@@ -60,11 +60,11 @@ function presetActive(p: ScenePreset, s: ReturnType<typeof useProject.getState>)
   );
 }
 
-function Looks() {
-  const { t, tr } = useT();
+export function Looks() {
+  const { tr } = useT();
   const state = useProject();
   return (
-    <Section title={t('scene.moods')}>
+    <div className="px-5 pt-3">
       <div className="grid grid-cols-2 gap-2">
         {SCENE_PRESETS.map((p) => {
           const active = presetActive(p, state);
@@ -85,7 +85,7 @@ function Looks() {
           );
         })}
       </div>
-    </Section>
+    </div>
   );
 }
 
@@ -106,7 +106,7 @@ const DECOR_LABEL: Record<Decor['kind'], I18nKey> = {
   table: 'decor.table',
 };
 
-function DecorSection() {
+export function DecorSection() {
   const { t, tr } = useT();
   const decor = useProject((s) => s.decor);
   const setDecor = useProject((s) => s.setDecor);
@@ -218,7 +218,7 @@ function DecorSection() {
 
 /* ------------------------------------------------------------ background */
 
-function BackgroundSection() {
+export function BackgroundSection() {
   const { t } = useT();
   const inPlace = useProject((s) => s.decor.kind === 'table');
   return (
@@ -239,7 +239,7 @@ function BackgroundSection() {
 
 /* ------------------------------------------------------------ light */
 
-function LightSection() {
+export function LightSection() {
   const { t, tr } = useT();
   const light = useProject((s) => s.lighting);
   const inPlace = useProject((s) => s.decor.kind === 'table');
@@ -261,7 +261,7 @@ function LightSection() {
     </Field>
   );
   return (
-    <Section title={t('light.title')} defaultOpen={false}>
+    <Section title={t('light.presets')}>
       {inPlace ? (
         <>
           <p className="text-[11.5px] leading-snug text-fg-subtle">{t('light.placeNote')}</p>
@@ -323,13 +323,13 @@ const PRESET_ICONS: Record<Exclude<CameraPresetId, 'custom'>, ReactNode> = {
 const F_MIN = Math.log(14);
 const F_MAX = Math.log(600);
 
-function CameraSection() {
+export function CameraSection() {
   const { t } = useT();
   const cam = useProject((s) => s.camera);
   const setCamera = useProject((s) => s.setCamera);
   const setPose = useProject((s) => s.setPose);
   return (
-    <Section title={t('camera.title')} defaultOpen={false} aside={cam.preset === 'custom' ? <span className="text-[11.5px] text-fg-subtle">{t('camera.custom')}</span> : undefined}>
+    <Section title={t('camera.angles')} aside={cam.preset === 'custom' ? <span className="text-[11.5px] text-fg-subtle">{t('camera.custom')}</span> : undefined}>
       <div className="grid grid-cols-3 gap-1.5">
         {(Object.keys(CAMERA_PRESETS) as Exclude<CameraPresetId, 'custom'>[]).map((id) => (
           <Chip
@@ -378,7 +378,7 @@ function CameraSection() {
 
 /* ------------------------------------------------------------ floor */
 
-function GroundSection() {
+export function GroundSection() {
   const { t } = useT();
   const ground = useProject((s) => s.ground);
   const setGround = useProject((s) => s.setGround);
@@ -410,20 +410,5 @@ function GroundSection() {
         )}
       </Advanced>
     </Section>
-  );
-}
-
-export function ScenePanel() {
-  const { t } = useT();
-  return (
-    <>
-      <Looks />
-      <div className="px-4 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">{t('scene.customize')}</div>
-      <DecorSection />
-      <BackgroundSection />
-      <LightSection />
-      <CameraSection />
-      <GroundSection />
-    </>
   );
 }

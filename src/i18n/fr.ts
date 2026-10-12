@@ -523,4 +523,9 @@ export const fr = {
   'settings.placement': 'Position dans la scène',
   'settings.design': 'Ton design',
   'settings.designs': 'Tes designs',
+  'light.presets': 'Préréglages',
+  'camera.angles': 'Angles',
+  'stage.fullscreen': 'Aperçu',
+  'stage.ideas': 'Idées',
+  'batch.apply': 'Appliquer à plusieurs designs',
 } as const;

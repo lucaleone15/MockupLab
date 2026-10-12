@@ -9,7 +9,7 @@ import { useAssets } from '@/store/assets';
 import { useProject, type Brand, type BrandFont, type Overlay, type OverlayFont } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { Advanced, Button, ColorField, Field, Section, Segmented, Slider, Spinner, Switch, cx } from '@/ui/primitives';
+import { Button, ColorField, Field, Section, Segmented, Slider, Spinner, Switch, cx } from '@/ui/primitives';
 
 type TextOverlay = Extract<Overlay, { kind: 'text' }>;
 type LogoOverlay = Extract<Overlay, { kind: 'logo' }>;
@@ -418,10 +418,30 @@ function inkFor(s: ReturnType<typeof useProject.getState>) {
 
 /* ------------------------------------------------------------ panel */
 
-export function TextPanel() {
+function useAddOverlay() {
+  const addOverlay = useProject((s) => s.addOverlay);
+  const selectOverlay = useUi((s) => s.selectOverlay);
+  return (o: Overlay) => {
+    addOverlay(o);
+    selectOverlay(o.id);
+  };
+}
+
+/** Brand kit and everything generated from it. */
+export function BrandPage() {
+  const add = useAddOverlay();
+  return (
+    <>
+      <BrandKit />
+      <BrandShowcase add={add} />
+    </>
+  );
+}
+
+/** Titles, captions and logos laid over the image. */
+export function TextPage() {
   const { t } = useT();
   const overlays = useProject((s) => s.overlays);
-  const addOverlay = useProject((s) => s.addOverlay);
   const updateOverlay = useProject((s) => s.updateOverlay);
   const removeOverlay = useProject((s) => s.removeOverlay);
   const selectedId = useUi((s) => s.selectedOverlayId);
@@ -430,10 +450,7 @@ export function TextPanel() {
   const ink = useProject((s) => inkFor(s));
   const selected = overlays.find((o) => o.id === selectedId) ?? null;
 
-  const add = (o: Overlay) => {
-    addOverlay(o);
-    selectOverlay(o.id);
-  };
+  const add = useAddOverlay();
   const labelOf = (o: Overlay) =>
     o.kind === 'text'
       ? o.text.split('\n')[0] || '…'
@@ -446,8 +463,6 @@ export function TextPanel() {
 
   return (
     <>
-      <BrandKit />
-      <BrandShowcase add={add} />
       <Section title={t('text.title')}>
         <div className="grid grid-cols-2 gap-1.5">
           <Button size="sm" onClick={() => add(newTextOverlay({ text: useProject.getState().brand.name || t('text.defaultTitle'), color: ink }))}>
@@ -516,9 +531,7 @@ export function TextPanel() {
           {selected.kind === 'logo' && <LogoEditor o={selected} />}
           {selected.kind === 'palette' && <PaletteEditor o={selected} />}
           {selected.kind === 'type' && <TypeEditor o={selected} />}
-          <Advanced more={t('ui.more')} less={t('ui.less')}>
-            <p className="text-[11px] leading-snug text-fg-subtle">{t('text.dragHint')}</p>
-          </Advanced>
+          <p className="text-[12px] leading-snug text-fg-subtle">{t('text.dragHint')}</p>
         </Section>
       )}
     </>

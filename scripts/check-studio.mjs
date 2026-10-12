@@ -37,4 +37,20 @@ if (hit) {
   await page.waitForTimeout(300);
 }
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'settings', 'canvas click → Settings page');
+const bar = page.getByTestId('floating-bar');
+await bar.getByRole('radio', { name: '1:1' }).click();
+check((await page.evaluate(() => window.__mockuplab.project.getState().export.ratio)) === '1:1', 'floating bar sets the ratio');
+await bar.getByTestId('open-variants').click();
+await page.waitForTimeout(500);
+check(await page.getByTestId('variants').isVisible(), 'Ideas opens the variants grid');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+await rail.getByRole('tab', { name: 'Ambiance', exact: true }).click();
+check(await page.getByTestId('rail-page').getByRole('button', { name: /Chêne · mur blanc/ }).isVisible(), 'Ambiance lists the moods');
+await rail.getByRole('tab', { name: 'Marque', exact: true }).click();
+check(await page.getByTestId('rail-page').getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand page has the brand board');
+await rail.getByRole('tab', { name: 'Texte', exact: true }).click();
+check(await page.getByTestId('rail-page').getByRole('button', { name: 'Titre', exact: true }).isVisible(), 'Text page adds titles');
+await rail.getByRole('tab', { name: 'Décor', exact: true }).click();
+check((await page.getByTestId('rail-page').getByRole('heading', { level: 3 }).count()) >= 3, 'Decor page shows background, set and floor groups');
 await done(browser, errors);

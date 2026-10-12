@@ -1,4 +1,5 @@
-import { Download, ImageOff, ImageUp } from 'lucide-react';
+import { Download, ImageOff, ImageUp, Layers } from 'lucide-react';
+import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
 import { exportImage } from '@/export/exportImage';
 import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
@@ -115,6 +116,10 @@ export function ImageSection() {
         ))}
       </div>
       {multi && <p className="text-[11px] leading-snug text-fg-subtle">{t('props.slotHint')}</p>}
+      <Button size="sm" className="self-start" onClick={() => batch.open()} data-testid="open-batch">
+        <Layers size={13} />
+        {t('batch.apply')}
+      </Button>
       {binding && (
         <>
           <Field label={multi ? `${t('props.fit')} · ${tr(current.label)}` : t('props.fit')}>

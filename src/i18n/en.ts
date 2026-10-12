@@ -525,4 +525,9 @@ export const en: Record<keyof typeof fr, string> = {
   'settings.placement': 'Placement in the scene',
   'settings.design': 'Your design',
   'settings.designs': 'Your designs',
+  'light.presets': 'Presets',
+  'camera.angles': 'Angles',
+  'stage.fullscreen': 'Preview',
+  'stage.ideas': 'Ideas',
+  'batch.apply': 'Apply to several designs',
 };
