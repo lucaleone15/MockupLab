@@ -24,6 +24,9 @@ function toBlob(canvas: HTMLCanvasElement, mime: string, quality: number) {
 }
 
 export function download(blob: Blob, filename: string) {
+  // every image, video or ZIP is kept with its project, and refreshes its thumbnail
+  void import('@/library/exports').then((m) => m.recordExport(blob, filename));
+  void import('@/library/thumbs').then((m) => m.scheduleThumb(1500));
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
