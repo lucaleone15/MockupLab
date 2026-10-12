@@ -35,7 +35,7 @@ export function DevicesPage() {
             ))}
           </div>
         )}
-        <p className="text-[12px] leading-snug text-fg-subtle">{t('devices.hint')}</p>
+        <p className="text-[12px] leading-snug text-fg-muted">{t('devices.hint')}</p>
       </Section>
     </>
   );

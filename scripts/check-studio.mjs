@@ -53,4 +53,8 @@ await rail.getByRole('tab', { name: 'Texte', exact: true }).click();
 check(await page.getByTestId('rail-page').getByRole('button', { name: 'Titre', exact: true }).isVisible(), 'Text page adds titles');
 await rail.getByRole('tab', { name: 'Décor', exact: true }).click();
 check((await page.getByTestId('rail-page').getByRole('heading', { level: 3 }).count()) >= 3, 'Decor page shows background, set and floor groups');
+await rail.getByRole('tab', { name: 'Lumière', exact: true }).focus();
+await page.keyboard.press('ArrowDown');
+check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'camera', 'ArrowDown in the rail moves to the next page');
+check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'Caméra', 'focus follows the keyboard in the rail');
 await done(browser, errors);

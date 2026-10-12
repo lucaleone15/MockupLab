@@ -24,6 +24,9 @@ export function ProjectMenu() {
     <div className="flex min-w-0 items-center gap-1">
       <input
         aria-label={t('project.name')}
+        name="project-name"
+        autoComplete="off"
+        spellCheck={false}
         value={name === 'Untitled' ? '' : name}
         placeholder={t('project.untitled')}
         onChange={(e) => useProject.setState({ name: e.target.value || 'Untitled' })}
