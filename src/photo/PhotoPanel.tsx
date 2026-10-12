@@ -159,6 +159,7 @@ export function DesignSection({ zone }: { zone: PhotoZone }) {
       <div className="flex gap-3">
         <button
           type="button"
+          aria-label={t('props.replace')}
           onClick={() => pickZoneImage(zone.id)}
           className={cx(
             'grid shrink-0 place-items-center self-start overflow-hidden rounded-md bg-surface-2 shadow-[0_0_0_1px_var(--line)_inset]',

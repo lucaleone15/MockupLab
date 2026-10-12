@@ -3,7 +3,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const url = process.argv[2] ?? 'http://localhost:5173/';
+const url = process.argv[2] ?? 'http://localhost:5173/#/studio';
 const out = process.argv[3] ?? 'out';
 const theme = process.env.THEME ?? 'dark';
 mkdirSync(out, { recursive: true });

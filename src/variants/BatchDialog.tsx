@@ -40,9 +40,9 @@ export function BatchDialog() {
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && batch.close()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[3px] animate-[fade-in_150ms_ease-out]" />
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[3px] animate-[fade-in_150ms_ease-out]" />
         <Dialog.Content
-          className="fixed left-1/2 top-1/2 z-40 flex max-h-[88vh] w-[720px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl ring-1 ring-line-strong animate-[toast-in_200ms_var(--ease-out-quart)]"
+          className="fixed left-1/2 top-1/2 z-40 flex max-h-[88vh] w-[720px] max-w-[94vw] -translate-x-1/2 -translate-y-1/2 menu-surface flex-col overflow-hidden rounded-[18px] animate-[toast-in_200ms_var(--ease-out-quart)]"
           data-testid="batch"
           // files dropped here stay here (not on the scene)
           onDragOver={(e) => {
@@ -59,11 +59,11 @@ export function BatchDialog() {
           }}
         >
           <div className="flex items-center gap-2.5 border-b border-line px-5 py-3.5">
-            <span className="grid size-8 place-items-center rounded-lg bg-accent text-accent-fg">
+            <span className="grid size-8 place-items-center rounded-[10px] bg-fg text-bg">
               <Layers size={16} />
             </span>
             <div>
-              <Dialog.Title className="text-[15px] font-semibold leading-tight">{t('batch.title')}</Dialog.Title>
+              <Dialog.Title className="font-display text-[20px] font-bold leading-tight">{t('batch.title')}</Dialog.Title>
               <Dialog.Description className="text-[11.5px] text-fg-subtle">{t('batch.subtitle')}</Dialog.Description>
             </div>
             <Dialog.Close className="ml-auto grid size-8 place-items-center rounded-lg text-fg-muted hover:bg-surface-3 hover:text-fg" aria-label={t('cancel')}>

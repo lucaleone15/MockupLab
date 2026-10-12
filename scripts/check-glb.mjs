@@ -18,7 +18,7 @@ await p.addInitScript(() => {
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/studio');
 await p.waitForFunction(() => window.__mockuplab);
 const glb = await p.evaluate(async () => {
   const { makeKiosk } = await import('/scripts/fixtures/makeGlb.ts');
@@ -28,6 +28,8 @@ const glb = await p.evaluate(async () => {
   return btoa(s);
 });
 writeFileSync('out/glb/kiosk.glb', Buffer.from(glb, 'base64'));
+await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
+await p.getByTestId('library-tabs').getByRole('button', { name: 'Mes modèles 3D' }).click();
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByTestId('import-glb').click()]);
 await chooser.setFiles('out/glb/kiosk.glb');
 await p.waitForTimeout(1500);
@@ -72,7 +74,7 @@ console.log('project file:', file.name, Math.round(file.text.length / 1024), 'KB
 const ctx2 = await b.newContext({ viewport: { width: 1600, height: 1000 } });
 const p2 = await ctx2.newPage();
 await p2.addInitScript(() => localStorage.setItem('mockuplab:lang', 'fr'));
-await p2.goto('http://localhost:5173/');
+await p2.goto('http://localhost:5173/#/studio');
 await p2.waitForFunction(() => window.__mockuplab);
 await p2.evaluate(async (text) => {
   const { importProjectFile } = await import('/src/store/persistence.ts');
@@ -82,7 +84,9 @@ await p2.waitForTimeout(1500);
 console.log('other browser after opening the file:', await p2.evaluate(() => window.__mockuplab.project.getState().items[0].modelId));
 // delete the model: the device falls back to the phone
 p.on('dialog', (d) => d.accept());
-await p.getByText('kiosk').first().hover();
+await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
+await p.getByTestId('library-tabs').getByRole('button', { name: 'Mes modèles 3D' }).click();
+await p.getByTestId('rail-page').getByText('kiosk').first().hover();
 await p.getByRole('button', { name: 'Supprimer ce modèle' }).first().click();
 await p.waitForTimeout(800);
 console.log('after delete:', (await item()).modelId);

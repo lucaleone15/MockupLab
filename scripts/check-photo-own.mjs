@@ -15,9 +15,8 @@ await p.addInitScript(() => {
 const errors = [];
 p.on('pageerror', (e) => errors.push(e.message));
 p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-await p.goto('http://localhost:5173/');
+await p.goto('http://localhost:5173/#/photo');
 await p.waitForFunction(() => window.__mockuplab?.photo);
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
 for (const [file, seed] of cases) {
   const name = basename(file).replace(/\.[a-z]+$/, '');
   const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByTestId('photo-library').getByRole('button', { name: 'Importer ma photo' }).click()]);
