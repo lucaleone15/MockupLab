@@ -4,6 +4,7 @@ import './index.css';
 import { App } from './app/App';
 import { useLang } from './i18n';
 import { restoreProject, startAutosave } from './store/persistence';
+import { useUi } from './store/ui';
 
 document.documentElement.lang = useLang.getState().lang;
 
@@ -12,6 +13,8 @@ void import('./models/glb/userModels')
   .then((m) => m.loadUserModels())
   .catch(() => undefined)
   .then(() => restoreProject())
+  .then((restored) => useUi.setState({ hasSavedProject: !!restored }))
+  .catch(() => undefined)
   .finally(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
