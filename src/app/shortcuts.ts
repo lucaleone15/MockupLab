@@ -35,6 +35,8 @@ export const SHORTCUTS: [string, string][] = [
 
 function onKey(e: KeyboardEvent) {
   if (isEditable(e.target)) return;
+  // the home page shows no project: only the help shortcut works there
+  if (useUi.getState().screen === 'home' && e.key !== '?') return;
   // an animation preview: only Escape (or space) to stop it
   if (useUi.getState().previewing) {
     if (e.key === 'Escape' || e.key === ' ') {

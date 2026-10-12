@@ -2,22 +2,22 @@ import { useState } from 'react';
 import { Tooltip } from 'radix-ui';
 import { useT } from '@/i18n';
 import { ErrorBoundary, hasWebGL2 } from './ErrorBoundary';
-import { Logo } from './TopBar';
-
-const webgl = hasWebGL2();
-import { LibraryPanel } from './LibraryPanel';
-import { PropertiesPanel } from './PropertiesPanel';
+import { Logo } from '@/shell/Logo';
 import { useGlobalInput } from './shortcuts';
 import { useRouteSync } from '@/shell/route';
 import { HelpDialog } from './HelpDialog';
 import { Toaster } from './Toaster';
-import { TopBar } from './TopBar';
-import { PreviewOverlay, Viewport } from './Viewport';
-import { useProject } from '@/store/project';
-import { PhotoLibrary } from '@/photo/PhotoLibrary';
-import { PhotoView } from '@/photo/PhotoView';
+import { TopBar } from '@/shell/TopBar';
+import { ExportSheet } from '@/shell/ExportSheet';
+import { PreviewOverlay } from './Viewport';
+import { useUi } from '@/store/ui';
+import { Home } from '@/home/Home';
+import { StudioScreen } from '@/studio/StudioScreen';
+import { PhotoScreen } from '@/photo/PhotoScreen';
 import { VariantsDialog } from '@/variants/VariantsDialog';
 import { BatchDialog } from '@/variants/BatchDialog';
+
+const webgl = hasWebGL2();
 
 function NoWebGL() {
   const { t } = useT();
@@ -25,7 +25,7 @@ function NoWebGL() {
     <div className="grid h-full place-items-center p-8 text-center">
       <div className="max-w-[460px]">
         <div className="mb-3 flex justify-center">
-          <Logo />
+          <Logo asLink={false} />
         </div>
         <h1 className="text-[18px] font-semibold">{t('webgl.title')}</h1>
         <p className="mt-2 text-[13px] leading-relaxed text-fg-muted">{t('webgl.body')}</p>
@@ -43,7 +43,7 @@ function SmallScreenNotice() {
     <div className="fixed inset-0 z-[60] grid place-items-center bg-bg/95 p-6 text-center backdrop-blur" role="dialog" aria-modal="true">
       <div className="max-w-[360px]">
         <div className="mb-3 flex justify-center">
-          <Logo />
+          <Logo asLink={false} />
         </div>
         <p className="text-[13.5px] leading-relaxed text-fg-muted">{t('small.body')}</p>
         <button type="button" onClick={() => setHidden(true)} className="mt-4 h-9 rounded-lg bg-accent px-4 text-[13px] font-medium text-accent-fg">
@@ -59,18 +59,20 @@ export function App() {
   useRouteSync();
   const { t } = useT();
   if (!webgl) return <NoWebGL />;
-  const photo = useProject((s) => s.mode === 'photo');
+  const screen = useUi((s) => s.screen);
   return (
     <Tooltip.Provider delayDuration={350} skipDelayDuration={150}>
       <div className="flex h-full flex-col">
-        <TopBar />
-        <div className="flex min-h-0 flex-1">
-          {photo ? <PhotoLibrary /> : <LibraryPanel />}
-          <ErrorBoundary label={photo ? t('mode.photo') : t('mode.scene')} key={photo ? 'photo' : 'scene'}>
-            {photo ? <PhotoView /> : <Viewport />}
-          </ErrorBoundary>
-          <PropertiesPanel />
-        </div>
+        {screen === 'home' ? (
+          <Home />
+        ) : (
+          <>
+            <TopBar />
+            <ErrorBoundary label={t(screen === 'photo' ? 'screen.photo' : 'screen.studio')} key={screen}>
+              {screen === 'photo' ? <PhotoScreen /> : <StudioScreen />}
+            </ErrorBoundary>
+          </>
+        )}
       </div>
       <Toaster />
       <HelpDialog />
@@ -78,6 +80,7 @@ export function App() {
       <PreviewOverlay />
       <SmallScreenNotice />
       <BatchDialog />
+      <ExportSheet />
     </Tooltip.Provider>
   );
 }
