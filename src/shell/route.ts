@@ -29,7 +29,11 @@ function apply(screen: Screen) {
   if (screen === 'studio' || screen === 'photo') {
     const mode = screen === 'studio' ? 'scene' : 'photo';
     if (useProject.getState().mode !== mode) {
+      // opening a screen is navigation, not an edit: keep it out of the undo history
+      const history = useProject.temporal.getState();
+      history.pause();
       useProject.getState().setMode(mode);
+      history.resume();
       ui.setPhotoTool('select');
     }
   }
@@ -39,8 +43,9 @@ function apply(screen: Screen) {
 /** Opens a screen (pushes a history entry). */
 export function navigate(screen: Screen) {
   const target = AVAILABLE[screen] ? screen : 'home';
+  // apply now (hashchange comes later, as a task): callers can rely on the new mode right away
+  apply(target);
   if (location.hash !== SCREEN_HASH[target]) location.hash = SCREEN_HASH[target];
-  else apply(target);
 }
 
 /** Keeps the store in step with the hash. Call once, in App. */
@@ -54,6 +59,19 @@ export function useRouteSync() {
     };
     sync();
     window.addEventListener('hashchange', sync);
-    return () => window.removeEventListener('hashchange', sync);
+    // the project's mode can change without the route (new project, opened file, undo): the screen follows
+    const unsub = useProject.subscribe((s, prev) => {
+      if (s.mode === prev.mode) return;
+      const screen = useUi.getState().screen;
+      if (screen !== 'studio' && screen !== 'photo') return;
+      const target: Screen = s.mode === 'photo' ? 'photo' : 'studio';
+      if (screen === target) return;
+      history.replaceState(null, '', SCREEN_HASH[target]);
+      useUi.getState().setScreen(target);
+    });
+    return () => {
+      window.removeEventListener('hashchange', sync);
+      unsub();
+    };
   }, []);
 }

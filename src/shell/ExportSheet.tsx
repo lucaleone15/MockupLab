@@ -31,7 +31,7 @@ export function ExportSheet() {
             disabled={!!exporting || noPhoto || (useProject.getState().mode === 'photo' && !photoOutputSize().width)}
             onClick={() => {
               setOpen(false);
-              void exportImage();
+              void exportImage('image');
             }}
           >
             <Download size={16} strokeWidth={2.2} />

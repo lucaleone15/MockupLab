@@ -1,0 +1,65 @@
+// scripts/check-review.mjs — regressions found by the phase 1 review: screen ⇄ mode stay in step,
+// home drops land on the device, a leftover video kind never hijacks Export, rail arrows don't nudge.
+import { openApp, check, done } from './lib/app.mjs';
+const { browser, page, errors } = await openApp({ hash: '#/photo' });
+const st = () =>
+  page.evaluate(() => {
+    const p = window.__mockuplab.project.getState();
+    return { screen: window.__mockuplab.ui.getState().screen, mode: p.mode, hash: location.hash, past: window.__mockuplab.project.temporal.getState().pastStates.length };
+  });
+// 1. opening a screen is not an undo step; mode changes elsewhere move the screen
+let s = await st();
+check(s.past === 0, `direct load of #/photo leaves no undo step (${s.past})`);
+await page.evaluate(() => (location.hash = '#/studio'));
+await page.waitForTimeout(200);
+await page.evaluate(() => (location.hash = '#/photo'));
+await page.waitForTimeout(200);
+await page.evaluate(() => window.__mockuplab.project.temporal.getState().undo());
+await page.waitForTimeout(200);
+s = await st();
+check(s.screen === 'photo' && s.mode === 'photo', `undo after switching screens keeps screen and mode in step (${s.screen}/${s.mode})`);
+await page.evaluate(() => window.__mockuplab.persistence.newProject());
+await page.waitForTimeout(300);
+s = await st();
+check((s.screen === 'studio') === (s.mode === 'scene') && s.hash === (s.mode === 'scene' ? '#/studio' : '#/photo'), `New project: screen follows mode (${s.screen}/${s.mode}/${s.hash})`);
+await page.evaluate(() => window.__mockuplab.project.getState().setMode('photo'));
+await page.waitForTimeout(300);
+s = await st();
+check(s.screen === 'photo' && s.hash === '#/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
+// 2. a paste on home with a photo-mode project lands on the studio device
+await page.evaluate(() => (location.hash = '#/'));
+await page.waitForTimeout(200);
+await page.evaluate(async () => {
+  const c = document.createElement('canvas');
+  c.width = 300;
+  c.height = 600;
+  c.getContext('2d').fillRect(0, 0, 300, 600);
+  const png = await new Promise((res) => c.toBlob(res, 'image/png'));
+  const dt = new DataTransfer();
+  dt.items.add(new File([png], 'home-paste.png', { type: 'image/png' }));
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }));
+});
+await page.waitForTimeout(1000);
+const landed = await page.evaluate(() => {
+  const api = window.__mockuplab;
+  const p = api.project.getState();
+  return p.items.some((it) => Object.values(it.surfaces).some((b) => b.assetId && api.assetName(b.assetId) === 'home-paste.png'));
+});
+check(landed, 'paste on home with a photo project → image on the studio device');
+// 3. a leftover video kind does not hijack the image export
+await page.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video' }));
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Lumière', exact: true }).click();
+await page.keyboard.press('Meta+e');
+await page.waitForTimeout(300);
+check(await page.getByTestId('export-sheet').isVisible(), '⌘E opens the image sheet even with a stored video kind');
+await page.getByTestId('export-sheet').getByRole('radio', { name: '1080p', exact: true }).click();
+const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 240000 }), page.getByTestId('export-sheet').getByRole('button', { name: /Télécharger/ }).click()]);
+check(/\.(png|jpg|webp)$/.test(dl.suggestedFilename()), `sheet downloads an image (${dl.suggestedFilename()})`);
+// 4. arrows in the rail do not move the selected device
+const pos = () => page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items[0].position));
+const before = await pos();
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Réglages', exact: true }).focus();
+await page.keyboard.press('ArrowDown');
+await page.keyboard.press('ArrowDown');
+check((await pos()) === before, 'rail arrows leave the device in place');
+await done(browser, errors);
