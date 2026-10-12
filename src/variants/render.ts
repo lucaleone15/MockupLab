@@ -48,7 +48,7 @@ async function sandbox<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /** Waits until what the current state needs is loaded and drawn. */
-async function ready() {
+export async function settleScene() {
   const { decor, background } = useProject.getState();
   const jobs: Promise<unknown>[] = [prepareBackground(background)];
   const material = decor.kind === 'table' || decor.kind === 'surface' || (decor.kind === 'podium' && decor.podiumFinish === 'material');
@@ -63,7 +63,7 @@ async function ready() {
 /** Puts a look on the scene (inside a sandbox) and waits for it to be drawn. */
 export async function showLook(look: Look) {
   applyLook(look);
-  await ready();
+  await settleScene();
 }
 
 /** Size of a thumbnail at the export ratio. */

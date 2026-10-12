@@ -46,7 +46,8 @@ if (import.meta.env.DEV) {
     import('./photo/editing'),
     import('./variants/store'),
     import('./library/exports'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx]) => {
+    import('./quick/store'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -64,6 +65,7 @@ if (import.meta.env.DEV) {
         assetUrl: (id: string) => as.useAssets.getState().assets[id]?.url,
         library: pe.library,
         exports: lx,
+        quick: qk.quick,
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         photo: {
