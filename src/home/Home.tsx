@@ -106,7 +106,7 @@ export function Home() {
       </header>
       <main className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col justify-center gap-9 px-6 pb-10">
         <section className="flex flex-col items-center gap-4 text-center">
-          <h1 className="font-display text-[clamp(40px,5.4vw,68px)] font-bold leading-[1.02] tracking-[-0.035em]">{t('home.title')}</h1>
+          <h1 className="font-display text-balance text-[clamp(40px,5.4vw,68px)] font-bold leading-[1.02] tracking-[-0.035em]">{t('home.title')}</h1>
           <p className="max-w-[600px] text-[16px] leading-relaxed text-fg-muted">{t('home.lead')}</p>
           <button
             type="button"
@@ -120,7 +120,7 @@ export function Home() {
               <kbd className="mx-0.5 rounded-md bg-surface-3 px-1.5 font-mono text-[12px]">{MOD}V</kbd>
               {after}
             </span>
-            <span className="text-[12.5px] text-fg-subtle">{t('home.dropHint')}</span>
+            <span className="text-[12.5px] text-fg-muted">{t('home.dropHint')}</span>
           </button>
         </section>
         <section className="flex flex-col gap-3">

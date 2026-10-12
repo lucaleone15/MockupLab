@@ -347,7 +347,7 @@ export function Sheet({
               <X size={16} />
             </Dialog.Close>
           </div>
-          <div className="scroll-thin flex flex-col gap-4 overflow-y-auto px-6 py-3">{children}</div>
+          <div className="scroll-thin flex flex-col gap-4 overflow-y-auto overscroll-contain px-6 py-3">{children}</div>
           {footer && <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>

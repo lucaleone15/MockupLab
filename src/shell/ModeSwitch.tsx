@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react';
 import { useT, type I18nKey } from '@/i18n';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
@@ -9,8 +10,19 @@ const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
 export function ModeSwitch() {
   const { t } = useT();
   const screen = useUi((s) => s.screen);
+  // radio group keyboard pattern: arrows move between the available modes
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const open = MODES.filter((m) => AVAILABLE[m]);
+    const i = Math.max(0, open.indexOf(screen));
+    const target = open[(i + step + open.length) % open.length];
+    navigate(target);
+    (e.currentTarget.querySelector(`[data-mode="${target}"]`) as HTMLElement | null)?.focus();
+  };
   return (
-    <div role="radiogroup" aria-label={t('screen.home')} data-testid="mode-switch" className="flex rounded-full bg-surface-3 p-[3px]">
+    <div role="radiogroup" aria-label={t('screen.home')} data-testid="mode-switch" className="flex rounded-full bg-surface-3 p-[3px]" onKeyDown={onKeyDown}>
       {MODES.map((m) => {
         const active = m === screen;
         const available = AVAILABLE[m];
@@ -20,6 +32,8 @@ export function ModeSwitch() {
             type="button"
             role="radio"
             aria-checked={active}
+            tabIndex={active ? 0 : -1}
+            data-mode={m}
             disabled={!available}
             title={available ? undefined : t('screen.soon')}
             onClick={() => navigate(m)}
