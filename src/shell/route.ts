@@ -1,0 +1,59 @@
+import { useEffect } from 'react';
+import { useProject } from '@/store/project';
+import { useUi, type Screen } from '@/store/ui';
+
+/*
+ * The screen lives in the URL hash so the browser's back button works and a
+ * mode can be bookmarked. The project's own mode follows the screen:
+ * studio ⇔ 'scene', photo ⇔ 'photo'. Quick and project are not built yet.
+ */
+
+export const SCREEN_HASH: Record<Screen, string> = {
+  home: '#/',
+  quick: '#/rapide',
+  project: '#/projet',
+  studio: '#/studio',
+  photo: '#/photo',
+};
+
+/** Screens that can be opened in this version. */
+export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: false, project: false, studio: true, photo: true };
+
+export function screenFromHash(hash: string): Screen {
+  const found = (Object.keys(SCREEN_HASH) as Screen[]).find((s) => SCREEN_HASH[s] === hash);
+  return found && AVAILABLE[found] ? found : 'home';
+}
+
+function apply(screen: Screen) {
+  const ui = useUi.getState();
+  if (screen === 'studio' || screen === 'photo') {
+    const mode = screen === 'studio' ? 'scene' : 'photo';
+    if (useProject.getState().mode !== mode) {
+      useProject.getState().setMode(mode);
+      ui.setPhotoTool('select');
+    }
+  }
+  if (ui.screen !== screen) ui.setScreen(screen);
+}
+
+/** Opens a screen (pushes a history entry). */
+export function navigate(screen: Screen) {
+  const target = AVAILABLE[screen] ? screen : 'home';
+  if (location.hash !== SCREEN_HASH[target]) location.hash = SCREEN_HASH[target];
+  else apply(target);
+}
+
+/** Keeps the store in step with the hash. Call once, in App. */
+export function useRouteSync() {
+  useEffect(() => {
+    const sync = () => {
+      const screen = screenFromHash(location.hash);
+      // unknown or unavailable hash: normalise the address bar
+      if (location.hash && location.hash !== SCREEN_HASH[screen]) history.replaceState(null, '', SCREEN_HASH[screen]);
+      apply(screen);
+    };
+    sync();
+    window.addEventListener('hashchange', sync);
+    return () => window.removeEventListener('hashchange', sync);
+  }, []);
+}

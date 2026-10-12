@@ -3,12 +3,26 @@ import { create } from 'zustand';
 export type Theme = 'dark' | 'light';
 /** What the user picked: follow the system, or force one theme. */
 export type ThemePref = 'auto' | 'light' | 'dark';
+export type Screen = 'home' | 'quick' | 'project' | 'studio' | 'photo';
+export type StudioPage = 'devices' | 'settings' | 'ambiance' | 'decor' | 'light' | 'camera' | 'text' | 'brand' | 'video';
+export type PhotoPage = 'photos' | 'zones' | 'design' | 'render' | 'video';
 
 interface UiState {
   /** The theme in use (resolved from the preference and the system). */
   theme: Theme;
   themePref: ThemePref;
   setThemePref: (p: ThemePref) => void;
+  /** Which screen is shown (mirrors the URL hash, see src/shell/route.ts). */
+  screen: Screen;
+  setScreen: (s: Screen) => void;
+  studioPage: StudioPage;
+  setStudioPage: (p: StudioPage) => void;
+  photoPage: PhotoPage;
+  setPhotoPage: (p: PhotoPage) => void;
+  exportOpen: boolean;
+  setExportOpen: (v: boolean) => void;
+  /** An autosaved project existed when the app started (the home page offers to resume it). */
+  hasSavedProject: boolean;
   /** Incremented to ask the camera rig to return to the default view. */
   viewResetToken: number;
   resetView: () => void;
@@ -79,6 +93,15 @@ export const useUi = create<UiState>((set) => ({
     applyTheme(theme);
     set({ themePref, theme });
   },
+  screen: 'home',
+  setScreen: (screen) => set({ screen }),
+  studioPage: 'settings',
+  setStudioPage: (studioPage) => set({ studioPage }),
+  photoPage: 'photos',
+  setPhotoPage: (photoPage) => set({ photoPage }),
+  exportOpen: false,
+  setExportOpen: (exportOpen) => set({ exportOpen }),
+  hasSavedProject: false,
   viewResetToken: 0,
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),
   exporting: null,

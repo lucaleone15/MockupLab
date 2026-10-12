@@ -8,6 +8,7 @@ const webgl = hasWebGL2();
 import { LibraryPanel } from './LibraryPanel';
 import { PropertiesPanel } from './PropertiesPanel';
 import { useGlobalInput } from './shortcuts';
+import { useRouteSync } from '@/shell/route';
 import { HelpDialog } from './HelpDialog';
 import { Toaster } from './Toaster';
 import { TopBar } from './TopBar';
@@ -55,6 +56,7 @@ function SmallScreenNotice() {
 
 export function App() {
   useGlobalInput();
+  useRouteSync();
   const { t } = useT();
   if (!webgl) return <NoWebGL />;
   const photo = useProject((s) => s.mode === 'photo');

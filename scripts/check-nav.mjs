@@ -1,0 +1,22 @@
+// scripts/check-nav.mjs — hash ⇄ screen, project mode follows, back button, unavailable screens.
+import { openApp, check, done } from './lib/app.mjs';
+const { browser, page, errors } = await openApp();
+const st = () => page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, mode: window.__mockuplab.project.getState().mode, hash: location.hash }));
+let s = await st();
+check(s.screen === 'home' && (s.hash === '' || s.hash === '#/'), 'no hash → home');
+await page.evaluate(() => (location.hash = '#/photo'));
+await page.waitForTimeout(200);
+s = await st();
+check(s.screen === 'photo' && s.mode === 'photo', '#/photo → photo screen, photo mode');
+await page.evaluate(() => (location.hash = '#/studio'));
+await page.waitForTimeout(200);
+s = await st();
+check(s.screen === 'studio' && s.mode === 'scene', '#/studio → studio screen, scene mode');
+await page.goBack();
+await page.waitForTimeout(200);
+check((await st()).screen === 'photo', 'back button returns to photo');
+await page.evaluate(() => (location.hash = '#/rapide'));
+await page.waitForTimeout(200);
+s = await st();
+check(s.screen === 'home' && s.hash === '#/', '#/rapide (not yet available) → home');
+await done(browser, errors);
