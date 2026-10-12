@@ -9,6 +9,7 @@ import { HelpDialog } from './HelpDialog';
 import { Toaster } from './Toaster';
 import { TopBar } from '@/shell/TopBar';
 import { ExportSheet } from '@/shell/ExportSheet';
+import { AllProjectsSheet } from '@/library/AllProjectsSheet';
 import { PreviewOverlay } from './Viewport';
 import { useUi } from '@/store/ui';
 import { Home } from '@/home/Home';
@@ -81,6 +82,7 @@ export function App() {
       <SmallScreenNotice />
       <BatchDialog />
       <ExportSheet />
+      <AllProjectsSheet />
     </Tooltip.Provider>
   );
 }

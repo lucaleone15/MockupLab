@@ -11,7 +11,8 @@ import { storeThumb, useLibrary } from './store';
 
 const W = 480;
 let timer: ReturnType<typeof setTimeout> | undefined;
-let last = 0;
+/** When each project last got a thumbnail (a new project gets its first one quickly). */
+const last = new Map<string, number>();
 let busy = false;
 
 async function render(): Promise<Blob | null> {
@@ -44,7 +45,7 @@ export async function captureThumb() {
     const blob = await render();
     if (blob && useLibrary.getState().currentId === id) {
       await storeThumb(id, blob);
-      last = Date.now();
+      last.set(id, Date.now());
     }
   } catch {
     /* a missing thumbnail is not worth an error */
@@ -56,8 +57,10 @@ export async function captureThumb() {
 /** Asks for a thumbnail `delay` ms from now (later calls push it back). */
 export function scheduleThumb(delay = 4000) {
   clearTimeout(timer);
-  const wait = Math.max(delay, 30000 - (Date.now() - last));
-  timer = setTimeout(() => void captureThumb(), last ? wait : delay);
+  const id = useLibrary.getState().currentId;
+  const before = id ? last.get(id) : undefined;
+  const wait = before ? Math.max(delay, 30000 - (Date.now() - before)) : delay;
+  timer = setTimeout(() => void captureThumb(), wait);
 }
 
 /** Keeps thumbnails fresh while the user edits. */

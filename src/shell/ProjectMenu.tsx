@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { DropdownMenu } from 'radix-ui';
-import { Check, ChevronDown, FilePlus2, FolderOpen, Save } from 'lucide-react';
+import { Check, ChevronDown, Copy, FilePlus2, FolderOpen, LayoutGrid, Save } from 'lucide-react';
+import { useLibrary } from '@/library/store';
 import { useT } from '@/i18n';
-import { newProject } from '@/store/persistence';
+import { library, newProject } from '@/store/persistence';
 import { openProjectFile, saveProjectFile } from '@/app/projectFiles';
 import { MOD } from '@/app/shortcuts';
 import { useProject } from '@/store/project';
@@ -42,13 +43,28 @@ export function ProjectMenu() {
           <DropdownMenu.Content sideOffset={6} align="start" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
             <DropdownMenu.Item
               className={item}
-              onSelect={() => {
-                if (window.confirm(t('project.newConfirm'))) newProject();
-              }}
+              onSelect={() => newProject()}
             >
               <FilePlus2 size={15} />
               {t('project.new')}
             </DropdownMenu.Item>
+            <DropdownMenu.Item
+              className={item}
+              onSelect={async () => {
+                const id = useLibrary.getState().currentId;
+                if (!id) return;
+                const copy = await library.duplicate(id);
+                if (copy) await library.open(copy);
+              }}
+            >
+              <Copy size={15} />
+              {t('project.duplicate')}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item className={item} onSelect={() => useUi.getState().setAllProjectsOpen(true)}>
+              <LayoutGrid size={15} />
+              {t('library.all')}
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator className="mx-2 my-1 h-px bg-line" />
             <DropdownMenu.Item className={item} onSelect={openProjectFile}>
               <FolderOpen size={15} />
               {t('project.open')}

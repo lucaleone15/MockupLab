@@ -7,7 +7,8 @@ import { templateUrl } from '@/photo/templates';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
 import { AVAILABLE, navigate } from '@/shell/route';
-import { useProject } from '@/store/project';
+import { ProjectCard } from '@/library/ProjectCard';
+import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 
@@ -72,26 +73,26 @@ export function importFromHome(files: Iterable<File>) {
   void importImages(list);
 }
 
-function Resume() {
+function Recents() {
   const { t } = useT();
-  const has = useUi((s) => s.hasSavedProject);
-  const name = useProject((s) => s.name);
-  const mode = useProject((s) => s.mode);
-  if (!has) return null;
-  const target: Screen = mode === 'photo' ? 'photo' : 'studio';
+  const list = useLibrary((s) => s.list);
+  if (!list.length) return null;
   return (
-    <button
-      type="button"
-      data-testid="home-resume"
-      onClick={() => navigate(target)}
-      className="glass flex w-full items-center gap-4 rounded-[14px] px-5 py-3.5 text-left transition-transform duration-150 active:scale-[0.99]"
-    >
-      <span className="flex-1">
-        <span className="block text-[14px] font-semibold">{t('home.resume', { name: name === 'Untitled' ? t('project.untitled') : name })}</span>
-        <span className="block text-[12.5px] text-fg-muted">{t('home.resumeMode', { mode: t(target === 'photo' ? 'screen.photo' : 'screen.studio') })}</span>
-      </span>
-      <span className="rounded-full bg-accent px-4 py-1.5 text-[13px] font-semibold text-accent-fg">{t('home.open')}</span>
-    </button>
+    <section className="flex flex-col gap-3" data-testid="recents">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[13px] font-medium text-fg-muted">{t('library.recent')}</h2>
+        {list.length > 4 && (
+          <button type="button" className="text-[13px] font-medium text-accent hover:underline" onClick={() => useUi.getState().setAllProjectsOpen(true)}>
+            {t('library.seeAll')}
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {list.slice(0, 4).map((m) => (
+          <ProjectCard key={m.id} meta={m} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -151,7 +152,7 @@ export function Home() {
             })}
           </div>
         </section>
-        <Resume />
+        <Recents />
       </main>
     </div>
   );
