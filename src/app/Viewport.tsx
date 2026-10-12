@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ImagePlus, Scan, Sparkles } from 'lucide-react';
+import { ImagePlus, Sparkles } from 'lucide-react';
 import { useT } from '@/i18n';
-import { outputSize, ratioValue } from '@/export/settings';
+import { ratioValue } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
 import { useAssets } from '@/store/assets';
 import { pickImages } from '@/lib/importImage';
@@ -9,9 +9,9 @@ import { loadSamples } from '@/lib/samples';
 import { Stage } from '@/scene/Stage';
 import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { IconButton, Spinner, cx } from '@/ui/primitives';
+import { Spinner, cx } from '@/ui/primitives';
+import { FloatingBar } from '@/shell/FloatingBar';
 import { MOD } from './shortcuts';
-import { videoSize } from '@/animation/size';
 import { OverlayLayer } from './OverlayLayer';
 
 /** While an animation preview plays: the app is frozen (the scene is a temporary copy), with a stop button. */
@@ -48,7 +48,7 @@ export function useFrameSize(ratio: number) {
     return () => ro.disconnect();
   }, []);
   const padX = 56;
-  const padY = 72;
+  const padY = 84;
   const aw = Math.max(0, box.w - padX * 2);
   const ah = Math.max(0, box.h - padY * 2);
   const w = Math.min(aw, ah * ratio);
@@ -158,21 +158,19 @@ export function ExportOverlay() {
 }
 
 export function Viewport() {
-  const { t } = useT();
   const ratio = useProject((s) => s.export.ratio);
-  const exportSettings = useProject((s) => s.export);
   const hasImage = useProject((s) => {
     const it = selectSelectedItem(s);
     // objects without faces (brand objects) never need an image
     return !it || Object.keys(it.surfaces).length === 0 || Object.values(it.surfaces).some((b) => b.assetId);
   });
-  const resetView = useUi((s) => s.resetView);
   const { ref, width, height } = useFrameSize(ratioValue(ratio));
   const frame = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   useAssets((s) => s.assets);
-  const out = exportSettings.kind === 'video' ? videoSize() : outputSize(exportSettings);
 
   return (
+    <div ref={root} className="relative flex min-w-0 flex-1">
     <main ref={ref} className="stage-bg relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">
       <div
         className="relative overflow-hidden rounded-[3px] transition-[width,height] duration-300 ease-[var(--ease-out-quart)]"
@@ -186,20 +184,12 @@ export function Viewport() {
         {!hasImage && <EmptyHint />}
       </div>
 
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex h-[72px] items-center justify-center gap-3 text-[11.5px] text-fg-subtle">
-        <span className="font-mono tabular-nums">
-          {out.width} × {out.height}
-        </span>
-        <span className="size-1 rounded-full bg-fg-subtle/50" />
-        <span>{t('stage.orbitHint')}</span>
-      </div>
-      <div className="absolute right-3 top-3">
-        <IconButton label={t('stage.resetView')} shortcut="F" onClick={resetView}>
-          <Scan size={16} />
-        </IconButton>
-      </div>
       <DropOverlay />
       <ExportOverlay />
     </main>
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+        <FloatingBar onFullscreen={() => void root.current?.requestFullscreen?.()} />
+      </div>
+    </div>
   );
 }
