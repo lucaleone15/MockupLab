@@ -525,4 +525,5 @@ export const en: Record<keyof typeof fr, string> = {
   'support.watch': 'Watch',
   'support.print': 'Print',
   'support.objects': 'Objects',
+  'pdf.error': 'Could not read “{name}” (protected or damaged PDF).',
 };

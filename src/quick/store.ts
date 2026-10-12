@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { t, useLang, type I18nString } from '@/i18n';
 import { download, formatBytes, slugify } from '@/export/exportImage';
 import { fileToAsset } from '@/lib/importImage';
+import { expandPdfs, isPdf } from '@/lib/pdf';
 import { sampleAsset } from '@/lib/samples';
 import { ZipWriter } from '@/lib/zip';
 import { getModel } from '@/models/registry';
@@ -127,10 +128,13 @@ export const quick = {
   stop() {
     run++;
   },
-  async setImage(file: File) {
+  async setImage(input: File) {
+    const pdf = isPdf(input);
+    const [file] = await expandPdfs([input]);
+    if (!file) return;
     const asset = await fileToAsset(file, file.name || 'image');
     useAssets.getState().add(asset);
-    const { support, confident } = detectSupport(asset.width, asset.height, file.type === 'application/pdf');
+    const { support, confident } = detectSupport(asset.width, asset.height, pdf);
     dropThumbs();
     set({ assetId: asset.id, support, confident, selected: [] });
     void renderMissing();

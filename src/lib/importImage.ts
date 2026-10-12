@@ -1,3 +1,4 @@
+import { IMAGE_OR_PDF, expandPdfs } from './pdf';
 import { t } from '@/i18n';
 import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
@@ -46,7 +47,7 @@ export async function fileToAsset(file: Blob, name: string): Promise<Asset> {
 
 /** Imports images (drop, paste, picker) and binds the first one to a device screen (the selected one by default). */
 export async function importImages(files: Iterable<File>, targetItemId?: string) {
-  const list = [...files];
+  const list = await expandPdfs(files);
   // photo mode: the photo itself, or the design of a zone (targetItemId is then a zone id)
   if (useProject.getState().mode === 'photo') return importIntoPhoto(list, targetItemId);
   const images = list.filter((f) => ACCEPTED.test(f.type));
@@ -113,7 +114,7 @@ export async function importFromUrl(url: string, name: string) {
 export function pickImages(onFiles: (files: FileList) => void = (f) => void importImages(f)) {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = IMAGE_OR_PDF;
   input.multiple = true;
   input.onchange = () => input.files && onFiles(input.files);
   input.click();

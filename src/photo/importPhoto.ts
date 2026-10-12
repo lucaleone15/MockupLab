@@ -1,3 +1,4 @@
+import { IMAGE_OR_PDF, expandPdfs } from '@/lib/pdf';
 import { t } from '@/i18n';
 import { fileToAsset } from '@/lib/importImage';
 import { isSampleAsset, sampleAsset } from '@/lib/samples';
@@ -12,7 +13,8 @@ const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
  * Images in photo mode: the first image becomes the photo; once there are
  * zones, an image goes into the zone it was dropped on (or the selected one).
  */
-export async function importIntoPhoto(files: Iterable<File>, zoneId?: string, asPhoto = false) {
+export async function importIntoPhoto(input: Iterable<File>, zoneId?: string, asPhoto = false) {
+  const files = await expandPdfs(input);
   const images = [...files].filter((f) => ACCEPTED.test(f.type));
   if (!images.length) {
     toast.error(t('image.unsupported', { name: [...files][0]?.name || 'file' }));
@@ -35,7 +37,7 @@ export async function importIntoPhoto(files: Iterable<File>, zoneId?: string, as
 export function pickPhoto() {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = IMAGE_OR_PDF;
   input.onchange = () => input.files && importIntoPhoto(input.files, undefined, true);
   input.click();
 }
@@ -44,7 +46,7 @@ export function pickPhoto() {
 export function pickZoneImage(zoneId: string) {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = IMAGE_OR_PDF;
   input.onchange = () => input.files && importIntoPhoto(input.files, zoneId);
   input.click();
 }
