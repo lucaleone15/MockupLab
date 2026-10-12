@@ -218,7 +218,7 @@ function FontPicker({ role, value, onChange }: { role: 'heading' | 'body'; value
   );
 }
 
-function BrandKit() {
+export function BrandKit() {
   const { t } = useT();
   const brand = useProject((s) => s.brand);
   const setBrand = useProject((s) => s.setBrand);

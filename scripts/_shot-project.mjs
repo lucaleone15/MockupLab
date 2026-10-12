@@ -1,0 +1,12 @@
+import { openApp } from './lib/app.mjs';
+const [scheme, out] = process.argv.slice(2);
+const { browser, page } = await openApp({ hash: '#/projet', colorScheme: scheme });
+const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('project-add').click()]);
+await chooser.setFiles(['public/samples/sample-web.png', 'public/samples/sample-app.png', 'public/samples/sample-poster.png']);
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=pack-item] img').length === 5, null, { timeout: 200000 });
+await page.screenshot({ path: out });
+await page.locator('[data-testid=project-style]').first().scrollIntoViewIfNeeded();
+await page.mouse.wheel(0, 700);
+await page.waitForTimeout(400);
+await page.screenshot({ path: out.replace('.png', '-2.png') });
+await browser.close();

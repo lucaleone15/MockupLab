@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Tooltip } from 'radix-ui';
 import { useT, type I18nKey } from '@/i18n';
 import { QuickScreen } from '@/quick/QuickScreen';
+import { ProjectScreen } from '@/project/ProjectScreen';
 import { HiddenStage } from '@/shell/HiddenStage';
 import { ErrorBoundary, hasWebGL2 } from './ErrorBoundary';
 import { Logo } from '@/shell/Logo';
@@ -72,7 +73,7 @@ export function App() {
           <>
             <TopBar />
             <ErrorBoundary label={t(`screen.${screen}` as I18nKey)} key={screen}>
-              {screen === 'photo' ? <PhotoScreen /> : screen === 'quick' ? <QuickScreen /> : <StudioScreen />}
+              {screen === 'photo' ? <PhotoScreen /> : screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
             </ErrorBoundary>
           </>
         )}
