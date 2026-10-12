@@ -21,8 +21,8 @@ interface UiState {
   setPhotoPage: (p: PhotoPage) => void;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
-  /** An autosaved project existed when the app started (the home page offers to resume it). */
-  hasSavedProject: boolean;
+  allProjectsOpen: boolean;
+  setAllProjectsOpen: (v: boolean) => void;
   /** Incremented to ask the camera rig to return to the default view. */
   viewResetToken: number;
   resetView: () => void;
@@ -101,7 +101,8 @@ export const useUi = create<UiState>((set) => ({
   setPhotoPage: (photoPage) => set({ photoPage }),
   exportOpen: false,
   setExportOpen: (exportOpen) => set({ exportOpen }),
-  hasSavedProject: false,
+  allProjectsOpen: false,
+  setAllProjectsOpen: (allProjectsOpen) => set({ allProjectsOpen }),
   viewResetToken: 0,
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),
   exporting: null,
