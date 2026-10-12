@@ -110,11 +110,11 @@ export async function importFromUrl(url: string, name: string) {
   await importImages([new File([blob], name, { type: blob.type || 'image/png' })]);
 }
 
-export function pickImages() {
+export function pickImages(onFiles: (files: FileList) => void = (f) => void importImages(f)) {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
   input.multiple = true;
-  input.onchange = () => input.files && importImages(input.files);
+  input.onchange = () => input.files && onFiles(input.files);
   input.click();
 }

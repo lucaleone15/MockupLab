@@ -91,7 +91,7 @@ function EmptyHint() {
           {before}
           <kbd className="mx-1 rounded bg-white/15 px-1 font-mono text-[10.5px] leading-[16px] text-white/85">{MOD}V</kbd>
           {after}{' '}
-          <button type="button" onClick={pickImages} className="font-medium text-white underline decoration-white/30 underline-offset-[3px] hover:decoration-white">
+          <button type="button" onClick={() => pickImages()} className="font-medium text-white underline decoration-white/30 underline-offset-[3px] hover:decoration-white">
             {t('stage.browse')}
           </button>
         </span>
