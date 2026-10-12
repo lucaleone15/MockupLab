@@ -5,15 +5,9 @@ import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import type { ParamDef, ParamValue } from '@/models/types';
 import { pickImages } from '@/lib/importImage';
-import { useState } from 'react';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
-import { CompositionSection } from './panels/CompositionSection';
-import { ScenePanel } from './panels/ScenePanel';
 import { ModelSwitcher } from './ModelSwitcher';
-import { TextPanel } from './panels/TextPanel';
-import { PhotoPanel } from '@/photo/PhotoPanel';
-import { VideoSection } from '@/animation/VideoSection';
 import { photoOutputSize } from '@/photo/exportPhoto';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
@@ -89,7 +83,7 @@ function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { i
   );
 }
 
-function ImageSection() {
+export function ImageSection() {
   const { t, tr } = useT();
   const item = useProject(selectSelectedItem);
   const setSurface = useProject((s) => s.setSurface);
@@ -106,7 +100,7 @@ function ImageSection() {
   const asset = binding?.assetId ? useAssets.getState().assets[binding.assetId] : undefined;
 
   return (
-    <Section title={multi ? t('props.images') : t('props.image')}>
+    <Section title={multi ? t('settings.designs') : t('settings.design')}>
       <div className="-mx-1.5 flex flex-col gap-1">
         {slots.map((sl) => (
           <SlotCard
@@ -211,7 +205,7 @@ function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamVal
   }
 }
 
-function DeviceSection() {
+export function DeviceSection() {
   const { t, tr } = useT();
   const item = useProject(selectSelectedItem);
   const updateItem = useProject((s) => s.updateItem);
@@ -222,7 +216,7 @@ function DeviceSection() {
   const finish = model.finishes.find((f) => f.id === item.finishId) ?? model.finishes[0];
 
   return (
-    <Section title={t('props.device')}>
+    <Section title={tr(model.name)}>
       <ModelSwitcher />
       {model.anchor !== 'bottom' && (
         <Field label={t('props.pose')}>
@@ -286,7 +280,7 @@ function DeviceSection() {
 }
 
 /** The ratio of the output (images and videos). */
-function RatioPicker() {
+export function RatioPicker() {
   const { t } = useT();
   const settings = useProject((s) => s.export);
   const setExport = useProject((s) => s.setExport);
@@ -318,7 +312,8 @@ function RatioPicker() {
   );
 }
 
-function ExportSection() {
+/** Image export settings (format, quality, size); the ratio is set in the floating bar. */
+export function ExportForm() {
   const { t } = useT();
   const settings = useProject((s) => s.export);
   const setExport = useProject((s) => s.setExport);
@@ -330,22 +325,7 @@ function ExportSection() {
   const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
 
   return (
-    <Section title={t('props.export')}>
-      <Segmented
-        value={settings.kind}
-        onChange={(kind) => setExport({ kind })}
-        options={[
-          { value: 'image', label: t('export.kind.image') },
-          { value: 'video', label: t('export.kind.video') },
-        ]}
-      />
-      {settings.kind === 'video' ? (
-        <>
-          {!photoMode && <RatioPicker />}
-          <VideoSection />
-        </>
-      ) : (
-      <>
+    <div className="flex flex-col gap-3.5">
       <Field label={t('props.format')}>
         <Segmented value={settings.format} onChange={(format) => setExport({ format })} options={FORMATS.map((f) => ({ value: f.id, label: f.label }))} />
       </Field>
@@ -362,7 +342,6 @@ function ExportSection() {
       <Field label={t('props.size')}>
         <Segmented value={settings.resolution} onChange={(resolution) => setExport({ resolution })} options={RESOLUTIONS.map((r) => ({ value: r.id, label: r.label }))} />
       </Field>
-      <RatioPicker />
       </>
       )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
@@ -377,70 +356,7 @@ function ExportSection() {
         <Download size={16} strokeWidth={2.2} />
         {t('export.cta')}
       </Button>
-      </>
-      )}
-    </Section>
+    </div>
   );
 }
 
-type Tab = 'device' | 'scene' | 'text' | 'export' | 'photo';
-
-export function PropertiesPanel() {
-  const { t } = useT();
-  const [tab, setTab] = useState<Tab>(() => {
-    try {
-      const v = localStorage.getItem('mockuplab:tab');
-      return v === 'scene' || v === 'export' || v === 'text' || v === 'photo' ? v : 'device';
-    } catch {
-      return 'device';
-    }
-  });
-  const choose = (v: Tab) => {
-    setTab(v);
-    try {
-      localStorage.setItem('mockuplab:tab', v);
-    } catch {
-      /* storage unavailable */
-    }
-  };
-  const photoMode = useProject((s) => s.mode === 'photo');
-  // each mode has its own first tab; brand and export are shared
-  const shown: Tab = photoMode ? (tab === 'device' || tab === 'scene' ? 'photo' : tab) : tab === 'photo' ? 'device' : tab;
-  return (
-    <aside className="flex w-[300px] shrink-0 flex-col border-l border-line bg-surface">
-      <div className="shrink-0 border-b border-line p-2">
-        <Segmented
-          value={shown}
-          onChange={choose}
-          options={
-            photoMode
-              ? [
-                  { value: 'photo', label: t('tab.photo') },
-                  { value: 'text', label: t('tab.brand') },
-                  { value: 'export', label: t('tab.export') },
-                ]
-              : [
-                  { value: 'device', label: t('tab.device') },
-                  { value: 'scene', label: t('tab.scene') },
-                  { value: 'text', label: t('tab.brand') },
-                  { value: 'export', label: t('tab.export') },
-                ]
-          }
-        />
-      </div>
-      <div className="scroll-thin flex-1 overflow-y-auto" key={shown}>
-        {shown === 'photo' && <PhotoPanel />}
-        {shown === 'device' && (
-          <>
-            <DeviceSection />
-            <ImageSection />
-            <CompositionSection />
-          </>
-        )}
-        {shown === 'scene' && <ScenePanel />}
-        {shown === 'text' && <TextPanel />}
-        {shown === 'export' && <ExportSection />}
-      </div>
-    </aside>
-  );
-}

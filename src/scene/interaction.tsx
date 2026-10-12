@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { footprint } from '@/lib/arrange';
 import { roundedRectOutline } from '@/lib/geometry/outline';
 import { getModel } from '@/models/registry';
+import { useUi } from '@/store/ui';
 import { useProject, type SceneItem } from '@/store/project';
 
 /*
@@ -150,6 +151,8 @@ export function Interactive({ item, children }: { item: SceneItem; children: Rea
     e.stopPropagation();
     const s = useProject.getState();
     if (s.selectedId !== item.id) s.selectItem(item.id);
+    // picking a device in the scene opens its settings
+    if (useUi.getState().screen === 'studio') useUi.getState().setStudioPage('settings');
     if (item.locked) return;
     const cam = e.camera as THREE.PerspectiveCamera;
     const planeY = e.point.y;

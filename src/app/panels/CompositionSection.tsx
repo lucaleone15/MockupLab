@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
-import { DropdownMenu } from 'radix-ui';
-import { AppWindow, Copy, Eye, EyeOff, LayoutGrid, Laptop, Lock, LockOpen, Monitor, Plus, Smartphone, Tablet, Trash2 } from 'lucide-react';
+import { AppWindow, Copy, Eye, EyeOff, LayoutGrid, Laptop, Lock, LockOpen, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
 import * as THREE from 'three';
-import { useT, type I18nKey } from '@/i18n';
-import { modelsByCategory, getModel } from '@/models/registry';
+import { useT } from '@/i18n';
+import { getModel } from '@/models/registry';
 import type { DeviceCategory } from '@/models/types';
 import { cameraState } from '@/scene/camera';
 import { useProject } from '@/store/project';
@@ -16,14 +15,6 @@ const ICONS: Partial<Record<DeviceCategory, ReactNode>> = {
   laptop: <Laptop size={14} />,
   desktop: <Monitor size={14} />,
   browser: <AppWindow size={14} />,
-};
-
-const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
-  phone: 'library.phones',
-  tablet: 'library.tablets',
-  laptop: 'library.laptops',
-  desktop: 'library.desktops',
-  browser: 'library.browser',
 };
 
 function RowButton({ label, onClick, children, active }: { label: string; onClick: () => void; children: ReactNode; active?: boolean }) {
@@ -55,19 +46,11 @@ function pushAlongView(id: string, distance: number) {
   s.updateItem(id, { position: [it.position[0] + f.x * distance, it.position[1], it.position[2] + f.z * distance] });
 }
 
-export function CompositionSection() {
-  const { t, tr } = useT();
+function useComposition() {
+  const { tr } = useT();
   const items = useProject((s) => s.items);
   const selectedId = useProject((s) => s.selectedId);
-  const selectItem = useProject((s) => s.selectItem);
-  const updateItem = useProject((s) => s.updateItem);
-  const duplicateItem = useProject((s) => s.duplicateItem);
-  const removeItem = useProject((s) => s.removeItem);
-  const addItem = useProject((s) => s.addItem);
-  const arrange = useProject((s) => s.arrange);
-  const resetView = useUi((s) => s.resetView);
   const selected = items.find((it) => it.id === selectedId) ?? items[0];
-
   // "Phone Pro", "Phone Pro 2"… when the same model appears several times.
   const seen = new Map<string, number>();
   const labels = items.map((it) => {
@@ -75,11 +58,22 @@ export function CompositionSection() {
     seen.set(it.modelId, n);
     return n > 1 ? `${tr(getModel(it.modelId).name)} ${n}` : tr(getModel(it.modelId).name);
   });
+  return { items, selected, labels };
+}
 
-  const menuItem = 'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12.5px] text-fg outline-none data-[highlighted]:bg-surface-4';
+/** The devices in the scene: select, hide, lock, duplicate, delete; and arrange them all. */
+export function SceneItems() {
+  const { t } = useT();
+  const { items, selected, labels } = useComposition();
+  const selectItem = useProject((s) => s.selectItem);
+  const updateItem = useProject((s) => s.updateItem);
+  const duplicateItem = useProject((s) => s.duplicateItem);
+  const removeItem = useProject((s) => s.removeItem);
+  const arrange = useProject((s) => s.arrange);
+  const resetView = useUi((s) => s.resetView);
 
   return (
-    <Section title={t('comp.title')} aside={<span className="text-[12px] tabular-nums text-fg-subtle">{items.length}</span>}>
+    <Section title={t('devices.inScene')} aside={<span className="text-[12px] tabular-nums text-fg-subtle">{items.length}</span>}>
       <ul className="-mx-1 flex flex-col gap-0.5">
         {items.map((it, i) => {
           const model = getModel(it.modelId);
@@ -120,55 +114,29 @@ export function CompositionSection() {
           );
         })}
       </ul>
+      <Button
+        size="sm"
+        disabled={items.length < 2}
+        onClick={() => {
+          arrange();
+          resetView();
+        }}
+      >
+        <LayoutGrid size={13} />
+        {t('comp.arrange')}
+      </Button>
+    </Section>
+  );
+}
 
-      <div className="grid grid-cols-2 gap-1.5">
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <Button size="sm">
-              <Plus size={13} />
-              {t('comp.add')}
-            </Button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content sideOffset={6} align="start" className="z-50 max-h-[60vh] min-w-[220px] overflow-y-auto rounded-xl bg-surface-3 p-1 shadow-2xl ring-1 ring-line-strong animate-[fade-in_120ms_ease-out]">
-              {modelsByCategory().map(([cat, models]) => (
-                <DropdownMenu.Group key={cat}>
-                  <DropdownMenu.Label className="px-2.5 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">
-                    {CATEGORY_KEYS[cat] ? t(CATEGORY_KEYS[cat]) : cat}
-                  </DropdownMenu.Label>
-                  {models.map((m) => (
-                    <DropdownMenu.Item
-                      key={m.id}
-                      className={menuItem}
-                      onSelect={() => {
-                        addItem(m.id);
-                        resetView();
-                      }}
-                    >
-                      <span className="text-fg-muted">{ICONS[m.category]}</span>
-                      {tr(m.name)}
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Group>
-              ))}
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-        <Button
-          size="sm"
-          disabled={items.length < 2}
-          onClick={() => {
-            arrange();
-            resetView();
-          }}
-        >
-          <LayoutGrid size={13} />
-          {t('comp.arrange')}
-        </Button>
-      </div>
-
-      {selected && (
-        <>
+/** Rotation and depth of the selected device. */
+export function Placement() {
+  const { t } = useT();
+  const { items, selected } = useComposition();
+  const updateItem = useProject((s) => s.updateItem);
+  if (!selected) return null;
+  return (
+    <Section title={t('settings.placement')}>
           <Field label={t('comp.rotation')} value={`${Math.round(THREE.MathUtils.radToDeg(selected.rotation[1]))}°`}>
             <Slider
               label={t('comp.rotation')}
@@ -193,8 +161,6 @@ export function CompositionSection() {
             </div>
           )}
           <p className="text-[11px] leading-snug text-fg-subtle">{t('comp.dragHint')}</p>
-        </>
-      )}
     </Section>
   );
 }
