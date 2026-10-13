@@ -17,6 +17,7 @@ import { AXES, applyLook, generateLooks, type Look } from '@/variants/looks';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { detectSupport, modelForSupport, type Support } from './detect';
 import { TEMPLATES, type QuickTag, type QuickTemplate } from './templates';
+import { carouselOf } from '@/export/settings';
 
 /*
  * Quick mode: the user's design (or a sample) on the device that suits it,
@@ -138,12 +139,20 @@ function dropThumbs() {
 
 export const labelOf = (tile: QuickTile) => (typeof tile.label === 'string' ? tile.label : tile.label[useLang.getState().lang]);
 
+/** Quick and Project make single images: a carousel set in the Studio becomes one slide's format. */
+function singleSlideFormat() {
+  const p = useProject.getState();
+  const c = carouselOf(p.export.ratio);
+  if (c) p.setExport({ ratio: c.slide[0] === c.slide[1] ? 'ig-square' : 'ig-post' });
+}
+
 export const quick = {
   state: get,
   detectSupport,
   modelForSupport,
   /** Starts (or resumes) rendering; called when the Quick screen shows. */
   start() {
+    singleSlideFormat();
     void renderMissing();
   },
   stop() {

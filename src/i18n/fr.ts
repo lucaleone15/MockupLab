@@ -462,6 +462,7 @@ export const fr = {
   'social.addSlide': 'Ajouter une slide',
   'social.removeSlide': 'Retirer une slide',
   'social.carouselDone': 'Carrousel exporté : {n} slides · {size}',
+  'social.carouselVideo': 'Un carrousel s’exporte en images : choisis Story · Reel · TikTok pour une vidéo.',
   'home.resume': 'Reprendre « {name} »',
   'home.resumeMode': '{mode}, enregistré automatiquement',
   'home.open': 'Ouvrir',

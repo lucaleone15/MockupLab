@@ -464,6 +464,7 @@ export const en: Record<keyof typeof fr, string> = {
   'social.addSlide': 'Add a slide',
   'social.removeSlide': 'Remove a slide',
   'social.carouselDone': 'Carousel exported: {n} slides · {size}',
+  'social.carouselVideo': 'A carousel is exported as images: pick Story · Reel · TikTok for a video.',
   'home.resume': 'Resume “{name}”',
   'home.resumeMode': '{mode}, autosaved',
   'home.open': 'Open',

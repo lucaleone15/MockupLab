@@ -128,25 +128,30 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   return { blob, width, height, filename: `mockuplab-${slug}-${width}x${height}.${ext}` };
 }
 
-/** Exports what is asked (default: the project's current kind, i.e. a video on the Video page). */
-/** Cuts a carousel strip into N slides of equal width: a ZIP of 01.png, 02.png… */
-export async function sliceCarousel(strip: Blob, slides: number, ext: string): Promise<Blob> {
-  const bmp = await createImageBitmap(strip);
-  const w = Math.round(bmp.width / slides);
-  const mime = FORMATS.find((f) => f.ext === ext)?.mime ?? 'image/png';
-  const zip = new ZipWriter();
+/**
+ * An Instagram carousel's slides: the strip is rendered once (anti-aliased for the size of one slide),
+ * cut on the canvas, and each slide encoded once at the export format and quality — 01, 02…
+ */
+export async function renderCarouselSlides(onProgress?: (done: number, total: number) => void): Promise<{ name: string; blob: Blob; width: number; height: number }[]> {
+  const project = useProject.getState();
+  const c = carouselOf(project.export.ratio);
+  const { width, height } = outputSize(project.export);
+  const slides = c?.slides ?? 1;
+  const w = Math.round(width / slides);
+  const { canvas } = await composeScene({ width, height, opaque: project.export.format === 'jpeg', supersample: supersampleFor(w, height), onProgress });
+  const out: { name: string; blob: Blob; width: number; height: number }[] = [];
   for (let i = 0; i < slides; i++) {
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = bmp.height;
-    c.getContext('2d')!.drawImage(bmp, i * w, 0, w, bmp.height, 0, 0, w, bmp.height);
-    const blob = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), mime, 0.92));
-    await zip.add(`${String(i + 1).padStart(2, '0')}.${ext}`, blob);
+    const slide = document.createElement('canvas');
+    slide.width = w;
+    slide.height = height;
+    slide.getContext('2d')!.drawImage(canvas, i * w, 0, w, height, 0, 0, w, height);
+    const { blob, ext } = await encodeCanvas(slide);
+    out.push({ name: `${String(i + 1).padStart(2, '0')}.${ext}`, blob, width: w, height });
   }
-  bmp.close();
-  return zip.finish();
+  return out;
 }
 
+/** Exports what is asked (default: the project's current kind, i.e. a video on the Video page). */
 export async function exportImage(kind: 'image' | 'video' = useProject.getState().export.kind) {
   const ui = useUi.getState();
   if (ui.exporting) return;
@@ -162,14 +167,17 @@ export async function exportImage(kind: 'image' | 'video' = useProject.getState(
     // Let the progress overlay paint before the (synchronous) GPU work.
     await nextFrame();
     await nextFrame();
-    const res = await renderImage();
     const carousel = project.mode === 'scene' ? carouselOf(project.export.ratio) : null;
     if (carousel) {
-      // an Instagram carousel: the strip, cut into its slides, in posting order
-      const zip = await sliceCarousel(res.blob, carousel.slides, res.filename.replace(/^.*\.([a-z]+)$/, '$1'));
-      download(zip, res.filename.replace(/\.[a-z]+$/, '.zip'));
-      toast.success(t('social.carouselDone', { n: carousel.slides, size: formatBytes(zip.size) }));
+      // an Instagram carousel: its slides, in posting order, in one ZIP
+      const slides = await renderCarouselSlides();
+      const zip = new ZipWriter();
+      for (const f of slides) await zip.add(f.name, f.blob);
+      const blob = zip.finish();
+      download(blob, `mockuplab-carousel-${slides.length}x${slides[0].width}x${slides[0].height}.zip`);
+      toast.success(t('social.carouselDone', { n: carousel.slides, size: formatBytes(blob.size) }));
     } else {
+      const res = await renderImage();
       download(res.blob, res.filename);
       toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
     }

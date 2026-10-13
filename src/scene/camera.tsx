@@ -5,7 +5,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ratioValue } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import { isLandscape, defaultParams, sizeOf } from '@/models/types';
+import { isLandscape, sizeOf } from '@/models/types';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type CameraPresetId, type CameraSettings, type SceneItem } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -236,13 +236,15 @@ export function CameraRig({ floorY }: { floorY: number }) {
   const frameKey = [
     resetToken,
     settings.preset,
-    // a print's paper size counts too (a bigger poster, or one adapted to a landscape image, is framed again);
-    // other size changes — a laptop's lid — keep the user's view
+    // the size counts too (a bigger TV, an opened magazine, a poster adapted to a landscape image are framed again),
+    // except what continuous sliders change — a laptop's lid, a brochure's fold — so tuning them keeps the user's view
     items
       .map((i) => {
         const model = getModel(i.modelId);
-        const paper = model.paperSize?.({ ...defaultParams(model), ...i.params }, aspectsOf(i.surfaces));
-        return `${i.modelId}:${i.params.orientation}:${i.pose}:${paper ? paper.map((v) => Math.round(v)).join('x') : ''}`;
+        const discrete = { ...i.params };
+        for (const p of model.params ?? []) if (p.kind === 'slider') discrete[p.id] = p.default;
+        const size = sizeOf(model, discrete, aspectsOf(i.surfaces)).size;
+        return `${i.modelId}:${i.params.orientation}:${i.pose}:${size.map((v) => Math.round(v)).join('x')}`;
       })
       .join(','),
     ratio,
