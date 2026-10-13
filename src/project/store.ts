@@ -13,6 +13,7 @@ import { useUi } from '@/store/ui';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { detectSupport, modelForSupport, type Support } from '@/quick/detect';
 import { composeBoard } from './board';
+import { colourBackground, palettesFromImages } from './palettes';
 
 /*
  * Project mode: several images of one project (website, app, print…), each
@@ -35,15 +36,31 @@ export const STYLES = ['table-oak-white', 'table-marble-sand', 'studio-light', '
 const HERO_ORDER: Support[] = ['laptop', 'browser', 'phone', 'tablet', 'print', 'screen', 'objects', 'watch'];
 const HERO_MAX = 5;
 
+/** Colours of the pack: none (the style's own), or a palette applied to every scene. */
+export interface PackColors {
+  source: 'style' | 'images' | 'brand' | 'custom';
+  /** Which suggestion (palettes drawn from the images). */
+  index: number;
+  palette: string[] | null;
+  /** Scenes take the palette's colours in turn instead of all the first one. */
+  vary: boolean;
+  /** A colour of its own for one scene ('hero' or a file id). */
+  perScene: Record<string, string>;
+  suggestions: string[][];
+}
+
+const NO_COLORS: PackColors = { source: 'style', index: 0, palette: null, vary: false, perScene: {}, suggestions: [] };
+
 interface PackState {
   files: PackFile[];
   style: string;
+  colors: PackColors;
   board: boolean;
   thumbs: { hero?: string; items: Record<string, string>; styles: Record<string, string>; board?: string };
   busy: boolean;
 }
 
-export const usePack = create<PackState>(() => ({ files: [], style: STYLES[0], board: true, thumbs: { items: {}, styles: {} }, busy: false }));
+export const usePack = create<PackState>(() => ({ files: [], style: STYLES[0], colors: NO_COLORS, board: true, thumbs: { items: {}, styles: {} }, busy: false }));
 const set = usePack.setState;
 const get = usePack.getState;
 let run = 0;
@@ -79,8 +96,39 @@ function stage(target: 'hero' | string, style = get().style) {
   const files = target === 'hero' ? heroFiles() : get().files.filter((f) => f.id === target);
   const items = files.map((f) => deviceFor(f, target === 'hero'));
   useProject.setState({ mode: 'scene', items, selectedId: items[0]?.id ?? null, overlays: [] });
-  applyScenePreset(SCENE_PRESETS.find((p) => p.id === style)!);
+  const preset = SCENE_PRESETS.find((p) => p.id === style)!;
+  applyScenePreset(preset);
+  const color = sceneColor(target);
+  if (color) {
+    const { palette } = get().colors;
+    const p = useProject.getState();
+    p.setBackground(colourBackground(preset.background ?? p.background, color, palette ?? [color]));
+    // a painted podium takes the palette's second colour
+    if (p.decor.kind === 'podium' && p.decor.podiumFinish === 'paint') p.setDecor({ color: palette?.[1] ?? color });
+  }
   if (items.length > 1) useProject.getState().arrange();
+}
+
+/** The pack colour of a scene: its own, the palette's next one (varied) or the first one; none without a palette. */
+function sceneColor(target: 'hero' | string): string | null {
+  const { palette, vary, perScene } = get().colors;
+  if (perScene[target]) return perScene[target];
+  if (!palette?.length) return null;
+  if (!vary) return palette[0];
+  const i = target === 'hero' ? 0 : get().files.findIndex((f) => f.id === target) + 1;
+  return palette[Math.max(0, i) % palette.length];
+}
+
+/** Palettes drawn from the pack's images (recomputed when images come and go). */
+async function suggest() {
+  const urls = get().files.map((f) => useAssets.getState().assets[f.assetId]?.url).filter((u): u is string => !!u);
+  const suggestions = await palettesFromImages(urls);
+  set((s) => {
+    const colors = { ...s.colors, suggestions };
+    // a palette taken from the images follows them
+    if (colors.source === 'images') colors.palette = suggestions[colors.index] ?? null;
+    return { colors };
+  });
 }
 
 const revoke = (url?: string) => url && URL.revokeObjectURL(url);
@@ -96,7 +144,10 @@ function dropPackThumbs(withStyles: boolean) {
 
 const boardInput = (hero: string, shots: string[]) => {
   const p = useProject.getState();
-  return { hero, shots, name: p.name === 'Untitled' ? '' : p.name, brand: p.brand, logo: p.brand.logoAssetId ? useAssets.getState().assets[p.brand.logoAssetId]?.url : undefined };
+  const { palette } = get().colors;
+  // the board wears the pack's colours when there are some
+  const brand = palette?.length && get().colors.source !== 'brand' ? { ...p.brand, colors: palette.map((hex) => ({ hex, name: '' })) } : p.brand;
+  return { hero, shots, name: p.name === 'Untitled' ? '' : p.name, brand, logo: p.brand.logoAssetId ? useAssets.getState().assets[p.brand.logoAssetId]?.url : undefined };
 };
 
 /** Renders the missing previews: styles first, then the pack; a newer call cancels this one. */
@@ -167,6 +218,7 @@ export const pack = {
     }
     if (!added.length) return;
     set((s) => ({ files: [...s.files, ...added] }));
+    await suggest();
     changed(true);
   },
   /** Adds the other pages of a PDF whose first page is in the pack. */
@@ -214,8 +266,28 @@ export const pack = {
   },
   remove(id: string) {
     set((s) => ({ files: s.files.filter((f) => f.id !== id) }));
+    void suggest().then(() => changed(true));
+  },
+  /** Pack colours: a palette (from the images, the brand or picked) or none (the style's own colours). */
+  setPalette(source: PackColors['source'], palette: string[] | null, index = 0) {
+    set((s) => ({ colors: { ...s.colors, source, index, palette: source === 'style' ? null : palette } }));
     changed(true);
   },
+  setVary(vary: boolean) {
+    set((s) => ({ colors: { ...s.colors, vary } }));
+    changed(true);
+  },
+  /** A colour of its own for one scene (null: back to the pack's). */
+  setSceneColor(target: 'hero' | string, color: string | null) {
+    set((s) => {
+      const perScene = { ...s.colors.perScene };
+      if (color) perScene[target] = color;
+      else delete perScene[target];
+      return { colors: { ...s.colors, perScene } };
+    });
+    changed(true);
+  },
+  sceneColor,
   move(id: string, delta: -1 | 1) {
     const files = [...get().files];
     const i = files.findIndex((f) => f.id === id);

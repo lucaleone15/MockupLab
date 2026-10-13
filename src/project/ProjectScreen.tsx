@@ -10,7 +10,8 @@ import { useAssets } from '@/store/assets';
 import { useProject } from '@/store/project';
 import { Button, Spinner, Switch, cx } from '@/ui/primitives';
 import { SUPPORTS } from '@/quick/detect';
-import { STYLES, pack, usePack, type PackFile } from './store';
+import { STYLES, pack, usePack, type PackColors, type PackFile } from './store';
+import { lighten } from './palettes';
 import { ModeRole } from '@/shell/ModeRole';
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
@@ -65,7 +66,7 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
   );
 }
 
-function PackItem({ url, label, onOpen, onDownload, ratio }: { url?: string; label: string; onOpen?: () => void; onDownload?: () => void; ratio: number }) {
+function PackItem({ url, label, onOpen, onDownload, ratio, target }: { url?: string; label: string; onOpen?: () => void; onDownload?: () => void; ratio: number; target?: string }) {
   const { t } = useT();
   const busy = usePack((s) => s.busy);
   return (
@@ -88,7 +89,100 @@ function PackItem({ url, label, onOpen, onDownload, ratio }: { url?: string; lab
         )}
       </div>
       <span className="truncate px-0.5 text-[12.5px] text-fg-muted">{label}</span>
+      {target && <SceneColor target={target} name={label} />}
     </div>
+  );
+}
+
+function Swatches({ colors }: { colors: string[] }) {
+  return (
+    <span className="flex h-7 w-full overflow-hidden rounded-md shadow-[0_0_0_1px_var(--line)_inset]">
+      {colors.map((c, i) => (
+        <span key={i} className="flex-1" style={{ background: c }} />
+      ))}
+    </span>
+  );
+}
+
+/** Pack colours: the style's own, a palette drawn from the images, the brand's, or one picked. */
+function PackColorsBlock() {
+  const { t } = useT();
+  const colors = usePack((s) => s.colors);
+  const brandColors = useProject((p) => p.brand.colors);
+  const brand = brandColors.map((c) => c.hex).slice(0, 3);
+  const options: { key: string; label: string; source: PackColors['source']; palette: string[] | null; index?: number; preview: string[] }[] = [
+    { key: 'style', label: t('project.colors.style'), source: 'style', palette: null, preview: [] },
+    ...colors.suggestions.map((p, i) => ({ key: `img${i}`, label: t('project.colors.fromImages', { n: i + 1 }), source: 'images' as const, palette: p, index: i, preview: p })),
+    ...(brand.length ? [{ key: 'brand', label: t('project.colors.brand'), source: 'brand' as const, palette: brand, preview: brand }] : []),
+  ];
+  const activeKey = colors.source === 'images' ? `img${colors.index}` : colors.source;
+  return (
+    <div className="flex flex-col gap-3 border-t border-line pt-5">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-[15px] font-semibold">{t('project.colors')}</h3>
+        <p className="text-[12.5px] text-fg-muted">{t('project.colors.hint')}</p>
+      </div>
+      <div role="radiogroup" aria-label={t('project.colors')} className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        {options.map((o) => (
+          <button
+            key={o.key}
+            type="button"
+            role="radio"
+            aria-checked={activeKey === o.key}
+            aria-label={o.label}
+            onClick={() => pack.setPalette(o.source, o.palette, o.index)}
+            className={cx('flex flex-col gap-1.5 rounded-[10px] p-1.5 text-left transition-shadow', activeKey === o.key ? 'shadow-[0_0_0_2px_var(--accent)]' : 'hover:bg-surface-2')}
+          >
+            {o.preview.length ? <Swatches colors={o.preview} /> : <span className="grid h-7 place-items-center rounded-md bg-surface-3 text-[11px] text-fg-muted">—</span>}
+            <span className="truncate text-[11.5px] text-fg-muted">{o.label}</span>
+          </button>
+        ))}
+        <label className={cx('flex cursor-pointer flex-col gap-1.5 rounded-[10px] p-1.5', colors.source === 'custom' ? 'shadow-[0_0_0_2px_var(--accent)]' : 'hover:bg-surface-2')}>
+          <input
+            type="color"
+            aria-label={t('project.colors.pick')}
+            value={colors.source === 'custom' && colors.palette ? colors.palette[0] : '#d9d4cb'}
+            onChange={(e) => pack.setPalette('custom', [e.target.value, lighten(e.target.value, 0.12), lighten(e.target.value, -0.5)])}
+            className="h-7 w-full cursor-pointer rounded-md"
+          />
+          <span className="truncate text-[11.5px] text-fg-muted">{t('project.colors.pick')}</span>
+        </label>
+      </div>
+      {colors.palette && (
+        <label className="flex cursor-pointer items-center gap-3 text-[13px]">
+          <Switch checked={colors.vary} onChange={pack.setVary} label={t('project.colors.vary')} />
+          {t('project.colors.vary')}
+        </label>
+      )}
+    </div>
+  );
+}
+
+/** Under a scene of the pack: its colour, picked among the palette's. */
+function SceneColor({ target, name }: { target: string; name: string }) {
+  const { t } = useT();
+  const colors = usePack((s) => s.colors);
+  if (!colors.palette) return null;
+  const current = pack.sceneColor(target);
+  return (
+    <span className="flex items-center gap-1 px-0.5">
+      {colors.palette.map((c) => (
+        <button
+          key={c}
+          type="button"
+          aria-label={t('project.colors.scene', { name, color: c })}
+          aria-pressed={current === c}
+          onClick={() => pack.setSceneColor(target, c)}
+          className={cx('size-4 rounded-full transition-transform hover:scale-110', current === c ? 'shadow-[0_0_0_2px_var(--surface),0_0_0_3.5px_var(--accent)]' : 'shadow-[0_0_0_1px_var(--line-strong)_inset]')}
+          style={{ background: c }}
+        />
+      ))}
+      {colors.perScene[target] && (
+        <button type="button" aria-label={t('project.colors.sceneReset', { name })} onClick={() => pack.setSceneColor(target, null)} className="ml-1 text-fg-subtle hover:text-fg">
+          <X size={12} />
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -148,16 +242,17 @@ export function ProjectScreen() {
                 );
               })}
             </div>
+            <PackColorsBlock />
           </Step>
         )}
         {s.files.length > 0 && (
           <Step n={3} title={t('project.step.pack')}>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <div className="col-span-2 row-span-2">
-                <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} onOpen={open('hero')} onDownload={() => void pack.downloadOne('hero')} />
+                <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} target="hero" onOpen={open('hero')} onDownload={() => void pack.downloadOne('hero')} />
               </div>
               {s.files.map((f) => (
-                <PackItem key={f.id} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} onOpen={open(f.id)} onDownload={() => void pack.downloadOne(f.id)} />
+                <PackItem key={f.id} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} target={f.id} onOpen={open(f.id)} onDownload={() => void pack.downloadOne(f.id)} />
               ))}
               {s.board && <PackItem url={s.thumbs.board} label={t('project.board')} ratio={1.5} />}
             </div>

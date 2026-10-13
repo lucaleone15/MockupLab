@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ImageUp, Shuffle, X } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { paintBackground, prepareBackground } from '@/lib/background';
-import { BG_PRESETS, PATTERN_DEFAULTS } from '@/lib/backgroundPresets';
+import { BG_PRESETS, BG_PRESET_NAMES, PATTERN_DEFAULTS } from '@/lib/backgroundPresets';
 import { importAsset, pickImageFile } from '@/lib/importImage';
 import { PATTERN_IDS } from '@/lib/patterns';
 import { useAssets } from '@/store/assets';
@@ -142,7 +142,7 @@ function GradientEditor({ stops, onChange }: { stops: GradientStop[]; onChange: 
 
 /** `basic`: the curated moods only; `details`: kind switch and the full editors. */
 export function BackgroundEditor({ part }: { part: 'basic' | 'details' }) {
-  const { t } = useT();
+  const { t, tr } = useT();
   const bg = useProject((s) => s.background);
   const setBackground = useProject((s) => s.setBackground);
   const imageAsset = useAssets((s) => (bg.kind === 'image' && bg.assetId ? s.assets[bg.assetId] : undefined));
@@ -169,7 +169,7 @@ export function BackgroundEditor({ part }: { part: 'basic' | 'details' }) {
     return (
       <div className="grid grid-cols-6 gap-1.5">
         {BG_PRESETS.map((p, i) => (
-          <Thumb key={i} bg={p} label={`${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
+          <Thumb key={i} bg={p} label={BG_PRESET_NAMES[i] ? tr(BG_PRESET_NAMES[i]) : `${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
         ))}
       </div>
     );

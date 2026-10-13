@@ -1,3 +1,4 @@
+import type { I18nString } from '@/i18n';
 import type { Background, PatternId } from '@/store/project';
 
 /** Curated starting points; every value stays editable afterwards. */
@@ -15,6 +16,23 @@ export const BG_PRESETS: Background[] = [
   { kind: 'pattern', pattern: 'topo', colors: ['#10131a', '#2f3a52', '#1b2333'], scale: 1, grain: 0.15, seed: 3 },
   { kind: 'pattern', pattern: 'dots', colors: ['#f4f1ea', '#ff5c35', '#000000'], scale: 1, grain: 0.05, seed: 1 },
   { kind: 'pattern', pattern: 'blueprint', colors: ['#16346b', '#7fa6e6', '#c7d8f5'], scale: 1, grain: 0.15, seed: 1 },
+];
+
+/** Names of the presets above, in the same order (shown on hover). */
+export const BG_PRESET_NAMES: I18nString[] = [
+  { fr: 'Nuit douce', en: 'Soft night' },
+  { fr: 'Studio blanc', en: 'White studio' },
+  { fr: 'Papier', en: 'Paper' },
+  { fr: 'Noir', en: 'Black' },
+  { fr: 'Aurore', en: 'Aurora' },
+  { fr: 'Aurore pastel', en: 'Pastel aurora' },
+  { fr: 'Coucher de soleil', en: 'Sunset' },
+  { fr: 'Lavande', en: 'Lavender' },
+  { fr: 'Prairie', en: 'Meadow' },
+  { fr: 'Holographique', en: 'Holographic' },
+  { fr: 'Topographie', en: 'Topography' },
+  { fr: 'Trame', en: 'Halftone' },
+  { fr: 'Plan', en: 'Blueprint' },
 ];
 
 /** Sensible colours when switching to a pattern. */
