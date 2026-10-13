@@ -6,7 +6,7 @@ import { BUILTIN_FONTS, fontLabel, fontStack, importFontFile, pickFontFile } fro
 import { importAsset, pickImageFile } from '@/lib/importImage';
 import { newLogoOverlay, newPaletteOverlay, newTextOverlay, newTypeOverlay } from '@/lib/overlays';
 import { useAssets } from '@/store/assets';
-import { useProject, type Brand, type BrandFont, type Overlay, type OverlayFont } from '@/store/project';
+import { DEFAULT_BRAND, useProject, type Brand, type BrandFont, type Overlay, type OverlayFont } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { Button, ColorField, Field, Section, Segmented, Slider, Spinner, Switch, cx } from '@/ui/primitives';
@@ -224,8 +224,21 @@ export function BrandKit() {
   const setBrand = useProject((s) => s.setBrand);
   const logo = useAssets((s) => (brand.logoAssetId ? s.assets[brand.logoAssetId] : undefined));
   const setColor = (i: number, patch: Partial<Brand['colors'][number]>) => setBrand({ colors: brand.colors.map((c, j) => (j === i ? { ...c, ...patch } : c)) });
+  const sample = brand.name === DEFAULT_BRAND.name && brand.tagline === DEFAULT_BRAND.tagline && brand.colors.map((c) => c.hex).join() === DEFAULT_BRAND.colors.map((c) => c.hex).join();
   return (
     <Section title={t('brand.kit')}>
+      {sample && (
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-accent/10 px-3 py-2 text-[12px] text-fg">
+          <span>{t('brand.sampleNote')}</span>
+          <button
+            type="button"
+            className="shrink-0 font-medium text-accent hover:underline"
+            onClick={() => setBrand({ name: '', tagline: '', logoAssetId: null, colors: [{ hex: '#1D1D1F', name: '' }] })}
+          >
+            {t('brand.fromScratch')}
+          </button>
+        </div>
+      )}
       <div className="flex gap-3">
         <button
           type="button"

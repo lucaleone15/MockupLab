@@ -195,6 +195,8 @@ export const fr = {
   'text.font.heading': 'Titre',
   'text.font.body': 'Texte',
   'brand.kit': 'Kit de marque',
+  'brand.sampleNote': 'Marque d’exemple : remplace-la par la tienne.',
+  'brand.fromScratch': 'Partir de zéro',
   'brand.logo': 'Importer le logo',
   'brand.sampleLogo': 'Utiliser le logo d’exemple',
   'brand.removeLogo': 'Retirer le logo',
