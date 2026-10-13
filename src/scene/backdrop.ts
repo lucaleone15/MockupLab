@@ -15,7 +15,7 @@ import { loadMaterialMap } from './realMaterials';
  * the shader where the tile sits in the full frame.
  */
 
-const LONG_SIDE = 1024;
+const LONG_SIDE = 2048;
 /** A transparent background has nothing to show: walls are a neutral warm white. */
 const NEUTRAL = '#ece6dc';
 
@@ -23,6 +23,17 @@ interface BackdropUniforms {
   uBackdrop: { value: THREE.Texture };
   /** Tile rectangle in the full frame: x, y (from the top), width, height, as fractions. */
   uView: { value: THREE.Vector4 };
+}
+
+/**
+ * Where the frame being rendered sits in the whole image (fractions): the full
+ * frame, or one tile of a tiled export. Set by the exporter only — the camera's
+ * own view offset also carries the lens shift and depth-of-field jitter, which
+ * move the subject, not the background.
+ */
+const tile = new THREE.Vector4(0, 0, 1, 1);
+export function setBackdropTile(x = 0, y = 0, width = 1, height = 1) {
+  tile.set(x, y, width, height);
 }
 
 function patch(material: THREE.MeshStandardMaterial, uniforms: BackdropUniforms) {
@@ -42,10 +53,8 @@ function patch(material: THREE.MeshStandardMaterial, uniforms: BackdropUniforms)
       );
   };
   material.customProgramCacheKey = () => 'backdrop';
-  material.onBeforeRender = (_renderer, _scene, camera) => {
-    const view = (camera as THREE.PerspectiveCamera).view;
-    if (view?.enabled) uniforms.uView.value.set(view.offsetX / view.fullWidth, view.offsetY / view.fullHeight, view.width / view.fullWidth, view.height / view.fullHeight);
-    else uniforms.uView.value.set(0, 0, 1, 1);
+  material.onBeforeRender = () => {
+    uniforms.uView.value.copy(tile);
   };
 }
 
@@ -73,8 +82,14 @@ export function useBackdropMaterial({ roughness = 0.95, plaster = false }: { rou
   useEffect(() => {
     let alive = true;
     const r = ratioValue(ratio);
-    canvas.width = r >= 1 ? LONG_SIDE : Math.round(LONG_SIDE * r);
-    canvas.height = r >= 1 ? Math.round(LONG_SIDE / r) : LONG_SIDE;
+    const w = r >= 1 ? LONG_SIDE : Math.round(LONG_SIDE * r);
+    const h = r >= 1 ? Math.round(LONG_SIDE / r) : LONG_SIDE;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      // the GPU storage was allocated at the old size: drop it so it is re-created at the new one
+      texture.dispose();
+    }
     const paint = () => {
       if (!alive) return;
       const ctx = canvas.getContext('2d')!;
@@ -86,7 +101,9 @@ export function useBackdropMaterial({ roughness = 0.95, plaster = false }: { rou
       invalidate();
     };
     paint();
-    void prepareBackground(background).then(paint);
+    void prepareBackground(background)
+      .then(paint)
+      .catch(() => undefined);
     return () => {
       alive = false;
     };

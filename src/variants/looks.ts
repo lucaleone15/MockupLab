@@ -19,6 +19,7 @@ import {
   type Lighting,
   type Project,
   type SceneItem,
+  type MaterialId,
 } from '@/store/project';
 
 /*
@@ -202,7 +203,8 @@ export function generateLooks(count: number, axes: Axis[], seed: number, p: Proj
       if (look.decor.kind === 'table') {
         look.decor.ambience = pick(r, AMBIENCE_ORDER);
         look.decor.gobo = pick(r, ['window', 'blinds', 'leaves', 'none'] as GoboId[]);
-        if (!on('set')) look.background = { kind: 'solid', color: pick(r, WALL_COLORS) };
+        // the table's wall is the background: it only changes when the background is one of the things that vary
+        if (on('background') && !on('set')) look.background = { kind: 'solid', color: pick(r, WALL_COLORS) };
         look.lighting.exposure = AMBIENCES[look.decor.ambience].exposure;
         look.lighting.environment = AMBIENCES[look.decor.ambience].environment;
       } else look.lighting = withLight(moody ? look.lighting.preset : lightFor(r, look.background, look.decor), r, look.lighting);
@@ -235,6 +237,9 @@ export function generateLooks(count: number, axes: Axis[], seed: number, p: Proj
   return looks;
 }
 
+/** Table tops a refined table look can switch to. */
+const TABLE_MATERIALS: MaterialId[] = ['oak', 'walnut', 'marble-white', 'marble-black', 'travertine', 'concrete'];
+
 /** Small changes around a look: angle, light direction, wall, shadows — one or two at a time. */
 export function refineLook(base: Look, count: number, seed: number, p: Project = useProject.getState()): Look[] {
   const r = rng(seed);
@@ -253,7 +258,7 @@ export function refineLook(base: Look, count: number, seed: number, p: Project =
         if (look.decor.kind === 'table') look.decor.gobo = pick(r, ['window', 'blinds', 'leaves', 'none'] as GoboId[]);
         else look.lighting = withLight(look.lighting.preset, r, look.lighting);
       } else if (c === 'set') {
-        if (look.decor.kind === 'table') look.background = { kind: 'solid', color: pick(r, WALL_COLORS) };
+        if (look.decor.kind === 'table') look.decor.material = pick(r, TABLE_MATERIALS);
         else if (look.background.kind === 'pattern') look.background = { ...look.background, seed: Math.floor(r() * 100) };
         else look.lighting = withLight(look.lighting.preset, r, look.lighting);
       }

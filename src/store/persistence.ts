@@ -110,7 +110,13 @@ export function migrateProject(raw: unknown): Project {
   const { wall: oldWall, ...rawDecor } = (r.decor ?? {}) as Partial<Project['decor']> & { wall?: string };
   const decor = { ...DEFAULT_DECOR, ...rawDecor };
   // v5 → v6: the wall colour of the table or of a wall object becomes the background, if the background was the default one
-  const hanging = Array.isArray(r.items) ? r.items.find((it) => typeof (it.params as Record<string, unknown> | undefined)?.wall === 'string') : undefined;
+  // only a wall that was actually shown (on the wall, wall switched on) gives its colour
+  const hanging = Array.isArray(r.items)
+    ? r.items.find((it) => {
+        const params = { ...defaultParams(getModel(it.modelId)), ...(it.params ?? {}) };
+        return typeof params.wall === 'string' && !!getModel(it.modelId).wallFor?.(params);
+      })
+    : undefined;
   const legacyWall = (decor.kind === 'table' ? oldWall : undefined) ?? (hanging?.params as Record<string, string> | undefined)?.wall;
   const background = r.background && JSON.stringify(r.background) !== JSON.stringify(base.background) ? r.background : legacyWall ? ({ kind: 'solid', color: legacyWall } as const) : (r.background ?? base.background);
   const rawPhoto = (r.photo ?? {}) as Partial<Project['photo']>;

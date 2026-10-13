@@ -118,4 +118,71 @@ const arr = await page.evaluate(async () => {
 check(arr.pitch >= 15 && arr.pitch <= 35, `after Arrange, the camera looks down 15–35°, enough to see the prints on the floor (${arr.pitch.toFixed(1)}°)`);
 check(arr.mount === 'lean', `a poster arranged with prints on the floor leans against the wall (${arr.mount})`);
 check(arr.gaps.every((g) => g >= 0 && g <= 60), `prints stay in front of the wall (${arr.gaps} cm)`);
+// review fixes ------------------------------------------------------------------------------
+// a ratio change, then a new background: the wall follows (the texture is re-allocated at its new size)
+const [afterRatio] = await shot(
+  'sweep-ratio-change',
+  `const s = api.project.getState();
+   s.setDecor({ kind: 'sweep' });
+   s.setBackground(${JSON.stringify(RED_BLUE)});
+   s.setExport({ ratio: '9:16' });
+   await new Promise((r) => setTimeout(r, 600));
+   api.project.getState().setBackground({ kind: 'solid', color: '#20b040' });`,
+  [[0.5, 0.06]],
+);
+check(afterRatio[1] > afterRatio[0] + 30 && afterRatio[1] > afterRatio[2] + 30, `after a ratio change the wall still follows the background (${afterRatio})`);
+await page.evaluate(() => window.__mockuplab.project.getState().setExport({ ratio: '16:9' }));
+
+// a lens shift moves the subject, not the background shown on the wall: the gradient runs left → right across the wall
+const LEFT_RIGHT = { kind: 'gradient', type: 'linear', angle: 90, stops: [{ color: '#d02020', at: 0 }, { color: '#2030d0', at: 1 }] };
+const across = await shot(
+  'sweep-shift',
+  `const s = api.project.getState(); s.setDecor({ kind: 'sweep' }); s.setBackground(${JSON.stringify(LEFT_RIGHT)}); s.setCamera({ shift: 0.25 });`,
+  [[0.05, 0.06], [0.3, 0.06], [0.6, 0.06], [0.95, 0.06]],
+);
+await page.evaluate(() => window.__mockuplab.project.getState().setCamera({ shift: 0 }));
+const shiftReds = across.map((c) => c[0]);
+check(shiftReds[0] - shiftReds[1] > 25 && shiftReds[2] < shiftReds[1] && bluish(across[3]), `with a lens shift the wall still shows the whole gradient (red: ${shiftReds.join(' ')})`);
+
+// several devices but no wall object / floor print: the 3/4 view keeps the devices' own angle
+const pitch2 = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const s = () => api.project.getState();
+  s().resetAll();
+  s().setDecor({ kind: 'none' });
+  s().addItem('phone-pro');
+  s().addItem('phone-pro');
+  s().arrange();
+  await new Promise((r) => setTimeout(r, 1000));
+  const dir = new (api.bridge().camera.position.constructor)();
+  api.bridge().camera.getWorldDirection(dir);
+  return (Math.asin(-dir.y) * 180) / Math.PI;
+});
+check(pitch2 < 15, `two phones keep the phone's own 3/4 angle (${pitch2.toFixed(1)}°)`);
+
+// migration: only a wall that was actually shown gives its colour to the background
+const mig2 = await page.evaluate(() => {
+  const m = window.__mockuplab.persistence.migrateProject;
+  const def = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#2a2a31', at: 0 }, { color: '#0d0d10', at: 1 }] };
+  const tv = m({ version: 5, background: def, decor: { kind: 'none' }, items: [{ id: 't', modelId: 'tv', params: { mount: 'stand', wall: '#ece6dc' } }] });
+  const off = m({ version: 5, background: def, decor: { kind: 'none' }, items: [{ id: 'p', modelId: 'poster', params: { wallOn: false, wall: '#3a3a3d' } }] });
+  return [tv.background.kind, off.background.kind];
+});
+check(mig2[0] === 'gradient' && mig2[1] === 'gradient', `a TV on its stand or a poster without wall keeps the default background (${mig2})`);
+// variants of a table scene keep the user's background unless the background is what varies
+const keep = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const L = await api.looks();
+  const s = api.project.getState();
+  s.resetAll();
+  s.setDecor({ kind: 'table', material: 'oak' });
+  const bg = { kind: 'gradient', type: 'linear', angle: 180, stops: [{ color: '#112233', at: 0 }, { color: '#445566', at: 1 }] };
+  s.setBackground(bg);
+  const p = api.project.getState();
+  const light = L.generateLooks(6, ['light'], 7, p);
+  const refined = L.refineLook(light[0], 8, 9, p);
+  const same = (l) => JSON.stringify(l.background) === JSON.stringify(bg);
+  return [light.filter(same).length, light.length, refined.filter(same).length, refined.length];
+});
+check(keep[0] === keep[1] && keep[2] === keep[3], `table variants keep the chosen background (light ${keep[0]}/${keep[1]}, refined ${keep[2]}/${keep[3]})`);
 await done(browser, errors);
