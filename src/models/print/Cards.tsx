@@ -2,7 +2,9 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { I18nString } from '@/i18n';
 import type { SurfaceBinding } from '@/store/project';
-import type { DeviceFinish, DeviceModule, DeviceProps, ParamDef } from '../types';
+import type { DeviceFinish, DeviceModule, DeviceProps, ImageAspects, ParamDef, ParamValue } from '../types';
+import { useImageAspects } from '../imageAspects';
+import { CARD_SIZES, FIT_PARAM, FLYER_SIZES, POSTCARD_SIZES, paperDims, sizeParam, type PaperSize } from './formats';
 import { cardGeometry, pageEdgeTexture, sheetGeometry } from './geometry';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial, type PaperFinish } from './shared';
 
@@ -77,8 +79,8 @@ function Stack({ w, h, t, r, count, front, position, yaw }: { w: number; h: numb
 interface CardSpec {
   id: string;
   name: I18nString;
-  w: number;
-  h: number;
+  sizes: PaperSize[];
+  defaultSize: string;
   t: number;
   native: [number, number];
   stack: boolean;
@@ -114,15 +116,18 @@ function usePrintPair(surfaces: Record<string, SurfaceBinding>, aspect: number, 
 }
 
 function defineCard(spec: CardSpec): DeviceModule {
-  const { w, h, t } = spec;
+  const { t } = spec;
   const gap = 0.9;
-  const sizes = {
+  const dims = (params: Record<string, ParamValue>, aspects?: ImageAspects) => paperDims(spec.sizes, params, aspects, 'front');
+  const boxes = (w: number, h: number): Record<string, [number, number, number]> => ({
     single: [w, t, h],
     pair: [w * 2 + gap, t, h * 1.15],
     stack: [w * 2 + gap * 2, t * 36, h * 1.2],
-  } as Record<string, [number, number, number]>;
+  });
+  const first = spec.sizes.find((x) => x.value === spec.defaultSize) ?? spec.sizes[0];
 
   function Component({ surfaces, params }: DeviceProps) {
+    const [w, h] = dims(params, useImageAspects(surfaces));
     const { front, back } = usePrintPair(surfaces, w / h, finishOf(params));
     const r = params.corners === 'rounded' ? Math.min(w, h) * 0.06 : 0.02;
     const layout = String(params.layout);
@@ -149,15 +154,20 @@ function defineCard(spec: CardSpec): DeviceModule {
     category: 'print',
     surfaceKind: 'print',
     anchor: 'bottom',
-    size: sizes.pair,
-    sizeFor: (p) => ({ size: sizes[String(p.layout)] ?? sizes.pair, focus: [0, 0, 0] }),
+    size: boxes(first.w, first.h).pair,
+    paperSize: (p, aspects) => dims(p, aspects),
+    sizeFor: (p, aspects) => {
+      const [w, h] = dims(p, aspects);
+      const b = boxes(w, h);
+      return { size: b[String(p.layout)] ?? b.pair, focus: [0, 0, 0] };
+    },
     surfaces: [
-      { id: 'front', label: side('Recto', 'Front'), aspect: w / h, nativeSize: spec.native },
-      { id: 'back', label: side('Verso', 'Back'), aspect: w / h, nativeSize: spec.native },
+      { id: 'front', label: side('Recto', 'Front'), aspect: first.w / first.h, nativeSize: spec.native },
+      { id: 'back', label: side('Verso', 'Back'), aspect: first.w / first.h, nativeSize: spec.native },
     ],
     finishes: NO_FINISH,
     defaultFinish: 'default',
-    params: [layoutParam(spec.stack), PAPER_PARAM, CORNERS_PARAM],
+    params: [FIT_PARAM, sizeParam(spec.sizes, spec.defaultSize), layoutParam(spec.stack), PAPER_PARAM, CORNERS_PARAM],
     view: FLAT_VIEW,
     yaw: 0,
     Component,
@@ -167,8 +177,8 @@ function defineCard(spec: CardSpec): DeviceModule {
 export const businessCard = defineCard({
   id: 'business-card',
   name: { fr: 'Carte de visite', en: 'Business card' },
-  w: 8.5,
-  h: 5.5,
+  sizes: CARD_SIZES,
+  defaultSize: 'eu',
   t: 0.045,
   native: [1004, 650],
   stack: true,
@@ -177,8 +187,8 @@ export const businessCard = defineCard({
 export const postcard = defineCard({
   id: 'postcard',
   name: { fr: 'Carte postale', en: 'Postcard' },
-  w: 14.8,
-  h: 10.5,
+  sizes: POSTCARD_SIZES,
+  defaultSize: 'a6',
   t: 0.04,
   native: [1748, 1240],
   stack: false,
@@ -186,7 +196,6 @@ export const postcard = defineCard({
 
 /* ------------------------------------------------------------ flyer */
 
-const FORMATS: Record<string, [number, number]> = { a4: [21, 29.7], a5: [14.8, 21] };
 
 function Sheet({
   w,
@@ -221,7 +230,7 @@ function Sheet({
 }
 
 function Flyer({ surfaces, params }: DeviceProps) {
-  const [w, h] = FORMATS[String(params.format)] ?? FORMATS.a4;
+  const [w, h] = paperDims(FLYER_SIZES, params, useImageAspects(surfaces), 'front');
   const { front, back } = usePrintPair(surfaces, w / h, finishOf(params));
   if (params.layout === 'single') return <Sheet w={w} h={h} front={front} back={back} position={[0, 0, 0]} yaw={0} />;
   return (
@@ -239,8 +248,9 @@ export const flyer: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [44, 1, 31],
-  sizeFor: (p) => {
-    const [w, h] = FORMATS[String(p.format)] ?? FORMATS.a4;
+  paperSize: (p, aspects) => paperDims(FLYER_SIZES, p, aspects, 'front'),
+  sizeFor: (p, aspects) => {
+    const [w, h] = paperDims(FLYER_SIZES, p, aspects, 'front');
     return { size: p.layout === 'single' ? [w, 0.6, h] : [w * 2 + 2, 0.6, h * 1.08], focus: [0, 0, 0] };
   },
   surfaces: [
@@ -250,16 +260,8 @@ export const flyer: DeviceModule = {
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
-    {
-      id: 'format',
-      kind: 'choice',
-      label: { fr: 'Format', en: 'Size' },
-      options: [
-        { value: 'a4', label: { fr: 'A4', en: 'A4' } },
-        { value: 'a5', label: { fr: 'A5', en: 'A5' } },
-      ],
-      default: 'a5',
-    },
+    FIT_PARAM,
+    sizeParam(FLYER_SIZES, 'a5'),
     layoutParam(false),
     PAPER_PARAM,
   ],

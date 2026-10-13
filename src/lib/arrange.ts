@@ -1,6 +1,7 @@
 import { getModel } from '@/models/registry';
 import { isLandscape, sizeOf } from '@/models/types';
 import type { Decor, SceneItem, Vec3 } from '@/store/project';
+import { aspectsOf } from '@/models/imageAspects';
 
 /*
  * Composition helpers for multi-device scenes. Footprints are in cm on the
@@ -9,9 +10,9 @@ import type { Decor, SceneItem, Vec3 } from '@/store/project';
 
 const GAP = 4;
 
-export function footprint(item: Pick<SceneItem, 'modelId' | 'params' | 'pose' | 'scale'>): { w: number; d: number; h: number } {
+export function footprint(item: Pick<SceneItem, 'modelId' | 'params' | 'pose' | 'scale'> & { surfaces?: SceneItem['surfaces'] }): { w: number; d: number; h: number } {
   const model = getModel(item.modelId);
-  const [w, h, d] = sizeOf(model, item.params).size;
+  const [w, h, d] = sizeOf(model, item.params, aspectsOf(item.surfaces)).size;
   const k = item.scale ?? 1;
   if (model.anchor === 'bottom') return { w: w * k, d: d * k, h: h * k };
   const landscape = isLandscape(item.params);
@@ -85,7 +86,7 @@ export interface SceneWall {
   draw: boolean;
 }
 
-const wallOf = (it: SceneItem) => getModel(it.modelId).wallFor?.({ ...it.params }) ?? null;
+const wallOf = (it: SceneItem) => getModel(it.modelId).wallFor?.({ ...it.params }, aspectsOf(it.surfaces)) ?? null;
 
 /**
  * The single wall of the scene: the set's wall when there is one, otherwise

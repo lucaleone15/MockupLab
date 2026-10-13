@@ -95,8 +95,11 @@ export function migrateProject(raw: unknown): Project {
           ...base.items[0],
           ...it,
           modelId: model.id,
-          // walls have no colour of their own any more (v6): they show the background
-          params: Object.fromEntries(Object.entries({ ...defaultParams(model), ...(it.params ?? {}) }).filter(([k]) => k !== 'wall')),
+          // walls have no colour of their own any more (v6): they show the background;
+          // prints saved before "Adapt to my image" keep their paper's proportions
+          params: Object.fromEntries(
+            Object.entries({ ...defaultParams(model), ...('fit' in defaultParams(model) && !('fit' in (it.params ?? {})) ? { fit: false } : {}), ...(it.params ?? {}) }).filter(([k]) => k !== 'wall'),
+          ),
           screen: { ...DEFAULT_SCREEN, ...(it.screen ?? {}) },
           visible: it.visible ?? true,
           locked: it.locked ?? false,

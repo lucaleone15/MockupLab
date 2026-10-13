@@ -508,12 +508,16 @@ export const useProject = create<ProjectState>()(
             s.decor,
           ),
         })),
+      // an image can change a print's proportions ("Adapt to my image"): walls and limits are re-applied
       setSurface: (itemId, slot, patch) =>
         set((s) => ({
-          items: s.items.map((it) =>
-            it.id === itemId
-              ? { ...it, sample: false, surfaces: { ...it.surfaces, [slot]: { ...(it.surfaces[slot] ?? DEFAULT_SURFACE), ...patch } } }
-              : it,
+          items: constrainItems(
+            s.items.map((it) =>
+              it.id === itemId
+                ? { ...it, sample: false, surfaces: { ...it.surfaces, [slot]: { ...(it.surfaces[slot] ?? DEFAULT_SURFACE), ...patch } } }
+                : it,
+            ),
+            s.decor,
           ),
         })),
       // walls, the table's wall and the studio cyclo all show the background

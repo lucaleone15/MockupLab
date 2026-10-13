@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { roundedSlab } from '@/lib/geometry/sweep';
 import { brushedMetal, mattePlastic } from '@/scene/materials';
 import { useRealMaterial } from '@/scene/realMaterials';
-import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
+import type { DeviceFinish, DeviceModule, DeviceProps, ImageAspects, ParamValue } from '../types';
+import { useImageAspects } from '../imageAspects';
+import { FIT_PARAM, POSTER_SIZES, paperDims, sizeParam } from './formats';
 import { cardGeometry } from './geometry';
 import { WallShadow } from '../shared/wall';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial } from './shared';
@@ -13,17 +15,16 @@ const A = Math.SQRT2;
 
 /* ------------------------------------------------------------ poster */
 
-const POSTER_FORMATS: Record<string, number> = { a3: 29.7, a2: 42, a1: 59.4 };
 const FRAME_COLORS: Record<string, string> = { black: '#1b1b1d', white: '#efeeea', oak: 'oak' };
 const LEAN = THREE.MathUtils.degToRad(7);
 const HANG_BOTTOM = 92;
 
-function posterDims(params: Record<string, unknown>) {
-  const w = POSTER_FORMATS[String(params.format)] ?? POSTER_FORMATS.a2;
-  const h = w * A;
+function posterDims(params: Record<string, ParamValue>, aspects?: ImageAspects) {
+  const [w, h] = paperDims(POSTER_SIZES, params, aspects, 'poster');
+  const short = Math.min(w, h);
   const framed = params.frame !== 'none';
-  const bar = framed ? Math.max(1.6, w * 0.045) : 0;
-  const mat = framed && params.mat === true ? w * 0.09 : 0;
+  const bar = framed ? Math.max(1.6, short * 0.045) : 0;
+  const mat = framed && params.mat === true ? short * 0.09 : 0;
   const fw = w + 2 * (mat + bar);
   const fh = h + 2 * (mat + bar);
   return { w, h, framed, bar, mat, fw, fh, depth: framed ? 2.4 : 0.4 };
@@ -58,8 +59,8 @@ function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: num
 }
 
 function Poster({ surfaces, params }: DeviceProps) {
-  const d = posterDims(params);
-  const print = usePrintMaterial(surfaces.poster, 1 / A, { finish: finishOf(params) });
+  const d = posterDims(params, useImageAspects(surfaces));
+  const print = usePrintMaterial(surfaces.poster, d.w / d.h, { finish: finishOf(params) });
   const board = useMemo(() => cardGeometry(d.w, d.h, d.framed ? 0.05 : 0.5, 0.02), [d.w, d.h, d.framed]);
   const onWall = params.mount !== 'lean';
   const showWall = params.wallOn !== false;
@@ -112,14 +113,15 @@ export const poster: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [50, 66, 3],
-  sizeFor: (p) => {
-    const d = posterDims(p);
+  sizeFor: (p, aspects) => {
+    const d = posterDims(p, aspects);
     const wall = p.mount !== 'lean';
     return { size: [d.fw, d.fh, wall ? d.depth : d.depth + Math.sin(LEAN) * d.fh], y0: wall ? HANG_BOTTOM : 0 };
   },
-  wallFor: (p) => {
+  paperSize: (p, aspects) => paperDims(POSTER_SIZES, p, aspects, 'poster'),
+  wallFor: (p, aspects) => {
     if (p.wallOn === false) return null;
-    const d = posterDims(p);
+    const d = posterDims(p, aspects);
     const z = p.mount !== 'lean' ? -d.depth / 2 - 0.05 : -d.depth / 2 - Math.sin(LEAN) * d.fh - 0.2;
     return { z };
   },
@@ -127,17 +129,8 @@ export const poster: DeviceModule = {
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
-    {
-      id: 'format',
-      kind: 'choice',
-      label: { fr: 'Format', en: 'Size' },
-      options: [
-        { value: 'a3', label: { fr: 'A3', en: 'A3' } },
-        { value: 'a2', label: { fr: 'A2', en: 'A2' } },
-        { value: 'a1', label: { fr: 'A1', en: 'A1' } },
-      ],
-      default: 'a2',
-    },
+    FIT_PARAM,
+    sizeParam(POSTER_SIZES, 'a2'),
     {
       id: 'frame',
       kind: 'choice',
