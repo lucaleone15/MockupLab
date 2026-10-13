@@ -197,6 +197,8 @@ export const en: Record<keyof typeof fr, string> = {
   'text.font.heading': 'Heading',
   'text.font.body': 'Body',
   'brand.kit': 'Brand kit',
+  'brand.sampleNote': 'Sample brand: replace it with yours.',
+  'brand.fromScratch': 'Start from scratch',
   'brand.logo': 'Import the logo',
   'brand.sampleLogo': 'Use the sample logo',
   'brand.removeLogo': 'Remove the logo',

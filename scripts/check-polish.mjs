@@ -72,4 +72,11 @@ for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/pr
 await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);
 check(await page.getByRole('button', { name: 'Varier ma scène' }).isVisible(), 'Studio: “Vary my scene” button');
+// the sample brand says it is a sample, and can be cleared in one click
+await page.evaluate(() => { history.pushState(null, '', '/projet'); dispatchEvent(new PopStateEvent('popstate')); });
+await page.waitForTimeout(500);
+check(await page.getByText('Marque d’exemple').first().isVisible().catch(() => false), 'the sample brand is labelled as a sample');
+await page.getByRole('button', { name: 'Partir de zéro' }).click();
+await page.waitForTimeout(200);
+check((await page.getByPlaceholder('Nom de la marque').inputValue()) === '' && !(await page.getByText('Marque d’exemple').first().isVisible().catch(() => false)), '“Start from scratch” clears the sample brand');
 await done(browser, errors);
