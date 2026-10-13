@@ -25,8 +25,8 @@ await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mu
   await u.step('Changer la couleur du fond (le mur suit)', async () => {
     if (await p.getByText('Couleur du mur').count()) u.friction('surprenant', 'une couleur de mur séparée du fond existe encore');
     await p.getByRole('tab', { name: 'Décor' }).click(T);
-    u.friction('surprenant', 'les fonds proposés n’ont pas de nom (« Ambiances 1, 2, 3… ») et le mot « Ambiances » est déjà celui d’un autre onglet');
-    await u.choose('Ambiances 3');
+    if (await p.getByRole('button', { name: /^Ambiances \d+$/ }).count()) u.friction('surprenant', 'les fonds proposés n’ont pas de nom (« Ambiances 1, 2, 3… »)');
+    await u.choose('Papier');
   });
   await u.step('Ajouter un flyer et une carte de visite', async () => {
     await p.getByRole('tab', { name: 'Appareils' }).click(T);
