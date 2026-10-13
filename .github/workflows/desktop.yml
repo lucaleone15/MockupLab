@@ -17,9 +17,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "MockupLab ${GITHUB_REF_NAME#v}" --notes "**Mac** : télécharge MockupLab-Mac.dmg (Apple Silicon et Intel). Au premier lancement : clic droit › Ouvrir.
-**Windows** : télécharge MockupLab-Windows.exe.
-(latest.yml sert uniquement aux mises à jour automatiques de Windows.)" --verify-tag
+      - name: Create the release (once)
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && exit 0
+          cat > notes.md <<'NOTES'
+          **Mac** : télécharge `MockupLab-Mac.dmg` (Apple Silicon et Intel). Au premier lancement : clic droit › Ouvrir.
+
+          **Windows** : télécharge `MockupLab-Windows.exe`.
+
+          `latest.yml` sert uniquement aux mises à jour automatiques de Windows.
+          NOTES
+          gh release create "$GITHUB_REF_NAME" --title "MockupLab ${GITHUB_REF_NAME#v}" --notes-file notes.md --verify-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
