@@ -3,7 +3,7 @@ import { journey } from './lib.mjs';
 await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mur assorti, export 4K', async (u) => {
   const p = u.page;
   const T = { timeout: 8000 };
-  await u.step('Ouvrir le Studio', () => p.getByRole('button', { name: /Studio/ }).first().click(T));
+  await u.step('Ouvrir le Studio', () => u.choose('Ouvrir le Studio'));
   await u.step('Ajouter une affiche', async () => {
     if (!(await p.getByRole('button', { name: 'Print', exact: true }).isVisible())) {
       u.friction('surprenant', 'le Studio s’ouvre sur « Réglages » (le téléphone par défaut), pas sur la liste des appareils');
@@ -26,7 +26,7 @@ await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mu
     await p.getByRole('button', { name: 'Print', exact: true }).click(T);
     await u.choose('Flyer');
     await u.choose('Carte de visite');
-    if (await p.getByText('Phone Pro', { exact: true }).first().isVisible()) u.friction('surprenant', 'le téléphone d’exemple réapparaît dans la scène après l’ajout du flyer et de la carte');
+    if (await p.getByText('Phone Pro', { exact: true }).first().isVisible()) u.friction('surprenant', 'le téléphone d’exemple reste dans la scène à côté des prints');
   });
   await u.step('Disposer', () => p.getByRole('button', { name: 'Disposer' }).click(T));
   await u.step('Exporter en 4K', async () => {

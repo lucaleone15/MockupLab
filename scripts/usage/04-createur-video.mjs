@@ -3,7 +3,7 @@ import { journey } from './lib.mjs';
 await journey('createur-video', 'Une capture d’appli → un Reel vertical animé en MP4', async (u) => {
   const p = u.page;
   const T = { timeout: 8000 };
-  await u.step('Ouvrir le Studio', () => u.choose(/^Studio/, { exact: false }));
+  await u.step('Ouvrir le Studio', () => u.choose('Ouvrir le Studio'));
   await u.step('Mettre sa capture', () => u.upload(p.getByRole('button', { name: 'parcourir' }), 'public/samples/sample-app.png'));
   await u.step('Format vertical 9:16', () => u.choose('9:16'));
   await u.step('Ouvrir l’onglet Vidéo', () => p.getByRole('tab', { name: 'Vidéo' }).click(T));

@@ -18,7 +18,12 @@ const n0 = await count();
 await page.getByTestId('library-tabs').getByRole('button', { name: 'Ordinateurs portables' }).click();
 await page.getByTestId('rail-page').getByRole('button', { name: 'Laptop 14', exact: true }).click();
 await page.waitForTimeout(300);
-check((await count()) === n0 + 1, 'library click adds a device');
+const models = () => page.evaluate(() => window.__mockuplab.project.getState().items.map((i) => i.modelId).join());
+check(n0 === 1 && (await models()) === 'laptop-14', `the first pick replaces the untouched sample phone (${await models()})`);
+await page.getByTestId('library-tabs').getByRole('button', { name: 'Téléphones' }).click();
+await page.getByTestId('rail-page').getByRole('button', { name: 'Phone Neo', exact: true }).click();
+await page.waitForTimeout(300);
+check((await count()) === 2, 'the next library click adds a device');
 // a click on a device in the canvas opens Settings
 await rail.getByRole('tab', { name: 'Lumière', exact: true }).click();
 await page.waitForTimeout(800);

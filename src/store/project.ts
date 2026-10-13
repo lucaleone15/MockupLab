@@ -346,6 +346,13 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
+/** The scene is still the lone sample phone of a new project: no image, not moved. */
+function isUntouchedSample(items: SceneItem[]) {
+  if (items.length !== 1) return false;
+  const [it] = items;
+  return it.modelId === 'phone-pro' && it.position.every((v) => v === 0) && Object.values(it.surfaces).every((b) => !b.assetId);
+}
+
 export const DEFAULT_BRAND: Brand = {
   name: 'Solstice',
   tagline: 'Festival de musique en plein air',
@@ -536,6 +543,11 @@ export const useProject = create<ProjectState>()(
       addItem: (modelId, position) =>
         set((s) => {
           const item = makeItem(getModel(modelId));
+          // the first pick replaces the sample phone a new project starts with, if it was left untouched
+          if (isUntouchedSample(s.items)) {
+            if (position) item.position = position;
+            return { items: constrainItems([item], s.decor), selectedId: item.id };
+          }
           item.position = position ?? besideOthers(s.items, getModel(modelId).size[0]);
           // A new device starts with the image of the selected one when the screens look alike.
           const selected = s.items.find((it) => it.id === s.selectedId);
