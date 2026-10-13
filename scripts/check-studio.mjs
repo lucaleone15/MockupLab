@@ -2,6 +2,7 @@
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const rail = page.getByTestId('studio-rail');
+check((await rail.getByRole('tab', { selected: true }).textContent()).trim() === 'Appareils', 'a fresh Studio opens on Appareils (add or change devices first)');
 const names = (await rail.getByRole('tab').allTextContents()).map((s) => s.trim());
 check(JSON.stringify(names) === JSON.stringify(['Appareils', 'Réglages', 'Ambiance', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']), `rail: ${names}`);
 for (const n of names) {
