@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; label: strin
           </span>
           <div className="text-[15px] font-semibold">{t('error.title', { what: this.props.label })}</div>
           <p className="text-[12.5px] leading-relaxed text-fg-muted">{t('error.body')}</p>
-          <code className="max-w-full truncate rounded-md bg-surface-2 px-2 py-1 font-mono text-[11px] text-fg-subtle">{this.state.error.message}</code>
+          <code className="max-w-full truncate rounded-md bg-surface-2 px-2 py-1 text-[11px] text-fg-subtle">{this.state.error.message}</code>
           <div className="flex gap-2">
             <button type="button" onClick={() => this.setState({ error: null })} className="h-8 rounded-lg bg-surface-3 px-3 text-[12.5px] font-medium hover:bg-surface-4">
               {t('error.retry')}

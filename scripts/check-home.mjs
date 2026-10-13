@@ -6,11 +6,8 @@ check(await page.getByTestId('home').isVisible(), 'home shown on first visit');
 check(await page.getByRole('heading', { level: 1 }).isVisible(), 'headline present');
 check((await page.getByTestId('project-card').count()) === 0, 'no recent projects on a first visit');
 for (const m of ['quick', 'project', 'studio', 'photo']) check(!(await page.getByTestId(`mode-card-${m}`).isDisabled()), `${m} card available`);
-const scroll = await page.evaluate(() => {
-  const el = document.querySelector('[data-testid=home]');
-  return el.scrollHeight - el.clientHeight;
-});
-check(scroll <= 0, `home fits 1440×900 without scrolling (overflow ${scroll}px)`);
+const dropBox = await page.getByTestId('home-drop').boundingBox();
+check(!!dropBox && dropBox.y + dropBox.height <= 900, 'the drop zone is in the first screen');
 // drop zone: pick a file
 const sample = readdirSync('public/samples').find((f) => f === 'sample-app.png');
 const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('home-drop').click()]);

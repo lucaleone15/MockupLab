@@ -124,7 +124,7 @@ export function VideoSection() {
       )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
         <span className="text-fg-muted">{t('props.output')}</span>
-        <span className="font-mono tabular-nums">
+        <span className="tabular-nums">
           {width} × {height}
           <span className="text-fg-subtle">
             {' '}

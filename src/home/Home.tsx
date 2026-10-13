@@ -1,9 +1,8 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { pickImages } from '@/lib/importImage';
 import { MOD } from '@/app/shortcuts';
-import { templateUrl } from '@/photo/templates';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
 import { AVAILABLE, navigate } from '@/shell/route';
@@ -12,56 +11,48 @@ import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 
-const sample = (name: string) => `${import.meta.env.BASE_URL}samples/${name}`;
+const shot = (name: string) => `${import.meta.env.BASE_URL}showcase/${name}.webp`;
 
-/** A small phone drawn in CSS around a real design. */
-function MiniPhone({ src, className }: { src: string; className?: string }) {
+/** Real mock-ups rendered by MockupLab from the sample designs (scripts/make-showcase.mjs). */
+const HERO = ['hero-table-black-marble', 'laptop-marble', 'phone-aurora', 'hero-table-oak-white', 'photo-desk'];
+const STRIP = ['phone-oak', 'hero-studio-light', 'laptop-concrete', 'phone-terrazzo', 'photo-desk', 'phone-aurora', 'hero-table-oak-white', 'laptop-marble'];
+const MODE_SHOTS: Record<Screen, string> = { home: '', quick: 'phone-oak', project: 'hero-studio-light', studio: 'laptop-concrete', photo: 'photo-desk' };
+
+/** Full-bleed slideshow of real mock-ups (still under reduced motion). */
+function HeroSlides() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const id = setInterval(() => setIndex((i) => (i + 1) % HERO.length), 5200);
+    return () => clearInterval(id);
+  }, []);
   return (
-    <span className={cx('block aspect-[9/19] overflow-hidden rounded-[9px] border-[3px] border-[#1d1d1f] bg-[#1d1d1f] shadow-[0_10px_24px_rgb(0_0_0/0.25)]', className)}>
-      <img src={src} alt="" className="h-full w-full rounded-[6px] object-cover object-top" draggable={false} />
-    </span>
-  );
-}
-
-function MiniLaptop({ src, className }: { src: string; className?: string }) {
-  return (
-    <span className={cx('flex flex-col items-center', className)}>
-      <span className="block aspect-[16/10] w-full overflow-hidden rounded-t-[5px] border-[3px] border-b-0 border-[#1d1d1f] bg-[#1d1d1f]">
-        <img src={src} alt="" className="h-full w-full object-cover object-top" draggable={false} />
-      </span>
-      <span className="block h-[5px] w-[116%] rounded-b-[4px] bg-[#c9c9ce] shadow-[0_8px_18px_rgb(0_0_0/0.2)]" />
-    </span>
-  );
-}
-
-/** What each mode makes, shown with real designs rather than icons. */
-const PREVIEWS: Record<Screen, ReactNode> = {
-  home: null,
-  quick: (
-    <span className="grid h-full grid-cols-3 gap-1.5 p-3">
-      {['#e9e4dc', '#1c1d22', '#cfd8e3'].map((bg) => (
-        <span key={bg} className="grid place-items-center rounded-[7px]" style={{ background: bg }}>
-          <MiniPhone src={sample('sample-app.png')} className="w-[38%]" />
-        </span>
+    <>
+      {HERO.map((name, i) => (
+        <img
+          key={name}
+          src={shot(name)}
+          alt=""
+          aria-hidden={i !== index}
+          loading={i === 0 ? 'eager' : 'lazy'}
+          className={cx('absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-[var(--ease-out-quart)]', i === index ? 'scale-100 opacity-100' : 'scale-[1.03] opacity-0')}
+          draggable={false}
+        />
       ))}
-    </span>
-  ),
-  project: (
-    <span className="flex h-full items-end justify-center gap-2 pb-4">
-      <MiniLaptop src={sample('sample-web.png')} className="w-[46%]" />
-      <MiniPhone src={sample('sample-app.png')} className="w-[13%]" />
-      <span className="block aspect-[1/1.414] w-[15%] overflow-hidden rounded-[2px] shadow-[0_8px_18px_rgb(0_0_0/0.22)]">
-        <img src={sample('sample-poster.png')} alt="" className="h-full w-full object-cover" draggable={false} />
-      </span>
-    </span>
-  ),
-  studio: (
-    <span className="grid h-full place-items-center bg-[radial-gradient(circle_at_50%_40%,#ffffff,#dedee3)] dark:bg-[radial-gradient(circle_at_50%_40%,#34353c,#15161a)]">
-      <MiniPhone src={sample('sample-app.png')} className="w-[17%] -rotate-[8deg]" />
-    </span>
-  ),
-  photo: <img src={templateUrl('marble-duo-thumb.jpg')} alt="" className="h-full w-full object-cover" draggable={false} />,
-};
+      <div className="absolute bottom-6 left-[max(24px,calc((100%-1180px)/2+24px))] flex gap-1.5">
+        {HERO.map((name, i) => (
+          <button
+            key={name}
+            type="button"
+            aria-label={`${i + 1} / ${HERO.length}`}
+            onClick={() => setIndex(i)}
+            className={cx('h-1 rounded-full transition-[width,background-color] duration-300', i === index ? 'w-6 bg-white' : 'w-2 bg-white/45 hover:bg-white/70')}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
 
 const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
 
@@ -105,56 +96,72 @@ export function Home() {
   const { t } = useT();
   const [before, after] = t('home.drop').split('{paste}');
   return (
-    <div data-testid="home" className="scroll-thin flex h-full flex-col overflow-y-auto">
-      <header className="flex h-14 shrink-0 items-center justify-between px-6">
-        <Logo asLink={false} />
-        <MoreMenu />
-      </header>
-      <main className="mx-auto flex w-full max-w-[1080px] flex-1 flex-col justify-center gap-9 px-6 pb-10">
-        <section className="flex flex-col items-center gap-4 text-center">
-          <h1 className="font-display text-balance text-[clamp(40px,5.4vw,68px)] font-bold leading-[1.02] tracking-[-0.035em]">{t('home.title')}</h1>
-          <p className="max-w-[600px] text-[16px] leading-relaxed text-fg-muted">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
+    <div data-testid="home" className="scroll-thin h-full overflow-y-auto">
+      <section data-testid="home-hero" className="relative isolate h-[min(78vh,760px)] min-h-[560px] overflow-hidden bg-[#0e0f13] text-white">
+        <HeroSlides />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(8_8_10/0.86)_0%,rgb(8_8_10/0.55)_42%,rgb(8_8_10/0)_74%)]" />
+        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgb(8_8_10/0.55),transparent)]" />
+        <header className="relative z-10 mx-auto flex h-16 max-w-[1180px] items-center justify-between px-6">
+          <Logo asLink={false} tone="light" />
+          <MoreMenu tone="light" />
+        </header>
+        <div className="relative z-10 mx-auto flex h-[calc(100%-64px)] max-w-[1180px] flex-col justify-center px-6 pb-16">
+          <h1 className="font-display max-w-[640px] text-balance text-[clamp(44px,6vw,80px)] font-bold leading-[0.98] tracking-[-0.035em]">{t('home.title')}</h1>
+          <p className="mt-5 max-w-[500px] text-[16.5px] leading-relaxed text-white/78">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
           <button
             type="button"
             data-testid="home-drop"
             onClick={() => pickImages(importFromHome)}
-            className="mt-3 flex w-full max-w-[600px] flex-col items-center gap-2 rounded-[18px] border-[1.5px] border-dashed border-line-strong bg-surface px-6 py-6 text-fg-muted transition-[border-color,color,transform] duration-150 hover:border-accent hover:text-fg active:scale-[0.99]"
+            className="mt-8 flex w-full max-w-[500px] items-center gap-4 rounded-[18px] border-[1.5px] border-dashed border-white/45 bg-white/12 px-5 py-4 text-left backdrop-blur-xl transition-[background-color,border-color,transform] duration-150 hover:border-white/80 hover:bg-white/18 active:scale-[0.99]"
           >
-            <ImagePlus size={24} className="text-accent" />
-            <span className="text-[14.5px] font-medium">
-              {before}
-              <kbd className="mx-0.5 rounded-md bg-surface-3 px-1.5 font-mono text-[12px]">{MOD}V</kbd>
-              {after}
+            <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-white text-[#1d1d1f]">
+              <ImagePlus size={20} />
             </span>
-            <span className="text-[12.5px] text-fg-muted">{t('home.dropHint')}</span>
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[14.5px] font-semibold">
+                {before}
+                <kbd className="mx-0.5 rounded-md bg-white/20 px-1.5 text-[12px]">{MOD}V</kbd>
+                {after}
+              </span>
+              <span className="text-[12.5px] text-white/70">{t('home.dropHint')}</span>
+            </span>
           </button>
-        </section>
-        <section className="flex flex-col gap-3">
-          <h2 className="text-[13px] font-medium text-fg-muted">{t('home.modes')}</h2>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {MODES.map((m) => {
-              const available = AVAILABLE[m];
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  data-testid={`mode-card-${m}`}
-                  disabled={!available}
-                  onClick={() => navigate(m)}
-                  className={cx(
-                    'glass flex flex-col gap-2.5 rounded-[18px] p-3 text-left transition-transform duration-200 ease-[var(--ease-out-quart)]',
-                    available ? 'hover:-translate-y-0.5 active:scale-[0.99]' : 'cursor-default',
-                  )}
-                >
-                  <span className={cx('block h-[118px] overflow-hidden rounded-[12px] bg-surface-2', !available && 'opacity-55 saturate-50')}>{PREVIEWS[m]}</span>
-                  <span className="flex items-center gap-2 px-1">
-                    <span className="font-display text-[19px] font-bold">{t(`screen.${m}` as I18nKey)}</span>
-                    {!available && <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11.5px] font-medium text-fg-muted">{t('screen.soon')}</span>}
-                  </span>
-                  <span className="px-1 pb-1 text-[13px] leading-snug text-fg-muted">{t(`home.${m}` as I18nKey)}</span>
-                </button>
-              );
-            })}
+        </div>
+      </section>
+
+      <section className="py-8" aria-label={t('home.made')}>
+        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-fg-muted">{t('home.made')}</h2>
+        <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]" data-testid="showcase-strip">
+          <div className="flex w-max gap-4 animate-[strip_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
+            {[...STRIP, ...STRIP].map((name, i) => (
+              <img key={i} src={shot(name)} alt="" loading="lazy" aria-hidden={i >= STRIP.length} className="h-[210px] w-[374px] shrink-0 rounded-[16px] object-cover" draggable={false} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-14">
+        <section className="flex flex-col gap-4">
+          <h2 className="font-display text-[26px] font-bold">{t('home.modes')}</h2>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {MODES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                data-testid={`mode-card-${m}`}
+                disabled={!AVAILABLE[m]}
+                onClick={() => navigate(m)}
+                className="glass group flex flex-col overflow-hidden rounded-[18px] text-left transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]"
+              >
+                <span className="block aspect-[16/10] overflow-hidden bg-surface-2">
+                  <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]" draggable={false} />
+                </span>
+                <span className="flex flex-col gap-1 px-4 pb-4 pt-3">
+                  <span className="font-display text-[20px] font-bold">{t(`screen.${m}` as I18nKey)}</span>
+                  <span className="text-[13px] leading-snug text-fg-muted">{t(`home.${m}` as I18nKey)}</span>
+                </span>
+              </button>
+            ))}
           </div>
         </section>
         <Recents />

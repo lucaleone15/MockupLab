@@ -1,3 +1,4 @@
+import { accentColor } from '@/ui/accent';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useThree, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -203,6 +204,7 @@ export function Interactive({ item, children }: { item: SceneItem; children: Rea
 /** Thin accent outline on the floor around the selected device (preview only). */
 export function SelectionRing({ item, floorY }: { item: SceneItem; floorY: number }) {
   const f = footprint(item);
+  const theme = useUi((s) => s.theme);
   const geometry = useMemo(() => {
     const pad = 1.6;
     const outline = roundedRectOutline(f.w + pad * 2, f.d + pad * 2, Math.min(3, (f.d + pad * 2) / 2), { smooth: 0.4, segments: 10 });
@@ -211,10 +213,11 @@ export function SelectionRing({ item, floorY }: { item: SceneItem; floorY: numbe
     return new THREE.BufferGeometry().setFromPoints(pts);
   }, [f.w, f.d]);
   const line = useMemo(() => {
-    const l = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: '#ff5c35', transparent: true, opacity: 0.9, depthTest: false }));
+    const l = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: accentColor(), transparent: true, opacity: 0.9, depthTest: false }));
     l.layers.set(HELPER_LAYER);
     l.renderOrder = 10;
     return l;
-  }, [geometry]);
+    // the accent follows the theme
+  }, [geometry, theme]);
   return <primitive object={line} position={[item.position[0], floorY + 0.05, item.position[2]]} rotation={[0, item.rotation[1], 0]} />;
 }

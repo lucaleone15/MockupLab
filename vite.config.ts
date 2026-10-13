@@ -18,7 +18,7 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['icons/favicon-48.png', 'icons/favicon-32.png', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'MockupLab',
         short_name: 'MockupLab',
@@ -41,7 +41,7 @@ export default defineConfig(({ command, isPreview, mode }) => ({
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => /\/(assets\/(light|materials|photo)|samples)\//.test(url.pathname),
+            urlPattern: ({ url }) => /\/(assets\/(light|materials|photo)|samples|showcase)\//.test(url.pathname),
             handler: 'CacheFirst',
             options: { cacheName: 'mockuplab-media', expiration: { maxEntries: 300 } },
           },

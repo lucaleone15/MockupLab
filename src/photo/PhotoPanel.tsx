@@ -45,7 +45,7 @@ export function PhotoSection() {
         <img src={asset.url} alt="" className="h-[52px] w-[78px] shrink-0 rounded-md object-cover shadow-[0_0_0_1px_var(--line)_inset]" />
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div className="truncate text-[12.5px] font-medium">{asset.name.replace(/^template-/, '')}</div>
-          <div className="font-mono text-[11px] tabular-nums text-fg-subtle">
+          <div className="text-[11px] tabular-nums text-fg-subtle">
             {asset.width} × {asset.height}
           </div>
           <div>
@@ -95,7 +95,7 @@ export function ZonesSection() {
   const tool = useUi((s) => s.photoTool);
   const { selectZone, updateZone, removeZone } = useProject.getState();
   return (
-    <Section title={t('photo.zones')} aside={<span className="font-mono text-[11px] text-fg-subtle">{zones.length}</span>}>
+    <Section title={t('photo.zones')} aside={<span className="text-[11px] text-fg-subtle">{zones.length}</span>}>
       {zones.length > 0 && (
         <div className="-mx-1 flex flex-col gap-0.5">
           {zones.map((z) => (
@@ -171,7 +171,7 @@ export function DesignSection({ zone }: { zone: PhotoZone }) {
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-1 py-0.5">
           <div className="min-w-0">
             <div className="truncate text-[12.5px] font-medium">{asset?.name ?? t('props.noImage')}</div>
-            <div className="font-mono text-[11px] tabular-nums text-fg-subtle">{asset ? `${asset.width} × ${asset.height}` : t('photo.design.drop')}</div>
+            <div className="text-[11px] tabular-nums text-fg-subtle">{asset ? `${asset.width} × ${asset.height}` : t('photo.design.drop')}</div>
           </div>
           <div className="flex gap-1.5">
             <Button size="sm" onClick={() => pickZoneImage(zone.id)}>
@@ -308,7 +308,7 @@ function CornerInput({ value, max, onChange, label }: { value: number; max: numb
           const v = Number(e.target.value);
           if (Number.isFinite(v)) onChange(v / max);
         }}
-        className="w-full min-w-0 bg-transparent text-right font-mono text-[11.5px] tabular-nums text-fg outline-none"
+        className="w-full min-w-0 bg-transparent text-right text-[11.5px] tabular-nums text-fg outline-none"
       />
     </label>
   );

@@ -148,7 +148,7 @@ export function BatchDialog() {
                 </button>
               </div>
             ) : (
-              <div className="flex-1 font-mono text-[11.5px] tabular-nums text-fg-subtle">
+              <div className="flex-1 text-[11.5px] tabular-nums text-fg-subtle">
                 {t('batch.summary', { n: total })} · {size.width} × {size.height} · {format}
               </div>
             )}

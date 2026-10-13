@@ -1,3 +1,4 @@
+import { accentColor } from '@/ui/accent';
 import { useEffect, useRef, useState } from 'react';
 import { paintOverlays, prepareOverlays, type OverlayBox } from '@/lib/overlays';
 import { useAssets } from '@/store/assets';
@@ -35,7 +36,7 @@ export function OverlayLayer({ width, height, frame }: { width: number; height: 
       const sel = boxes.current.find((b) => b.id === selectedId);
       if (sel) {
         ctx.save();
-        ctx.strokeStyle = '#ff5c35';
+        ctx.strokeStyle = accentColor();
         ctx.lineWidth = 1.5 * dpr;
         ctx.setLineDash([5 * dpr, 4 * dpr]);
         const pad = 6;

@@ -99,7 +99,7 @@ void main() {
   if (uHasDesign < 0.5) {
     // Empty zone (preview only): a soft accent checker.
     vec2 c = floor(q * 14.0);
-    col = mix(vec3(1.0, 0.36, 0.21), vec3(1.0, 0.55, 0.42), mod(c.x + c.y, 2.0)) * 0.6;
+    col = mix(vec3(0.0, 0.44, 0.89), vec3(0.35, 0.62, 0.95), mod(c.x + c.y, 2.0)) * 0.6;
     alpha *= 0.55;
   } else if (!inside) {
     col = uBg;

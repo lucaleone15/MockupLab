@@ -63,6 +63,7 @@ function startUpdates() {
     return;
   }
   if (!app.isPackaged || process.env.MOCKUPLAB_NO_UPDATES) return;
+  if (process.platform === 'darwin') return startMacUpdates();
   const { autoUpdater } = require('electron-updater');
   // macOS installs updates only for signed apps: there we offer the download page instead
   const canInstall = process.platform !== 'darwin';
@@ -81,6 +82,22 @@ function startUpdates() {
   const check = () => void autoUpdater.checkForUpdates().catch(() => undefined);
   check();
   setInterval(check, 6 * 60 * 60 * 1000);
+}
+
+/** macOS (unsigned): ask GitHub for a newer release and offer its download page. */
+function startMacUpdates() {
+  const { newerRelease } = require('./update-check.cjs');
+  let page = RELEASES;
+  ipcMain.on('mockuplab:install-update', () => void shell.openExternal(page));
+  const check = async () => {
+    const found = await newerRelease(app.getVersion(), net.fetch).catch(() => null);
+    if (!found) return;
+    page = found.url || RELEASES;
+    lastUpdate = { state: 'available', version: found.version };
+    win?.webContents.send('mockuplab:update', lastUpdate);
+  };
+  void check();
+  setInterval(() => void check(), 6 * 60 * 60 * 1000);
 }
 
 app.whenReady().then(() => {
