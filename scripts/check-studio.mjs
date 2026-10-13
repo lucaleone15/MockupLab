@@ -73,4 +73,5 @@ const after = (setup) => page.evaluate((setup) => {
 check((await after(`s.addItem('phone-pro'); s.addItem('laptop-14');`)) === 'phone-pro,laptop-14', 'a phone picked on purpose stays when a laptop is added');
 check((await after(`const id = s.items[0].id; s.updateItem(id, { rotation: [0, 0.5, 0] }); s.addItem('laptop-14');`)).split(',').length === 2, 'an edited sample phone stays');
 check((await after(`s.addItem('laptop-14');`)) === 'laptop-14', 'an untouched sample phone is replaced');
+check((await after(`s.replaceModel(s.selectedId, 'tv'); s.addItem('poster');`)) === 'tv,poster', 'a sample changed with “Change” is kept');
 await done(browser, errors);

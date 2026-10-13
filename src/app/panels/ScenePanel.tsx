@@ -3,7 +3,7 @@ import { Box, Cylinder, Home, Layers, Square } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { CAMERA_PRESETS, fNumber } from '@/scene/camera';
 import { LIGHT_PRESETS, LIGHT_PRESET_ORDER } from '@/scene/lighting/presets';
-import { AMBIENCES, AMBIENCE_ORDER, WALL_COLORS } from '@/scene/ambiences';
+import { AMBIENCES, AMBIENCE_ORDER } from '@/scene/ambiences';
 import { MATERIAL_ORDER, REAL_MATERIALS, materialUrl } from '@/scene/realMaterials';
 import { SCENE_PRESETS, applyScenePreset, type ScenePreset } from '@/scene/scenePresets';
 import { useProject, type AmbienceId, type CameraPresetId, type Decor, type GoboId, type MaterialId } from '@/store/project';
@@ -51,7 +51,7 @@ function MaterialPicker({ value, onChange }: { value: MaterialId; onChange: (m: 
 
 function presetActive(p: ScenePreset, s: ReturnType<typeof useProject.getState>) {
   if (p.decor.kind === 'table')
-    return s.decor.kind === 'table' && s.decor.material === p.decor.material && s.decor.wall === p.decor.wall && s.decor.gobo === p.decor.gobo;
+    return s.decor.kind === 'table' && s.decor.material === p.decor.material && JSON.stringify(s.background) === JSON.stringify(p.background) && s.decor.gobo === p.decor.gobo;
   return (
     s.decor.kind === p.decor.kind &&
     (!p.decor.material || s.decor.material === p.decor.material) &&
@@ -146,13 +146,6 @@ export function DecorSection() {
           <Field label={t('decor.matter')} value={<span className="font-sans text-[11.5px]">{tr(REAL_MATERIALS[decor.material].name)}</span>}>
             <MaterialPicker value={decor.material} onChange={(material) => setDecor({ material })} />
           </Field>
-          <Field label={t('decor.wall')}>
-            <div className="flex gap-1.5">
-              {WALL_COLORS.map((c) => (
-                <button key={c} type="button" aria-label={c} onClick={() => setDecor({ wall: c })} className={cx('size-7 rounded-full transition-[transform,box-shadow] hover:scale-110', ring(decor.wall === c))} style={{ background: c }} />
-              ))}
-            </div>
-          </Field>
           <Field label={t('decor.shadows')}>
             <Segmented
               size="sm"
@@ -171,9 +164,6 @@ export function DecorSection() {
               ))}
             </div>
           </Field>
-          <Advanced {...more}>
-            <ColorField label={t('decor.wall')} value={decor.wall} onChange={(wall) => setDecor({ wall })} />
-          </Advanced>
         </>
       )}
 

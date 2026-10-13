@@ -58,10 +58,10 @@ check(d.kind === 'sweep' && d.color.toLowerCase() === '#334455', `cyclo on: stud
 await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'solid', color: '#aa2200' }));
 await page.waitForTimeout(200);
 d = await page.evaluate(() => window.__mockuplab.project.getState().decor);
-check(d.color.toLowerCase() === '#aa2200', 'cyclo follows the background colour');
+check(d.kind === 'sweep', 'the cyclo stays when the background colour changes (it shows the background)');
 await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'gradient', stops: [{ color: '#000000', at: 0 }, { color: '#ffffff', at: 1 }], angle: 90, mode: 'linear' }));
 await page.waitForTimeout(200);
-check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'none', 'a gradient turns the cyclo off');
+check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'sweep', 'a gradient keeps the cyclo');
 check(mono.length === 0, `no monospace text in the interface (${[...new Set(mono)].slice(0, 6).join(', ')})`);
 // every mode says what it is for while it is empty
 for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/projet', 'project'], ['/photo', 'photo']]) {

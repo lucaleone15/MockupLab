@@ -50,6 +50,31 @@ const poster = await shot(
 );
 check(reddish(poster[0]) && bluish(poster[1]), `poster wall follows the gradient: top ${poster[0]}, lower ${poster[1]}`);
 
+// no wall colour of its own: the poster's settings have no "Couleur du mur"
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Réglages', exact: true }).click();
+await page.waitForTimeout(300);
+check((await page.getByText('Couleur du mur').count()) === 0, 'the poster has no wall colour of its own');
+
+// table set: its wall shows the background too, whichever way round
+for (const [name, bg, test] of [['table-red-top', RED_BLUE, reddish], ['table-blue-top', BLUE_RED, bluish]]) {
+  const [top] = await shot(
+    name,
+    `const s = api.project.getState();
+     if (!api.project.getState().items.some((i) => i.modelId === 'phone-pro')) s.addItem('phone-pro');
+     const keep = api.project.getState().items.find((i) => i.modelId === 'phone-pro').id;
+     for (const it of api.project.getState().items) if (it.id !== keep) s.removeItem(it.id);
+     s.setDecor({ kind: 'table', material: 'oak' });
+     s.setBackground(${JSON.stringify(bg)});`,
+    [[0.5, 0.05]],
+  );
+  check(test(top), `table wall shows the background (${name}: ${top})`);
+}
+
+// studio cyclo with a gradient: the cyclo stays and shows it
+const [cyc] = await shot('sweep-gradient', `const s = api.project.getState(); s.setDecor({ kind: 'sweep' }); s.setBackground(${JSON.stringify(RED_BLUE)});`, [[0.5, 0.05]]);
+check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'sweep', 'a gradient keeps the studio cyclo');
+check(reddish(cyc), `the cyclo shows the gradient (${cyc})`);
+
 // 2. same scene exported in 4K (several tiles): the gradient runs smoothly down the wall, no seam
 const col = await shot('poster-gradient-4k', `api.project.getState().setExport({ resolution: '4k' });`, Array.from({ length: 12 }, (_, i) => [0.04, 0.04 + i * 0.08]));
 const reds = col.map((c) => c[0]);
