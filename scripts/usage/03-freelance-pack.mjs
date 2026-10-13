@@ -22,6 +22,11 @@ await journey('freelance-pack', 'Site + appli + affiche + carte d’un client �
       u.friction('bloquant', 'impossible de choisir les couleurs de fond du pack : la palette de marque n’habille que la planche, les 6 styles ont des couleurs figées');
       return;
     }
+    // the client's brand: start from scratch, two colours
+    if (await p.getByRole('button', { name: 'Partir de zéro' }).isVisible().catch(() => false)) await u.choose('Partir de zéro');
+    await p.getByLabel('Couleur 1').fill('#0a7e8c');
+    await u.choose('Ajouter une couleur');
+    await p.getByLabel('Couleur 2').fill('#f2c14e');
     await u.choose('Ma marque');
     await u.choose('Varier d’une scène à l’autre');
   });
