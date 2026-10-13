@@ -217,6 +217,8 @@ export interface VideoSettings {
   fps: 24 | 30 | 60;
   resolution: '720' | '1080' | '4k';
   format: 'mp4' | 'webm' | 'gif';
+  /** Shots that do not loop by themselves come back to their start (ping-pong). */
+  loop?: boolean;
   /** 'cinema': motion blur (several instants per frame) and animated depth of field. */
   quality: 'fast' | 'cinema';
 }

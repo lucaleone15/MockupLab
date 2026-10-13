@@ -41,4 +41,27 @@ check((await page.getByRole('button', { name: 'Post Insta' }).count()) > 0 && (a
 await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);
 
+// Reel / TikTok video preset, and a perfect loop for a cinematic shot
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Vidéo', exact: true }).click();
+await page.getByRole('button', { name: 'Reel / TikTok' }).click();
+await page.waitForTimeout(200);
+const v = await page.evaluate(() => { const e = window.__mockuplab.project.getState().export; return { ratio: e.ratio, ...e.video }; });
+check(v.ratio === 'story' && v.resolution === '1080' && v.fps === 30 && v.duration === 10 && v.format === 'mp4', `Reel / TikTok preset: ${JSON.stringify(v)}`);
+for (const d of ['6 s', '10 s', '15 s']) check(await page.getByRole('radio', { name: d, exact: true }).isVisible().catch(() => false), `duration ${d} offered`);
+await page.getByRole('switch', { name: 'Boucle parfaite' }).click();
+const gap = await page.evaluate(async () => {
+  const A = await window.__mockuplab.animations();
+  const p = window.__mockuplab.project.getState();
+  const def = A.ANIMATIONS.find((a) => a.id === 'reveal');
+  const rig = A.rigFor(def, p.export.video);
+  const cam = window.__mockuplab.bridge().camera;
+  rig.at(0);
+  const a = cam.position.clone();
+  rig.at(1);
+  const b = cam.position.clone();
+  rig.at(0.5);
+  const mid = cam.position.clone();
+  return [a.distanceTo(b), a.distanceTo(mid)];
+});
+check(gap[0] < 0.5 && gap[1] > 5, `perfect loop: the last frame is the first (${gap[0].toFixed(2)}), the middle moves (${gap[1].toFixed(1)})`);
 await done(browser, errors);

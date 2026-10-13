@@ -5,7 +5,7 @@ import { cameraHandle, cameraState, focusPoint, frame, presetDirection, type Cam
 import { decorLayout } from '@/scene/Decor';
 import { ratioValue } from '@/export/settings';
 import { useAssets } from '@/store/assets';
-import { selectSelectedItem, useProject, type AnimationId, type CameraSettings, type SceneItem, type Vec3, type WorkMode } from '@/store/project';
+import { selectSelectedItem, useProject, type AnimationId, type CameraSettings, type SceneItem, type Vec3, type VideoSettings, type WorkMode } from '@/store/project';
 import { aspectsOf } from '@/models/imageAspects';
 
 /*
@@ -170,6 +170,27 @@ function montage(shots: { rig: Rig; from: number; to: number }[], fade = 0.07): 
       top?.rig.at(top.t);
     },
   };
+}
+
+/** A shot played forth and back: its last frame is its first (a seamless loop). */
+export function loopRig(rig: Rig): Rig {
+  const pp = (t: number) => 1 - Math.abs(1 - 2 * t);
+  return {
+    at: (t) => rig.at(pp(t)),
+    zoom: (t) => rig.zoom(pp(t)),
+    moves: rig.moves,
+    blur: rig.blur && ((t) => rig.blur!(pp(t))),
+    layers: rig.layers && ((t) => rig.layers!(pp(t))),
+  };
+}
+
+/** Whether the video loops: the shot does by itself, or "Perfect loop" is on. */
+export const loops = (def: AnimationDef, v: Pick<VideoSettings, 'loop'>) => def.loop || !!v.loop;
+
+/** The rig of a video: the shot, played forth and back for a perfect loop. */
+export function rigFor(def: AnimationDef, v: Pick<VideoSettings, 'loop'>): Rig {
+  const rig = makeRig(def.id);
+  return v.loop && !def.loop ? loopRig(rig) : rig;
 }
 
 export function makeRig(id: AnimationId): Rig {

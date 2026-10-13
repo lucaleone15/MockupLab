@@ -11,7 +11,7 @@ import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { inSandbox } from '@/variants/render';
-import { ANIMATIONS, makeRig } from './animations';
+import { ANIMATIONS, loops, rigFor } from './animations';
 import { videoFps, videoSize } from './size';
 
 /*
@@ -87,14 +87,15 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
   canvas.height = height;
   const ctx = canvas.getContext('2d', { willReadFrequently: v.format === 'gif' })!;
   ctx.imageSmoothingQuality = 'high';
-  const encoder = v.format === 'gif' ? gifEncoder(canvas, fps, def.loop) : await videoEncoder(canvas, v.format, fps);
+  const looping = loops(def, v);
+  const encoder = v.format === 'gif' ? gifEncoder(canvas, fps, looping) : await videoEncoder(canvas, v.format, fps);
   const cinema = v.quality === 'cinema';
 
   await inSandbox(async () => {
-    const rig = makeRig(def.id);
+    const rig = rigFor(def, v);
     await ready();
     // motion blur: each frame averages instants spread over half a frame interval (a 180° shutter)
-    const step = def.loop ? 1 / frames : 1 / (frames - 1);
+    const step = looping ? 1 / frames : 1 / (frames - 1);
     const subAt = (t: number) => (p.mode === 'scene' && cinema ? (rig.blur?.(t) ?? 6) : 1);
     const layer = document.createElement('canvas');
     layer.width = width;
@@ -111,7 +112,7 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
     for (let i = 0; i < frames; i++) {
       if (token !== cancelled) throw new Error('cancelled');
       // a loop ends just before its start; a move goes from start to end
-      const time = def.loop ? i / frames : i / (frames - 1);
+      const time = looping ? i / frames : i / (frames - 1);
       if (p.mode === 'scene') {
         const layers = rig.layers ? rig.layers(time) : [{ rig, t: time, weight: 1, scale: 1 }];
         ctx.globalAlpha = 1;
@@ -124,7 +125,7 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
             if (token !== cancelled) throw new Error('cancelled');
             // shutter: half a frame interval, in the shot's own time
             let tt = l.t + (sub > 1 ? ((k + 0.5) / sub - 0.5) * 0.5 * step * l.scale : 0);
-            tt = def.loop ? ((tt % 1) + 1) % 1 : Math.min(1, Math.max(0, tt));
+            tt = looping ? ((tt % 1) + 1) % 1 : Math.min(1, Math.max(0, tt));
             const f = await instant(l.rig, tt);
             lctx.globalAlpha = 1 / (k + 1);
             lctx.drawImage(f, 0, 0);
@@ -197,13 +198,13 @@ export function togglePreview() {
   void inSandbox(
     () =>
       new Promise<void>((resolve) => {
-        const rig = makeRig(def.id);
+        const rig = rigFor(def, v);
         const start = performance.now();
         let raf = 0;
         const tick = (now: number) => {
           const s = (now - start) / 1000 / v.duration;
           // a move plays, holds a moment, and starts again
-          const time = def.loop ? s % 1 : Math.min(1, (s % 1.15) / 1);
+          const time = loops(def, v) ? s % 1 : Math.min(1, (s % 1.15) / 1);
           rig.at(time);
           useUi.getState().setPreviewZoom(rig.zoom(time));
           raf = requestAnimationFrame(tick);
