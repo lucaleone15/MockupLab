@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, type ComponentRef } from 'react';
+import { footprint } from '@/lib/arrange';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -148,6 +149,38 @@ export function frame(items: SceneItem[], dir: THREE.Vector3, fovDeg: number, as
   return { target, position: target.clone().addScaledVector(dir.clone().normalize(), dist), subject: box.getSize(new THREE.Vector3()).length() };
 }
 
+/**
+ * The device that sets the viewing angle: the selected one when it is alone,
+ * otherwise the largest one (the hero of the composition) — a small card lying
+ * flat must not turn a whole wall-and-table scene into a top-down view.
+ */
+export function leadItem(items: SceneItem[], selected: SceneItem | null): SceneItem | null {
+  const visible = items.filter((it) => it.visible);
+  if (visible.length < 2) return selected;
+  let best = visible[0];
+  let area = 0;
+  for (const it of visible) {
+    const f = footprint(it);
+    if (f.w * f.h > area) {
+      area = f.w * f.h;
+      best = it;
+    }
+  }
+  return best;
+}
+
+/**
+ * A 3/4 view of several devices looks down a little: enough to see what lies
+ * on the floor in front of a wall, not so much that the wall disappears.
+ */
+function composedDirection(dir: THREE.Vector3, preset: CameraPresetId, items: SceneItem[]) {
+  if (preset !== 'threeQuarter' || items.filter((it) => it.visible).length < 2) return dir;
+  const el = Math.asin(THREE.MathUtils.clamp(dir.y / dir.length(), -1, 1));
+  const clamped = THREE.MathUtils.clamp(el, THREE.MathUtils.degToRad(20), THREE.MathUtils.degToRad(32));
+  const h = Math.hypot(dir.x, dir.z) || 1;
+  return new THREE.Vector3((dir.x / h) * Math.cos(clamped), Math.sin(clamped), (dir.z / h) * Math.cos(clamped));
+}
+
 /** Direction from target to camera for a preset, relative to the selected device's yaw. */
 export function presetDirection(preset: CameraPresetId, item: SceneItem | null): THREE.Vector3 {
   const model = getModel(item?.modelId ?? 'phone-pro');
@@ -210,7 +243,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
     const dir =
       settings.preset === 'custom' && controls.current
         ? camera.position.clone().sub(controls.current.target)
-        : presetDirection(settings.preset, item);
+        : composedDirection(presetDirection(settings.preset, leadItem(items, item)), settings.preset, items);
     const f = frame(items, dir, camera.fov, ratioValue(ratio), floorY);
     camera.position.copy(f.position);
     cameraState.target.copy(f.target);
