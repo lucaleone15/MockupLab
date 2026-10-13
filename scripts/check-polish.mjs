@@ -71,6 +71,17 @@ for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/pr
 await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);
 check(await page.getByRole('button', { name: 'Varier ma scène' }).isVisible(), 'Studio: “Vary my scene” button');
+// once the scene has a design of the user's, the role line goes (it only explains an empty Studio)
+await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const s = api.project.getState();
+  s.resetAll();
+  s.addItem('poster');
+  await api.loadSamples(api.project.getState().items[0].id);
+  api.project.getState().addItem('business-card');
+});
+await page.waitForTimeout(400);
+check(!(await page.getByTestId('mode-role').first().isVisible().catch(() => false)), 'Studio: no role line over a scene that already has a design');
 // photo mode: once a photo is in, the hint offers to browse for the design
 await page.evaluate(() => { history.pushState(null, '', '/photo'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);

@@ -83,10 +83,12 @@ function EmptyHint() {
   const { t } = useT();
   const item = useProject(selectSelectedItem);
   const [loading, setLoading] = useState(false);
+  // the role line explains an empty Studio; once a design is in, it would only cover the scene
+  const sceneHasImage = useProject((s) => s.items.some((it) => Object.values(it.surfaces).some((b) => b.assetId)));
   const [before, after] = t('stage.emptyHint').split('{paste}');
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 animate-[fade-in_300ms_ease-out]">
-      <ModeRole screen="studio" className="rounded-full bg-black/45 px-3 py-1 text-[12px] text-white/80 backdrop-blur-xl" />
+      {!sceneHasImage && <ModeRole screen="studio" className="rounded-full bg-black/45 px-3 py-1 text-[12px] text-white/80 backdrop-blur-xl" />}
       <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 py-2 pl-3 pr-2 text-[12.5px] text-white/85 shadow-2xl backdrop-blur-xl">
         <ImagePlus size={16} className="text-white/60" />
         <span>
