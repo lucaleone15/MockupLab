@@ -91,21 +91,22 @@ export function Looks() {
 
 /* ------------------------------------------------------------ set */
 
-/** "Fond" covers the plain backdrop and the studio cyclo (an option of a plain colour). */
-type DecorChoice = 'backdrop' | 'podium' | 'surface' | 'table';
+/** The sets: nothing but the background, the studio cyclo, a podium, a surface, a table. */
+type DecorChoice = Decor['kind'];
 const DECOR_ICONS: Record<DecorChoice, ReactNode> = {
-  backdrop: <Layers size={15} />,
+  none: <Square size={15} className="opacity-40" />,
+  sweep: <Layers size={15} />,
   podium: <Cylinder size={15} />,
   surface: <Square size={15} />,
   table: <Home size={15} />,
 };
 const DECOR_LABEL: Record<DecorChoice, I18nKey> = {
-  backdrop: 'decor.backdrop',
+  none: 'decor.backdrop',
+  sweep: 'decor.sweep',
   podium: 'decor.podium',
   surface: 'decor.surface',
   table: 'decor.table',
 };
-const choiceOf = (kind: Decor['kind']): DecorChoice => (kind === 'none' || kind === 'sweep' ? 'backdrop' : kind);
 
 export function DecorSection() {
   const { t, tr } = useT();
@@ -113,8 +114,6 @@ export function DecorSection() {
   const setDecor = useProject((s) => s.setDecor);
   const setLighting = useProject((s) => s.setLighting);
   const setCamera = useProject((s) => s.setCamera);
-  const background = useProject((s) => s.background);
-  const solid = background.kind === 'solid';
   const more = { more: t('ui.more'), less: t('ui.less') };
   const chooseAmbience = (id: AmbienceId) => {
     setDecor({ ambience: id });
@@ -122,13 +121,12 @@ export function DecorSection() {
   };
   return (
     <Section title={t('decor.title')} defaultOpen={false}>
-      <div className="grid grid-cols-4 gap-1.5" data-testid="decor-kinds">
+      <div className="grid grid-cols-5 gap-1.5" data-testid="decor-kinds">
         {(Object.keys(DECOR_ICONS) as DecorChoice[]).map((k) => (
           <Chip
             key={k}
-            active={choiceOf(decor.kind) === k}
+            active={decor.kind === k}
             onClick={() => {
-              if (k === 'backdrop') return choiceOf(decor.kind) !== 'backdrop' && setDecor({ kind: 'none' });
               if (k !== 'table') return setDecor({ kind: k });
               setDecor({ kind: k });
               chooseAmbience(decor.ambience);
@@ -173,22 +171,7 @@ export function DecorSection() {
         </Field>
       )}
 
-      {choiceOf(decor.kind) === 'backdrop' && (
-        <div className="flex flex-col gap-1.5">
-          <label className={cx('flex items-center justify-between gap-3 text-[12.5px]', solid ? 'cursor-pointer' : 'opacity-50')}>
-            <span className="text-fg-muted">{t('decor.cyclo')}</span>
-            <Switch
-              checked={decor.kind === 'sweep'}
-              label={t('decor.cyclo')}
-              onChange={(on) => {
-                if (!solid) return;
-                setDecor(on ? { kind: 'sweep', color: background.kind === 'solid' ? background.color : decor.color } : { kind: 'none' });
-              }}
-            />
-          </label>
-          <p className="text-[12px] leading-snug text-fg-muted">{t(solid ? 'decor.cycloHint' : 'decor.cycloSolidOnly')}</p>
-        </div>
-      )}
+      {decor.kind === 'sweep' && <p className="text-[12px] leading-snug text-fg-muted">{t('decor.cycloHint')}</p>}
 
       {decor.kind === 'podium' && (
         <>
@@ -229,19 +212,12 @@ export function DecorSection() {
 
 export function BackgroundSection() {
   const { t } = useT();
-  const inPlace = useProject((s) => s.decor.kind === 'table');
   return (
     <Section title={t('bg.title')} defaultOpen={false}>
-      {inPlace ? (
-        <p className="text-[11.5px] leading-snug text-fg-subtle">{t('bg.placeNote')}</p>
-      ) : (
-        <>
-          <BackgroundEditor part="basic" />
-          <Advanced more={t('ui.more')} less={t('ui.less')}>
-            <BackgroundEditor part="details" />
-          </Advanced>
-        </>
-      )}
+      <BackgroundEditor part="basic" />
+      <Advanced more={t('ui.more')} less={t('ui.less')}>
+        <BackgroundEditor part="details" />
+      </Advanced>
     </Section>
   );
 }

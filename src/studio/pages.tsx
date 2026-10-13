@@ -11,8 +11,8 @@ export function StudioPageBody({ page }: { page: StudioPage }) {
     case 'decor':
       return (
         <>
-          <DecorSection />
           <BackgroundSection />
+          <DecorSection />
           <GroundSection />
         </>
       );

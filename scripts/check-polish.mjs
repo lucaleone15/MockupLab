@@ -45,23 +45,22 @@ for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'M
   await page.waitForTimeout(200);
   mono = mono.concat(await monoOnScreen());
 }
-// decor: Fond · Podium · Surface · Table, with the studio cyclo as an option of Fond
+// Décor page: Fond · Mise en scène · Sol; five sets; the background stays editable with the table
 await page.getByTestId('studio-rail').getByRole('tab', { name: 'Décor', exact: true }).click();
+await page.waitForTimeout(200);
+const titles = (await page.getByTestId('rail-page').getByRole('heading', { level: 3 }).allTextContents()).map((s) => s.trim());
+check(JSON.stringify(titles.slice(0, 3)) === JSON.stringify(['Fond', 'Mise en scène', 'Sol']), `Décor page order ${JSON.stringify(titles)}`);
 const kinds = (await page.getByTestId('decor-kinds').getByRole('button').allTextContents()).map((s) => s.trim());
-check(JSON.stringify(kinds) === JSON.stringify(['Fond', 'Podium', 'Surface', 'Table']), `decor choices ${JSON.stringify(kinds)}`);
-await page.getByTestId('decor-kinds').getByRole('button', { name: 'Fond' }).click();
-await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'solid', color: '#334455' }));
+check(JSON.stringify(kinds) === JSON.stringify(['Aucune', 'Studio', 'Podium', 'Surface', 'Table']), `set choices ${JSON.stringify(kinds)}`);
+await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'gradient', type: 'linear', stops: [{ color: '#000000', at: 0 }, { color: '#ffffff', at: 1 }], angle: 90 }));
+await page.getByTestId('decor-kinds').getByRole('button', { name: 'Studio' }).click();
 await page.waitForTimeout(200);
-await page.getByRole('switch', { name: /Cyclo studio/ }).click();
-let d = await page.evaluate(() => { const s = window.__mockuplab.project.getState(); return { kind: s.decor.kind, color: s.decor.color }; });
-check(d.kind === 'sweep' && d.color.toLowerCase() === '#334455', `cyclo on: studio backdrop in the background colour (${JSON.stringify(d)})`);
-await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'solid', color: '#aa2200' }));
-await page.waitForTimeout(200);
-d = await page.evaluate(() => window.__mockuplab.project.getState().decor);
-check(d.kind === 'sweep', 'the cyclo stays when the background colour changes (it shows the background)');
-await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ kind: 'gradient', stops: [{ color: '#000000', at: 0 }, { color: '#ffffff', at: 1 }], angle: 90, mode: 'linear' }));
-await page.waitForTimeout(200);
-check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'sweep', 'a gradient keeps the cyclo');
+check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'sweep', 'Studio set works with a gradient');
+await page.getByTestId('decor-kinds').getByRole('button', { name: 'Table' }).click();
+await page.waitForTimeout(300);
+check((await page.getByTestId('rail-page').getByRole('radio', { name: 'Dégradé' }).count()) + (await page.getByTestId('rail-page').getByRole('button', { name: 'Dégradé' }).count()) > 0, 'with the table, the background is still editable');
+check((await page.getByText('Couleur du mur').count()) === 0 && (await page.getByText('Le mur de la table sert de fond').count()) === 0, 'no separate wall colour for the table');
+await page.getByTestId('decor-kinds').getByRole('button', { name: 'Aucune' }).click();
 check(mono.length === 0, `no monospace text in the interface (${[...new Set(mono)].slice(0, 6).join(', ')})`);
 // every mode says what it is for while it is empty
 for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/projet', 'project'], ['/photo', 'photo']]) {
