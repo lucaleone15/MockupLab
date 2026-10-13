@@ -13,6 +13,12 @@ const table = [
   [1700, 1100, 'print'],
   [3024, 1964, 'laptop'],
   [2880, 1800, 'laptop'],
+  [750, 1334, 'phone'],
+  [1242, 2208, 'phone'],
+  [1200, 675, 'laptop'],
+  [2400, 1350, 'laptop'],
+  [5120, 2880, 'laptop'],
+  [2944, 1904, 'laptop'],
 ];
 for (const [w, h, want] of table) {
   const got = await page.evaluate(([w, h]) => window.__mockuplab.quick.detectSupport(w, h), [w, h]);
@@ -22,6 +28,11 @@ const near = await page.evaluate(() => window.__mockuplab.quick.detectSupport(11
 check(near.confident === false, '1150×1000 sits near a boundary → to confirm');
 const named = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1440, 900, false, 'carte-de-visite-recto.png'));
 check(named.support === 'print', 'a file named like a business card → print');
+for (const [w, h, name, want] of [[1170, 2532, 'menu-screen.png', 'phone'], [1440, 900, 'sprint-board.png', 'laptop'], [1440, 900, 'fingerprint.png', 'laptop'], [1440, 900, 'card-component.png', 'laptop'], [1440, 900, 'carte-du-site.png', 'laptop']]) {
+  const got = await page.evaluate(([w, h, n]) => window.__mockuplab.quick.detectSupport(w, h, false, n), [w, h, name]);
+  check(got.support === want, `${name} ${w}×${h} → ${want} (${got.support})`);
+}
+check((await page.evaluate(() => window.__mockuplab.quick.detectSupport(1440, 900, false, 'carte-de-visite-recto.png'))).confident === false, 'a print guessed from the name is still to confirm');
 const flyer = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1920, 1080, false, 'Flyer_A5.jpg'));
 check(flyer.support === 'print', 'a file named like a flyer → print');
 const cardModel = await page.evaluate(() => [window.__mockuplab.quick.modelForSupport('print', 1700, 1100), window.__mockuplab.quick.modelForSupport('print', 1414, 2000)]);
