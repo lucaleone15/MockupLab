@@ -26,12 +26,12 @@ const monoOnScreen = () =>
       .filter((el) => /mono/i.test(getComputedStyle(el).fontFamily))
       .map((el) => el.tagName + ':' + el.textContent.trim().slice(0, 20)),
   );
-// home: real mock-ups, the drop zone in the first screen, the icon
+// home: real mock-ups, “Open the Studio” in the first screen, the icon
 await page.waitForFunction(() => [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => i.complete && i.naturalWidth > 0), null, { timeout: 15000 }).catch(() => {});
 check(await page.evaluate(() => [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /showcase\//.test(i.src) && i.naturalWidth >= 1200)), 'home hero shows a real rendered mock-up');
 check((await page.locator('[data-testid=showcase-strip] img').count()) >= 5, 'strip of real mock-ups');
-const drop = await page.getByTestId('home-drop').boundingBox();
-check(!!drop && drop.y + drop.height <= 900, 'drop zone visible without scrolling');
+const cta = await page.getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
+check(!!cta && cta.y + cta.height <= 900, '“Open the Studio” visible without scrolling');
 check(await page.evaluate(() => /icons\/(favicon|icon)/.test(document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '')), 'favicon is the app icon');
 check(await page.evaluate(() => !!document.querySelector('[data-testid=logo] img[src*="icons/"]')), 'logo mark is the app icon');
 const weights = await page.evaluate(() => [...document.querySelectorAll('[data-testid=logo] span span')].map((s) => getComputedStyle(s).fontWeight + getComputedStyle(s).fontFamily));
@@ -63,4 +63,13 @@ await page.evaluate(() => window.__mockuplab.project.getState().setBackground({ 
 await page.waitForTimeout(200);
 check((await page.evaluate(() => window.__mockuplab.project.getState().decor.kind)) === 'none', 'a gradient turns the cyclo off');
 check(mono.length === 0, `no monospace text in the interface (${[...new Set(mono)].slice(0, 6).join(', ')})`);
+// every mode says what it is for while it is empty
+for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/projet', 'project'], ['/photo', 'photo']]) {
+  await page.evaluate((p) => { history.pushState(null, '', p); dispatchEvent(new PopStateEvent('popstate')); }, path);
+  await page.waitForTimeout(500);
+  check(await page.getByTestId('mode-role').first().isVisible().catch(() => false), `${screen}: empty state says what the mode is for`);
+}
+await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
+await page.waitForTimeout(300);
+check(await page.getByRole('button', { name: 'Varier ma scène' }).isVisible(), 'Studio: “Vary my scene” button');
 await done(browser, errors);
