@@ -1,10 +1,10 @@
-import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Square, TrendingUp, Waves, ZoomIn } from 'lucide-react';
+import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Smartphone, Square, TrendingUp, Waves, ZoomIn } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
 import { useProject, type AnimationId, type VideoSettings } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { Button, Field, Segmented, Slider, cx } from '@/ui/primitives';
+import { Button, Field, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 import { exportVideo, togglePreview } from './actions';
 import { animationsFor, hasScrollable } from './animations';
 import { videoFps, videoSize } from './size';
@@ -44,8 +44,20 @@ export function VideoSection() {
   const { width, height } = videoSize();
   const fps = videoFps();
 
+  // vertical, 1080 × 1920, 30 fps, 10 s, MP4: ready for Reels and TikTok
+  const reel = () => {
+    setExport({ ratio: 'story', video: { ...video, resolution: '1080', fps: 30, duration: 10, format: 'mp4' } });
+  };
   return (
     <>
+      {mode === 'scene' && (
+        <Tooltip label={t('video.reelHint')}>
+          <Button onClick={reel} className="w-full">
+            <Smartphone size={15} />
+            {t('video.reel')}
+          </Button>
+        </Tooltip>
+      )}
       <Field label={t('video.animation')}>
         {(['cinematic', 'classic'] as const).map((g) => {
           const group = list.filter((a) => a.group === g);
@@ -89,8 +101,20 @@ export function VideoSection() {
         </Field>
       )}
       <Field label={t('video.duration')} value={`${video.duration} s`}>
-        <Slider label={t('video.duration')} min={2} max={12} step={0.5} value={video.duration} onChange={(duration) => set({ duration })} />
+        <Segmented
+          size="sm"
+          value={[6, 10, 15].includes(video.duration) ? String(video.duration) : ''}
+          onChange={(d) => set({ duration: Number(d) })}
+          options={[6, 10, 15].map((d) => ({ value: String(d), label: `${d} s` }))}
+        />
+        <Slider label={t('video.duration')} min={2} max={15} step={0.5} value={video.duration} onChange={(duration) => set({ duration })} />
       </Field>
+      {!current.loop && (
+        <label className="flex cursor-pointer items-center justify-between gap-3 text-[12.5px]" title={t('video.loopHint')}>
+          <span className="text-fg-muted">{t('video.loop')}</span>
+          <Switch checked={!!video.loop} onChange={(loop) => set({ loop })} label={t('video.loop')} />
+        </label>
+      )}
       <Field label={t('video.format')}>
         <Segmented
           value={video.format}
