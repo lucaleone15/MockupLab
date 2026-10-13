@@ -92,4 +92,20 @@ await page.getByTestId('rail-page').getByRole('radio', { name: 'A0', exact: true
 await page.waitForTimeout(800);
 const d1 = await dist();
 check(d1 > d0 * 1.4, `A2 → A0 re-frames the view (camera ${Math.round(d0)} → ${Math.round(d1)})`);
+// other size changes (a laptop's lid) keep the user's view
+const lid = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const s = api.project.getState();
+  s.resetAll();
+  s.addItem('laptop-14');
+  await new Promise((r) => setTimeout(r, 600));
+  const cam = api.bridge().camera;
+  const before = cam.position.clone();
+  const it = api.project.getState().items[0];
+  const def = (await api.models).find?.((m) => m.id === 'laptop-14');
+  api.project.getState().setParam(it.id, 'angle', 70);
+  await new Promise((r) => setTimeout(r, 600));
+  return before.distanceTo(cam.position);
+});
+check(lid < 0.01, `changing a laptop's lid angle keeps the view (camera moved ${lid.toFixed(2)})`);
 await done(browser, errors);

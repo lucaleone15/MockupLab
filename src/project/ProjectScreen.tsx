@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Download, ImagePlus, SlidersHorizontal, X } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { ratioValue } from '@/export/settings';
@@ -7,7 +7,7 @@ import { BrandKit } from '@/app/panels/TextPanel';
 import { SCENE_PRESETS } from '@/scene/scenePresets';
 import { navigate } from '@/shell/route';
 import { useAssets } from '@/store/assets';
-import { useProject } from '@/store/project';
+import { DEFAULT_BRAND, useProject } from '@/store/project';
 import { Button, Spinner, Switch, cx } from '@/ui/primitives';
 import { SUPPORTS } from '@/quick/detect';
 import { STYLES, pack, usePack, type PackColors, type PackFile } from './store';
@@ -109,13 +109,26 @@ function PackColorsBlock() {
   const { t } = useT();
   const colors = usePack((s) => s.colors);
   const brandColors = useProject((p) => p.brand.colors);
-  const brand = brandColors.map((c) => c.hex).slice(0, 3);
+  // the sample brand is not "my brand"
+  const filled = brandColors.map((c) => c.hex).join() !== DEFAULT_BRAND.colors.map((c) => c.hex).join();
+  const brand = filled ? brandColors.map((c) => c.hex).slice(0, 3) : [];
   const options: { key: string; label: string; source: PackColors['source']; palette: string[] | null; index?: number; preview: string[] }[] = [
     { key: 'style', label: t('project.colors.style'), source: 'style', palette: null, preview: [] },
     ...colors.suggestions.map((p, i) => ({ key: `img${i}`, label: t('project.colors.fromImages', { n: i + 1 }), source: 'images' as const, palette: p, index: i, preview: p })),
     ...(brand.length ? [{ key: 'brand', label: t('project.colors.brand'), source: 'brand' as const, palette: brand, preview: brand }] : []),
   ];
   const activeKey = colors.source === 'images' ? `img${colors.index}` : colors.source;
+  // the picker fires while dragging: the pack is re-rendered once the colour settles
+  const [picked, setPicked] = useState<string | null>(null);
+  const timer = useRef(0);
+  const pick = (hex: string) => {
+    setPicked(hex);
+    clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setPicked(null);
+      pack.setPalette('custom', [hex, lighten(hex, 0.12), lighten(hex, -0.5)]);
+    }, 350);
+  };
   return (
     <div className="flex flex-col gap-3 border-t border-line pt-5">
       <div className="flex flex-col gap-1">
@@ -141,8 +154,8 @@ function PackColorsBlock() {
           <input
             type="color"
             aria-label={t('project.colors.pick')}
-            value={colors.source === 'custom' && colors.palette ? colors.palette[0] : '#d9d4cb'}
-            onChange={(e) => pack.setPalette('custom', [e.target.value, lighten(e.target.value, 0.12), lighten(e.target.value, -0.5)])}
+            value={picked ?? (colors.source === 'custom' && colors.palette ? colors.palette[0] : '#d9d4cb')}
+            onChange={(e) => pick(e.target.value)}
             className="h-7 w-full cursor-pointer rounded-md"
           />
           <span className="truncate text-[11.5px] text-fg-muted">{t('project.colors.pick')}</span>
