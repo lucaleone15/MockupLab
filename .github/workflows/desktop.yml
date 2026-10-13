@@ -11,7 +11,18 @@ permissions:
   contents: write
 
 jobs:
+  # one release first: the macOS and Windows builds then upload into it
+  # (when each created it, two releases with the same tag appeared)
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "MockupLab ${GITHUB_REF_NAME#v}" --notes "Mac : télécharge le .dmg (arm64 = Apple Silicon). Windows : MockupLab-Setup.exe." --verify-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
+    needs: release
     strategy:
       fail-fast: false
       matrix:
