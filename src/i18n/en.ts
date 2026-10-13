@@ -545,4 +545,6 @@ export const en: Record<keyof typeof fr, string> = {
   'update.apply': 'Update',
   'update.later': 'Later',
   'home.leadDesktop': 'Drop a screenshot, a website or a poster: MockupLab puts it on realistic 3D devices and objects, or on real photos. Everything stays on your computer.',
+  'project.pdfMoreOne': 'Add the other page',
+  'project.pdfMore': 'Add the other {n} pages',
 };

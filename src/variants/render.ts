@@ -23,6 +23,21 @@ let queue: Promise<unknown> = Promise.resolve();
 /** Resolves once no sandbox is running (the project is the user's again). */
 export const whenIdle = () => queue;
 
+let running = 0;
+/** A sandbox is rendering: the project in the store is a staged scene, not the user's. */
+export const sandboxRunning = () => running > 0;
+
+/** Galleries that render in sandboxes (Quick, Project, variants) register how to stop. */
+const cancellers = new Set<() => void>();
+export function onCancelSandboxes(fn: () => void) {
+  cancellers.add(fn);
+}
+/** Stops every gallery's rendering and waits until the project is the user's again. */
+export async function cancelSandboxes() {
+  for (const fn of cancellers) fn();
+  await whenIdle();
+}
+
 /** Runs `fn` on a temporary copy of the project; sandboxes run one after the other. */
 export function inSandbox<T>(fn: () => Promise<T>): Promise<T> {
   const p = queue.then(() => sandbox(fn));
@@ -36,12 +51,18 @@ async function sandbox<T>(fn: () => Promise<T>): Promise<T> {
   const history = useProject.temporal.getState();
   history.pause();
   pauseAutosave(true);
+  running++;
+  let userChanged = false;
   try {
     return await fn();
   } finally {
+    running--;
     sandboxFlag.restoring = true;
     try {
-      useProject.setState({ ...saved });
+      // the scene comes back; what the user changed meanwhile (name, brand, export settings) stays
+      const live = useProject.getState();
+      userChanged = live.name !== saved.name || live.brand !== saved.brand || live.export !== saved.export;
+      useProject.setState({ ...saved, name: live.name, brand: live.brand, export: live.export });
     } finally {
       sandboxFlag.restoring = false;
     }
@@ -49,7 +70,7 @@ async function sandbox<T>(fn: () => Promise<T>): Promise<T> {
     await settle(2);
     if (view) cameraHandle.restore?.(view);
     history.resume();
-    pauseAutosave(false);
+    pauseAutosave(false, userChanged);
   }
 }
 

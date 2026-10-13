@@ -1,4 +1,5 @@
 import { hasRenderer } from '@/scene/exporter';
+import { sandboxRunning } from '@/variants/render';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { storeThumb, useLibrary } from './store';
@@ -35,11 +36,20 @@ async function render(): Promise<Blob | null> {
 }
 
 /** Takes the current project's thumbnail now (if the editor can render it). */
-export async function captureThumb() {
+/** A thumbnail can be taken now (no export, preview or render sandbox running). */
+export function canCapture() {
   const ui = useUi.getState();
+  return !busy && !ui.exporting && !ui.previewing && !sandboxRunning() && (ui.screen === 'studio' || ui.screen === 'photo');
+}
+
+export async function captureThumb() {
   const id = useLibrary.getState().currentId;
-  if (!id || busy || ui.exporting || ui.previewing) return;
-  if (ui.screen !== 'studio' && ui.screen !== 'photo') return;
+  if (!id || !canCapture()) {
+    // busy editor: try again a little later (not from other screens, nothing to capture there)
+    const screen = useUi.getState().screen;
+    if (id && (screen === 'studio' || screen === 'photo')) scheduleThumb(4000);
+    return;
+  }
   busy = true;
   try {
     const blob = await render();

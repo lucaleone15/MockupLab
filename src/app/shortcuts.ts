@@ -141,6 +141,15 @@ function onPhotoKey(e: KeyboardEvent, key: string) {
   return key === 'r' || key === 'f';
 }
 
+/** Pasted or dropped files go where the screen expects them. */
+function routeFiles(files: File[]) {
+  const screen = useUi.getState().screen;
+  if (screen === 'home') importFromHome(files);
+  else if (screen === 'quick') void import('@/quick/store').then((m) => files[0] && m.quick.setImage(files[0]));
+  else if (screen === 'project') void import('@/project/store').then((m) => m.pack.add(files));
+  else void importImages(files);
+}
+
 /** Global keyboard shortcuts, clipboard paste and drag & drop (files and library models). */
 export function useGlobalInput() {
   useEffect(() => {
@@ -149,8 +158,7 @@ export function useGlobalInput() {
       const files = [...(e.clipboardData?.files ?? [])];
       if (files.length) {
         e.preventDefault();
-        if (useUi.getState().screen === 'home') importFromHome(files);
-        else importImages(files);
+        routeFiles(files);
       }
     };
 
@@ -193,8 +201,9 @@ export function useGlobalInput() {
         void import('@/models/glb/userModels').then((m) => m.importModelFile(glb));
         return;
       }
-      if (useUi.getState().screen === 'home') {
-        if (e.dataTransfer?.files.length) importFromHome(e.dataTransfer.files);
+      const screen = useUi.getState().screen;
+      if (screen === 'home' || screen === 'quick' || screen === 'project') {
+        if (e.dataTransfer?.files.length) routeFiles([...e.dataTransfer.files]);
         return;
       }
       // An image dropped on a device (or a photo zone) goes on that device's screen.

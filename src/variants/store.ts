@@ -6,7 +6,7 @@ import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { AXES, applyLook, generateLooks, refineLook, type Axis, type Look } from './looks';
-import { inSandbox, renderFull, renderThumb, showLook, whenIdle } from './render';
+import { inSandbox, renderFull, renderThumb, showLook, whenIdle, onCancelSandboxes } from './render';
 
 /*
  * Variants gallery: generated looks, their thumbnails (rendered one after the
@@ -35,6 +35,9 @@ export const useVariants = create<VariantsState>(() => ({
 }));
 
 let run = 0;
+onCancelSandboxes(() => {
+  run++;
+});
 const set = useVariants.setState;
 const get = useVariants.getState;
 
