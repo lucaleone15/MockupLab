@@ -202,7 +202,11 @@ export interface Ground {
 
 export type ImageFormat = 'png' | 'jpeg' | 'webp';
 export type ResolutionPreset = '1080' | '2k' | '4k';
-export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4';
+/** Social formats have an exact pixel size. */
+export type SocialPreset = 'ig-post' | 'ig-square' | 'story' | 'youtube' | 'linkedin' | 'pinterest';
+/** An Instagram carousel: N slides of 4:5 or 1:1 side by side. */
+export type CarouselPreset = `c${number}-${'4x5' | '1x1'}`;
+export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4' | SocialPreset | CarouselPreset;
 
 export type AnimationId = 'reveal' | 'dive' | 'dutch' | 'flip' | 'drop' | 'crane' | 'vertigo' | 'trailer' | 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float' | 'zoom';
 

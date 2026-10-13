@@ -1,6 +1,7 @@
-import { Maximize2, Scan, Sparkles } from 'lucide-react';
+import { ChevronDown, Check, Maximize2, PanelsTopLeft, Scan, Sparkles } from 'lucide-react';
+import { DropdownMenu } from 'radix-ui';
 import { useT } from '@/i18n';
-import { RATIOS } from '@/export/settings';
+import { RATIOS, SOCIAL, socialOf } from '@/export/settings';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { variants } from '@/variants/store';
@@ -10,9 +11,11 @@ const btn = 'flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[12.5px] f
 
 /** Output format, recenter, full-screen preview and Ideas, floating over the stage. */
 export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
-  const { t } = useT();
+  const { t, tr } = useT();
   const ratio = useProject((s) => s.export.ratio);
   const setExport = useProject((s) => s.setExport);
+  const social = socialOf(ratio);
+  const safeZones = useUi((s) => s.safeZones);
   return (
     <div className="menu-surface pointer-events-auto flex items-center gap-1 rounded-[14px] p-1" data-testid="floating-bar">
       <div role="radiogroup" aria-label={t('props.ratio')} className="flex">
@@ -31,6 +34,36 @@ export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
           </Tooltip>
         ))}
       </div>
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button type="button" aria-label={social ? `${t('social.menu')} · ${tr(social.label)}` : t('social.menu')} className={cx(btn, social && 'bg-fg text-bg hover:bg-fg hover:text-bg')}>
+            {social ? tr(social.label) : t('social.menu')}
+            <ChevronDown size={13} />
+          </button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content side="top" sideOffset={8} className="menu-surface z-50 min-w-[230px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
+            <DropdownMenu.RadioGroup value={social?.id ?? ''} onValueChange={(v) => setExport({ ratio: v as typeof ratio })}>
+              {SOCIAL.map((f) => (
+                <DropdownMenu.RadioItem key={f.id} value={f.id} className="flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-fg">
+                  {tr(f.label)}
+                  <span className="ml-auto text-[11.5px] tabular-nums opacity-60">
+                    {f.px[0]} × {f.px[1]}
+                  </span>
+                  <Check size={13} className={social?.id === f.id ? '' : 'opacity-0'} />
+                </DropdownMenu.RadioItem>
+              ))}
+            </DropdownMenu.RadioGroup>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+      {social?.safe && (
+        <Tooltip label={t('social.safeHint')}>
+          <button type="button" aria-pressed={safeZones} aria-label={t('social.safe')} className={cx(btn, safeZones && 'text-fg')} onClick={() => useUi.getState().setSafeZones(!safeZones)}>
+            <PanelsTopLeft size={15} />
+          </button>
+        </Tooltip>
+      )}
       <span className="mx-1 h-5 w-px bg-line-strong" />
       <Tooltip label={t('stage.resetView')} shortcut="F">
         <button type="button" className={btn} aria-label={t('stage.resetView')} onClick={() => useUi.getState().resetView()}>

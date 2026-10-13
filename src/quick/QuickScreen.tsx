@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
 import { Check, Download, ImagePlus, SlidersHorizontal, Sparkles } from 'lucide-react';
-import { useT, type I18nKey } from '@/i18n';
-import { RATIOS, ratioValue } from '@/export/settings';
+import { useT, type I18nKey, type I18nString } from '@/i18n';
+import { RATIOS, SOCIAL, ratioValue } from '@/export/settings';
 import { pickImages } from '@/lib/importImage';
 import { navigate } from '@/shell/route';
 import { useAssets } from '@/store/assets';
-import { useProject } from '@/store/project';
+import { useProject, type RatioPreset } from '@/store/project';
 import { Button, Chip, GroupTitle, Spinner, cx } from '@/ui/primitives';
 import { SUPPORTS } from './detect';
 import { QUICK_TAGS } from './templates';
 import { labelOf, quick, useQuick, type QuickTile } from './store';
 import { ModeRole } from '@/shell/ModeRole';
 
-const FORMATS = RATIOS.filter((r) => ['16:9', '4:3', '1:1', '4:5', '9:16'].includes(r.id));
+const FORMATS: { id: RatioPreset; label: string | I18nString }[] = [
+  ...RATIOS.filter((r) => ['16:9', '4:3', '1:1', '4:5', '9:16'].includes(r.id)),
+  ...SOCIAL.filter((s) => s.id === 'ig-post' || s.id === 'story').map((s) => ({ id: s.id, label: s.label })),
+];
 
 function Tile({ tile }: { tile: QuickTile }) {
   const { t } = useT();
@@ -60,7 +63,7 @@ function Tile({ tile }: { tile: QuickTile }) {
 }
 
 export function QuickScreen() {
-  const { t } = useT();
+  const { t, tr } = useT();
   const s = useQuick();
   const asset = useAssets((a) => (s.assetId ? a.assets[s.assetId] : undefined));
   const ratio = useProject((p) => p.export.ratio);
@@ -114,7 +117,7 @@ export function QuickScreen() {
                   quick.refresh();
                 }}
               >
-                {r.label}
+                {typeof r.label === 'string' ? r.label : tr(r.label)}
               </Chip>
             ))}
           </div>
