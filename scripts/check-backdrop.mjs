@@ -98,4 +98,24 @@ const mig = await page.evaluate(() => {
 check(mig.table[0] === 6 && mig.table[1].kind === 'solid' && mig.table[1].color === '#b9c2ae' && !mig.table[2], `v5 table wall → plain background (${JSON.stringify(mig.table)})`);
 check(mig.red.kind === 'solid' && mig.red.color === '#ff0000', 'a chosen background is kept over an old wall colour');
 check(mig.poster[0].kind === 'solid' && mig.poster[0].color === '#c98a6b' && !mig.poster[1], `v5 poster wall → plain background, param dropped (${JSON.stringify(mig.poster)})`);
+// "Arrange" with a poster on the wall + a flyer + a business card: the camera keeps a 3/4 view (not a plunge),
+// and the prints stay in front of the wall
+const arr = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const s = () => api.project.getState();
+  s().resetAll();
+  s().setDecor({ kind: 'none' });
+  s().addItem('poster');
+  s().addItem('flyer');
+  s().addItem('business-card');
+  s().arrange();
+  await new Promise((r) => setTimeout(r, 1200));
+  const dir = new (api.bridge().camera.position.constructor)();
+  api.bridge().camera.getWorldDirection(dir);
+  const wallZ = s().items.find((i) => i.modelId === 'poster').position[2];
+  return { mount: s().items.find((i) => i.modelId === 'poster').params.mount, pitch: (Math.asin(-dir.y) * 180) / Math.PI, gaps: s().items.filter((i) => i.modelId !== 'poster').map((i) => Math.round(i.position[2] - wallZ)) };
+});
+check(arr.pitch >= 15 && arr.pitch <= 35, `after Arrange, the camera looks down 15–35°, enough to see the prints on the floor (${arr.pitch.toFixed(1)}°)`);
+check(arr.mount === 'lean', `a poster arranged with prints on the floor leans against the wall (${arr.mount})`);
+check(arr.gaps.every((g) => g >= 0 && g <= 60), `prints stay in front of the wall (${arr.gaps} cm)`);
 await done(browser, errors);

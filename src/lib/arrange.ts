@@ -34,8 +34,12 @@ export function besideOthers(items: SceneItem[], width: number): Vec3 {
  * the others alternate right / left in front of it, angled towards the
  * centre, so every screen stays visible from a 3/4 view.
  */
-export function arrangeItems(items: SceneItem[]): SceneItem[] {
-  if (items.length < 2) return items.map((it) => ({ ...it, position: [0, 0, 0] as Vec3 }));
+export function arrangeItems(input: SceneItem[]): SceneItem[] {
+  if (input.length < 2) return input.map((it) => ({ ...it, position: [0, 0, 0] as Vec3 }));
+  // a poster hung high above prints lying on the floor leaves an empty band in the middle of the frame:
+  // arranged together, it leans against the wall instead, at the prints' level
+  const onFloor = input.some((it) => it.visible && !wallOf(it));
+  const items = onFloor ? input.map((it) => (it.modelId === 'poster' && it.params.mount === 'wall' ? { ...it, params: { ...it.params, mount: 'lean' } } : it)) : input;
   const sized = items.map((it) => ({ it, f: footprint(it) })).sort((a, b) => b.f.w * b.f.h - a.f.w * a.f.h);
   const [hero, ...rest] = sized;
   const out = new Map<string, SceneItem>();
