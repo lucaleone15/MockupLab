@@ -18,8 +18,12 @@ await journey('freelance-pack', 'Site + appli + affiche + carte d’un client �
   });
   await u.step('Choisir un style', () => u.choose(/Marbre · mur sable/, { exact: false }));
   await u.step('Mettre les couleurs de la marque au pack', async () => {
-    if (!(await p.getByText(/Couleurs du pack/).first().isVisible().catch(() => false)))
+    if (!(await p.getByText(/Couleurs du pack/).first().isVisible().catch(() => false))) {
       u.friction('bloquant', 'impossible de choisir les couleurs de fond du pack : la palette de marque n’habille que la planche, les 6 styles ont des couleurs figées');
+      return;
+    }
+    await u.choose('Ma marque');
+    await u.choose('Varier d’une scène à l’autre');
   });
   await u.step('Voir le pack et la planche', () => p.getByText('Planche de présentation').first().waitFor({ timeout: 60000 }), { slowMs: 15000 });
   await u.step('Attendre les aperçus du pack', () => p.waitForFunction(() => !document.querySelector('[class*="animate-[spin"]'), null, { timeout: 120000 }), { slowMs: 20000 });
