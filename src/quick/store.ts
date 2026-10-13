@@ -14,7 +14,7 @@ import { useAssets } from '@/store/assets';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { AXES, applyLook, generateLooks, type Look } from '@/variants/looks';
-import { inSandbox, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
+import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { SUPPORT_MODELS, detectSupport, type Support } from './detect';
 import { TEMPLATES, type QuickTag, type QuickTemplate } from './templates';
 
@@ -34,6 +34,8 @@ interface QuickState {
   filter: QuickTag | 'all';
   tiles: QuickTile[];
   thumbs: Record<string, string>;
+  /** What each thumbnail shows (support|design|ratio), to never keep a stale one. */
+  thumbKeys: Record<string, string>;
   selected: string[];
   busy: string | null;
 }
@@ -51,11 +53,14 @@ const initialTiles = (): QuickTile[] =>
     return { id: tpl.id, label, tags: tpl.tags, template: tpl };
   });
 
-export const useQuick = create<QuickState>(() => ({ assetId: null, support: 'phone', confident: true, filter: 'all', tiles: initialTiles(), thumbs: {}, selected: [], busy: null }));
+export const useQuick = create<QuickState>(() => ({ assetId: null, support: 'phone', confident: true, filter: 'all', tiles: initialTiles(), thumbs: {}, thumbKeys: {}, selected: [], busy: null }));
 const set = useQuick.setState;
 const get = useQuick.getState;
 
 let run = 0;
+onCancelSandboxes(() => run++);
+
+const currentKey = () => `${get().support}|${get().assetId ?? 'sample'}|${useProject.getState().export.ratio}`;
 
 /** The device of the current support, with the design (or a sample) on its first face. */
 async function stagedItem(): Promise<SceneItem> {
@@ -103,18 +108,25 @@ async function renderMissing() {
   if (!todo().length || useUi.getState().screen !== 'quick') return;
   await inSandbox(async () => {
     for (let next = todo()[0]; next && token === run && useUi.getState().screen === 'quick'; next = todo()[0]) {
+      const key = currentKey();
       await stage(next);
       await settleScene();
       if (token !== run) break;
       const url = await renderThumb();
-      set((s) => ({ thumbs: { ...s.thumbs, [next.id]: url } }));
+      // the support, design or format changed while it rendered: drop it, it will be redone
+      if (token !== run || key !== currentKey()) {
+        URL.revokeObjectURL(url);
+        break;
+      }
+      set((s) => ({ thumbs: { ...s.thumbs, [next.id]: url }, thumbKeys: { ...s.thumbKeys, [next.id]: key } }));
     }
   }).catch(() => undefined);
 }
 
 function dropThumbs() {
+  run++;
   for (const url of Object.values(get().thumbs)) URL.revokeObjectURL(url);
-  set({ thumbs: {} });
+  set({ thumbs: {}, thumbKeys: {} });
 }
 
 export const labelOf = (tile: QuickTile) => (typeof tile.label === 'string' ? tile.label : tile.label[useLang.getState().lang]);

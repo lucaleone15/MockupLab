@@ -223,12 +223,21 @@ let paused = false;
 let dirty = false;
 
 /** Suspends autosave while the project is changed temporarily (variants, batches); resuming saves. */
-export function pauseAutosave(v: boolean) {
+export function pauseAutosave(v: boolean, changedMeanwhile = false) {
   paused = v;
-  if (!v) {
-    clearTimeout(timer);
-    timer = setTimeout(() => void save().catch(() => undefined), 700);
-  }
+  if (changedMeanwhile) dirty = true;
+  clearTimeout(timer);
+  // resuming saves only what was changed before (or during) the pause, never a staged scene
+  if (!v && dirty) schedule();
+}
+
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    if (paused) return;
+    dirty = false;
+    void save().catch(() => undefined);
+  }, 700);
 }
 
 /** Runs `fn` (a load) without scheduling an autosave for it. */
@@ -267,7 +276,12 @@ async function save() {
 /** Saves the current project now (before switching to another one). */
 export async function flushSave() {
   clearTimeout(timer);
-  if (paused) return;
+  if (paused) {
+    // a render sandbox holds a staged scene: stop it, the user's project comes back
+    const { cancelSandboxes } = await import('@/variants/render');
+    await cancelSandboxes();
+    clearTimeout(timer);
+  }
   if (!dirty) return;
   dirty = false;
   await save().catch(() => undefined);
@@ -275,17 +289,15 @@ export async function flushSave() {
 
 /** Saves shortly after every change. */
 export function startAutosave() {
-  const schedule = () => {
-    if (paused || silent) return;
+  const onChange = () => {
+    if (silent) return;
+    // changes made by a render sandbox are not the user's
+    if (paused) return;
     dirty = true;
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      dirty = false;
-      void save().catch(() => undefined);
-    }, 700);
+    schedule();
   };
-  useProject.subscribe(schedule);
-  useAssets.subscribe(schedule);
+  useProject.subscribe(onChange);
+  useAssets.subscribe(onChange);
 }
 
 /* ------------------------------------------------------------ files */
@@ -412,8 +424,13 @@ export const library = {
     await writeIndex(list.map((p) => (p.id === id ? { ...p, name } : p)));
   },
   async remove(id: string) {
-    clearTimeout(timer);
     const current = useLibrary.getState().currentId === id;
+    if (current) {
+      const { cancelSandboxes } = await import('@/variants/render');
+      await cancelSandboxes();
+      clearTimeout(timer);
+      dirty = false;
+    }
     await del(projectKey(id), db);
     await del(thumbKey(id), db);
     const { deleteAllExports } = await import('@/library/exports');

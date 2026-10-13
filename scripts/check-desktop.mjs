@@ -32,6 +32,14 @@ win = await app.firstWindow();
 await win.waitForSelector('[data-testid=home]', { timeout: 20000 });
 await win.waitForSelector('[data-testid=project-card]', { timeout: 10000 }).catch(() => {});
 check((await win.getByTestId('project-card').filter({ hasText: 'Projet bureau' }).count()) === 1, 'project kept between launches');
+await app.close();
+// an update found before the page subscribed is still offered
+const env2 = { ...env, MOCKUPLAB_FAKE_UPDATE: '9.9.9' };
+delete env2.MOCKUPLAB_NO_UPDATES;
+app = await electron.launch({ args: ['desktop'], env: env2 });
+win = await app.firstWindow();
+await win.waitForSelector('[data-testid=update-banner]', { timeout: 20000 }).catch(() => {});
+check(await win.getByTestId('update-banner').isVisible(), 'desktop update offered even when found before the page loaded');
 check(errors.length === 0, `no page errors${errors.length ? ': ' + errors.join(' | ') : ''}`);
 await app.close();
 

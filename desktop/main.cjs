@@ -25,6 +25,8 @@ async function serve(request) {
 }
 
 let win = null;
+/** Last update state, replayed when the page subscribes (it may load after the check). */
+let lastUpdate = null;
 
 function createWindow() {
   win = new BrowserWindow({
@@ -49,13 +51,26 @@ function createWindow() {
 
 /* ------------------------------------------------------------ updates */
 
+ipcMain.on('mockuplab:update-query', (e) => {
+  if (lastUpdate) e.sender.send('mockuplab:update', lastUpdate);
+});
+
 function startUpdates() {
+  // tests: pretend an update is waiting
+  if (process.env.MOCKUPLAB_FAKE_UPDATE) {
+    lastUpdate = { state: 'available', version: process.env.MOCKUPLAB_FAKE_UPDATE };
+    ipcMain.on('mockuplab:install-update', () => win?.webContents.send('mockuplab:update-installing'));
+    return;
+  }
   if (!app.isPackaged || process.env.MOCKUPLAB_NO_UPDATES) return;
   const { autoUpdater } = require('electron-updater');
   // macOS installs updates only for signed apps: there we offer the download page instead
   const canInstall = process.platform !== 'darwin';
   autoUpdater.autoDownload = canInstall;
-  const send = (state, info) => win?.webContents.send('mockuplab:update', { state, version: info?.version ?? '' });
+  const send = (state, info) => {
+    lastUpdate = { state, version: info?.version ?? '' };
+    win?.webContents.send('mockuplab:update', lastUpdate);
+  };
   autoUpdater.on('update-available', (info) => !canInstall && send('available', info));
   autoUpdater.on('update-downloaded', (info) => send('downloaded', info));
   autoUpdater.on('error', () => undefined);

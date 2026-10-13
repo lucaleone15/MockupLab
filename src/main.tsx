@@ -49,7 +49,8 @@ if (import.meta.env.DEV) {
     import('./library/exports'),
     import('./quick/store'),
     import('./project/store'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk, pk]) => {
+    import('./library/thumbs'),
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk, pk, th]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -69,6 +70,7 @@ if (import.meta.env.DEV) {
         exports: lx,
         quick: qk.quick,
         pack: pk.pack,
+        thumbs: th,
         importFiles: im.importImages,
         asset: (id: string) => as.useAssets.getState().assets[id],
         variants: va.useVariants,

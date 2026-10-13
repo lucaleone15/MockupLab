@@ -543,4 +543,6 @@ export const fr = {
   'update.apply': 'Mettre à jour',
   'update.later': 'Plus tard',
   'home.leadDesktop': 'Dépose une capture d’écran, un site ou une affiche : MockupLab la place sur des appareils et des objets réalistes en 3D, ou sur de vraies photos. Tout reste sur ton ordinateur.',
+  'project.pdfMoreOne': 'Ajouter l’autre page',
+  'project.pdfMore': 'Ajouter les {n} autres pages',
 } as const;

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { t } from '@/i18n';
 import { download, formatBytes, slugify } from '@/export/exportImage';
 import { fileToAsset } from '@/lib/importImage';
-import { expandPdfs, isPdf } from '@/lib/pdf';
+import { expandPdfs, isPdf, pdfPageCount, pdfToImage } from '@/lib/pdf';
 import { ZipWriter } from '@/lib/zip';
 import { getModel } from '@/models/registry';
 import { SCENE_PRESETS, applyScenePreset } from '@/scene/scenePresets';
@@ -10,7 +10,7 @@ import { useAssets } from '@/store/assets';
 import { makeItem, useProject, type SceneItem } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { inSandbox, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
+import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { SUPPORT_MODELS, detectSupport, type Support } from '@/quick/detect';
 import { composeBoard } from './board';
 
@@ -26,6 +26,8 @@ export interface PackFile {
   assetId: string;
   support: Support;
   confident: boolean;
+  /** First page of a longer PDF: its other pages can be added. */
+  pdf?: { file: File; pages: number };
 }
 
 export const STYLES = ['table-oak-white', 'table-marble-sand', 'studio-light', 'studio-dark', 'podium-terrazzo', 'aurora'];
@@ -45,6 +47,7 @@ export const usePack = create<PackState>(() => ({ files: [], style: STYLES[0], b
 const set = usePack.setState;
 const get = usePack.getState;
 let run = 0;
+onCancelSandboxes(() => run++);
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -107,12 +110,14 @@ async function renderMissing() {
       stage('hero', style);
       await settleScene();
       const url = await renderThumb();
+      if (!alive()) return void URL.revokeObjectURL(url);
       set((s) => ({ thumbs: { ...s.thumbs, styles: { ...s.thumbs.styles, [style]: url } } }));
     }
     if (alive() && !get().thumbs.hero) {
       stage('hero');
       await settleScene();
       const url = await renderThumb();
+      if (!alive()) return void URL.revokeObjectURL(url);
       set((s) => ({ thumbs: { ...s.thumbs, hero: url } }));
     }
     for (const f of get().files) {
@@ -121,6 +126,7 @@ async function renderMissing() {
       stage(f.id);
       await settleScene();
       const url = await renderThumb();
+      if (!alive()) return void URL.revokeObjectURL(url);
       set((s) => ({ thumbs: { ...s.thumbs, items: { ...s.thumbs.items, [f.id]: url } } }));
     }
   }).catch(() => undefined);
@@ -133,6 +139,7 @@ async function renderMissing() {
 }
 
 function changed(styles: boolean) {
+  run++;
   dropPackThumbs(styles);
   void renderMissing();
 }
@@ -146,20 +153,63 @@ export const pack = {
     run++;
   },
   async add(input: Iterable<File>) {
-    const pdfs = new Set([...input].filter(isPdf).map((f) => f.name.replace(/\.pdf$/i, '')));
-    const files = await expandPdfs(input);
     const added: PackFile[] = [];
-    for (const file of files) {
-      if (!file.type.startsWith('image/')) continue;
+    for (const original of input) {
+      const pdf = isPdf(original);
+      const [file] = pdf ? await expandPdfs([original]) : [original];
+      if (!file || !file.type.startsWith('image/')) continue;
       const asset = await fileToAsset(file, file.name || 'image');
       useAssets.getState().add(asset);
-      const fromPdf = [...pdfs].some((n) => file.name.startsWith(n + '-p'));
-      const { support, confident } = detectSupport(asset.width, asset.height, fromPdf);
-      added.push({ id: uid(), name: file.name, assetId: asset.id, support, confident });
+      const { support, confident } = detectSupport(asset.width, asset.height, pdf);
+      const pages = pdf ? await pdfPageCount(original) : 0;
+      added.push({ id: uid(), name: file.name, assetId: asset.id, support, confident, pdf: pages > 1 ? { file: original, pages } : undefined });
     }
     if (!added.length) return;
     set((s) => ({ files: [...s.files, ...added] }));
     changed(true);
+  },
+  /** Adds the other pages of a PDF whose first page is in the pack. */
+  async addPdfPages(id: string) {
+    const row = get().files.find((f) => f.id === id);
+    if (!row?.pdf) return;
+    const { file, pages } = row.pdf;
+    set((s) => ({ files: s.files.map((f) => (f.id === id ? { ...f, pdf: undefined } : f)) }));
+    const added: PackFile[] = [];
+    for (let n = 2; n <= pages; n++) {
+      try {
+        const img = await pdfToImage(file, n);
+        const asset = await fileToAsset(img, img.name);
+        useAssets.getState().add(asset);
+        added.push({ id: uid(), name: img.name, assetId: asset.id, support: row.support, confident: true });
+      } catch {
+        toast.error(t('pdf.error', { name: file.name }));
+        break;
+      }
+    }
+    const i = get().files.findIndex((f) => f.id === id);
+    set((s) => ({ files: [...s.files.slice(0, i + 1), ...added, ...s.files.slice(i + 1)] }));
+    changed(true);
+  },
+  /** One mock-up of the pack at the export settings. */
+  async downloadOne(target: 'hero' | string) {
+    if (get().busy) return;
+    run++;
+    set({ busy: true });
+    try {
+      const file = get().files.find((f) => f.id === target);
+      const r = await inSandbox(async () => {
+        stage(target);
+        await settleScene();
+        return renderFull();
+      });
+      const base = target === 'hero' ? 'hero' : slugify((file?.name ?? 'mockup').replace(/\.[^.]+$/, '')) || 'mockup';
+      download(r.blob, `mockuplab-${base}-${r.width}x${r.height}.${r.ext}`);
+    } catch (e) {
+      toast.error(t('export.failed', { reason: e instanceof Error ? e.message : String(e) }));
+    } finally {
+      set({ busy: false });
+      void renderMissing();
+    }
   },
   remove(id: string) {
     set((s) => ({ files: s.files.filter((f) => f.id !== id) }));

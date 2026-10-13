@@ -21,7 +21,6 @@ declare global {
     __mockuplabUpdate?: { show: () => void };
     mockuplabDesktop?: {
       platform: string;
-      version: string;
       onUpdate: (cb: (info: { state: 'available' | 'downloaded'; version: string }) => void) => void;
       installUpdate: () => void;
     };

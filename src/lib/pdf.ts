@@ -55,4 +55,16 @@ export async function expandPdfs(files: Iterable<File>): Promise<File[]> {
   return out;
 }
 
+/** Number of pages of a PDF (0 if it cannot be read). */
+export async function pdfPageCount(file: File): Promise<number> {
+  try {
+    const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')]);
+    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    return doc.numPages;
+  } catch {
+    return 0;
+  }
+}
+
 export const IMAGE_OR_PDF = 'image/*,application/pdf';

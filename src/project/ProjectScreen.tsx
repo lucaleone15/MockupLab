@@ -33,6 +33,11 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13.5px] font-medium">{f.name}</span>
         {!f.confident && <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span>}
+        {f.pdf && (
+          <button type="button" className="block text-[12.5px] font-medium text-accent hover:underline" onClick={() => void pack.addPdfPages(f.id)}>
+            {f.pdf.pages === 2 ? t('project.pdfMoreOne') : t('project.pdfMore', { n: f.pdf.pages - 1 })}
+          </button>
+        )}
       </span>
       <select
         aria-label={t('project.supportOf', { name: f.name })}
@@ -59,14 +64,21 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
   );
 }
 
-function PackItem({ url, label, onOpen, ratio }: { url?: string; label: string; onOpen?: () => void; ratio: number }) {
+function PackItem({ url, label, onOpen, onDownload, ratio }: { url?: string; label: string; onOpen?: () => void; onDownload?: () => void; ratio: number }) {
   const { t } = useT();
+  const busy = usePack((s) => s.busy);
   return (
     <div data-testid="pack-item" className="group flex flex-col gap-1.5">
       <div className="relative overflow-hidden rounded-[14px] bg-surface-2" style={{ aspectRatio: String(ratio) }}>
         {url ? <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[fade-in_250ms_ease-out]" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
         {onOpen && (
-          <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+          <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+            {onDownload && (
+              <Button variant="primary" size="sm" disabled={!url || busy} onClick={onDownload}>
+                <Download size={13} />
+                {t('quick.download')}
+              </Button>
+            )}
             <Button size="sm" className="bg-white text-[#1d1d1f] hover:bg-white/90" onClick={onOpen}>
               <SlidersHorizontal size={13} />
               {t('project.openStudio')}
@@ -140,10 +152,10 @@ export function ProjectScreen() {
           <Step n={3} title={t('project.step.pack')}>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               <div className="col-span-2 row-span-2">
-                <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} onOpen={open('hero')} />
+                <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} onOpen={open('hero')} onDownload={() => void pack.downloadOne('hero')} />
               </div>
               {s.files.map((f) => (
-                <PackItem key={f.id} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} onOpen={open(f.id)} />
+                <PackItem key={f.id} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} onOpen={open(f.id)} onDownload={() => void pack.downloadOne(f.id)} />
               ))}
               {s.board && <PackItem url={s.thumbs.board} label={t('project.board')} ratio={1.5} />}
             </div>
