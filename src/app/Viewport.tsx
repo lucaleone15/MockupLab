@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImagePlus, Sparkles } from 'lucide-react';
 import { useT } from '@/i18n';
-import { ratioValue, socialOf } from '@/export/settings';
+import { carouselOf, ratioValue, socialOf } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
 import { useAssets } from '@/store/assets';
 import { pickImages } from '@/lib/importImage';
@@ -77,6 +77,20 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
     };
   }, [background, width, height, theme, assets]);
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" />;
+}
+
+/** Where an Instagram carousel is cut into slides: on screen only. */
+function CarouselCuts() {
+  const ratio = useProject((s) => s.export.ratio);
+  const c = carouselOf(ratio);
+  if (!c) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10">
+      {Array.from({ length: c.slides - 1 }, (_, i) => (
+        <div key={i} data-testid="carousel-cut" className="absolute inset-y-0 border-l border-dashed border-white/70 mix-blend-difference" style={{ left: `${((i + 1) / c.slides) * 100}%` }} />
+      ))}
+    </div>
+  );
 }
 
 /** Where the social network's interface covers the frame: on screen only, never in the export. */
@@ -205,6 +219,7 @@ export function Viewport() {
         {width > 0 && <Stage />}
         <OverlayLayer width={width} height={height} frame={frame} />
         <SafeZones />
+        <CarouselCuts />
         {!hasImage && <EmptyHint />}
       </div>
 
