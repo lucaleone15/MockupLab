@@ -39,6 +39,19 @@ export async function journey(name, goal, run, opts = {}) {
       steps.push({ label, ms, clicks: (await clicks()) - c });
       await page.screenshot({ path: `${dir}/${String(steps.length).padStart(2, '0')}-${slug(label)}.png` });
     },
+    /** Clicks the visible control a person would read as `name` (button, tab, radio, switch…). */
+    async choose(name, { exact = true, timeout = 8000 } = {}) {
+      const deadline = Date.now() + timeout;
+      while (Date.now() < deadline) {
+        for (const role of ['button', 'radio', 'tab', 'option', 'switch', 'checkbox', 'menuitem', 'link']) {
+          const l = page.getByRole(role, { name, exact });
+          const n = await l.count();
+          for (let i = 0; i < n; i++) if (await l.nth(i).isVisible()) return l.nth(i).click();
+        }
+        await page.waitForTimeout(200);
+      }
+      throw new Error(`aucun contrôle visible nommé « ${name} »`);
+    },
     async upload(trigger, file) {
       const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), trigger.click()]);
       await chooser.setFiles(file);

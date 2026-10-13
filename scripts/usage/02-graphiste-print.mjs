@@ -1,0 +1,38 @@
+// Print designer: a poster, a flyer and a business card for a client, on a matching wall, exported in 4K.
+import { journey } from './lib.mjs';
+await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mur assorti, export 4K', async (u) => {
+  const p = u.page;
+  const T = { timeout: 8000 };
+  await u.step('Ouvrir le Studio', () => p.getByRole('button', { name: /Studio/ }).first().click(T));
+  await u.step('Ajouter une affiche', async () => {
+    if (!(await p.getByRole('button', { name: 'Print', exact: true }).isVisible())) {
+      u.friction('surprenant', 'le Studio s’ouvre sur « Réglages » (le téléphone par défaut), pas sur la liste des appareils');
+      await p.getByRole('tab', { name: 'Appareils' }).click(T);
+    }
+    await p.getByRole('button', { name: 'Print', exact: true }).click(T);
+    await p.getByRole('button', { name: 'Affiche', exact: true }).click(T);
+  });
+  await u.step('Mettre son visuel sur l’affiche', () => u.upload(p.getByRole('button', { name: 'parcourir' }), 'public/samples/sample-poster.png'));
+  await u.step('Choisir le format A1', async () => {
+    if (!(await p.getByRole('radio', { name: 'A1', exact: true }).isVisible())) {
+      u.friction('surprenant', 'le format de l’affiche n’est pas à côté de la liste des appareils : il faut chercher dans « Réglages »');
+      await p.getByRole('tab', { name: 'Réglages' }).click(T);
+    }
+    await u.choose('A1');
+  });
+  await u.step('Changer la couleur du mur', () => u.choose('Sauge'));
+  await u.step('Ajouter un flyer et une carte de visite', async () => {
+    await p.getByRole('tab', { name: 'Appareils' }).click(T);
+    await p.getByRole('button', { name: 'Print', exact: true }).click(T);
+    await u.choose('Flyer');
+    await u.choose('Carte de visite');
+    if (await p.getByText('Phone Pro', { exact: true }).first().isVisible()) u.friction('surprenant', 'le téléphone d’exemple réapparaît dans la scène après l’ajout du flyer et de la carte');
+  });
+  await u.step('Disposer', () => p.getByRole('button', { name: 'Disposer' }).click(T));
+  await u.step('Exporter en 4K', async () => {
+    await p.getByRole('button', { name: 'Exporter' }).first().click(T);
+    await u.choose('4K');
+    const [d] = await Promise.all([p.waitForEvent('download', { timeout: 90000 }), p.getByRole('button', { name: 'Télécharger', exact: true }).click(T)]);
+    if (!/\.(png|jpe?g|webp)$/i.test(d.suggestedFilename())) u.friction('surprenant', `fichier : ${d.suggestedFilename()}`);
+  }, { slowMs: 20000 });
+});
