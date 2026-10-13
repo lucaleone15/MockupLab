@@ -54,7 +54,7 @@ interface StoredAsset {
 
 export function snapshot(s: ProjectState = useProject.getState()): Project {
   return {
-    version: 5,
+    version: 6,
     mode: s.mode,
     photo: s.photo,
     brand: s.brand,
@@ -95,7 +95,8 @@ export function migrateProject(raw: unknown): Project {
           ...base.items[0],
           ...it,
           modelId: model.id,
-          params: { ...defaultParams(model), ...(it.params ?? {}) },
+          // walls have no colour of their own any more (v6): they show the background
+          params: Object.fromEntries(Object.entries({ ...defaultParams(model), ...(it.params ?? {}) }).filter(([k]) => k !== 'wall')),
           screen: { ...DEFAULT_SCREEN, ...(it.screen ?? {}) },
           visible: it.visible ?? true,
           locked: it.locked ?? false,
@@ -103,7 +104,12 @@ export function migrateProject(raw: unknown): Project {
         };
       })
     : base.items;
-  const decor = { ...DEFAULT_DECOR, ...(r.decor ?? {}) };
+  const { wall: oldWall, ...rawDecor } = (r.decor ?? {}) as Partial<Project['decor']> & { wall?: string };
+  const decor = { ...DEFAULT_DECOR, ...rawDecor };
+  // v5 → v6: the wall colour of the table or of a wall object becomes the background, if the background was the default one
+  const hanging = Array.isArray(r.items) ? r.items.find((it) => typeof (it.params as Record<string, unknown> | undefined)?.wall === 'string') : undefined;
+  const legacyWall = (decor.kind === 'table' ? oldWall : undefined) ?? (hanging?.params as Record<string, string> | undefined)?.wall;
+  const background = r.background && JSON.stringify(r.background) !== JSON.stringify(base.background) ? r.background : legacyWall ? ({ kind: 'solid', color: legacyWall } as const) : (r.background ?? base.background);
   const rawPhoto = (r.photo ?? {}) as Partial<Project['photo']>;
   const zones = Array.isArray(rawPhoto.zones)
     ? rawPhoto.zones
@@ -131,7 +137,7 @@ export function migrateProject(raw: unknown): Project {
     items,
     selectedId: items.some((it) => it.id === r.selectedId) ? (r.selectedId as string) : items[0].id,
     overlays: Array.isArray(r.overlays) ? r.overlays : [],
-    background: r.background ?? base.background,
+    background,
     decor,
     lighting: { ...base.lighting, ...(r.lighting ?? {}) },
     camera: { ...DEFAULT_CAMERA, ...(r.camera ?? {}) },
@@ -140,7 +146,7 @@ export function migrateProject(raw: unknown): Project {
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     mode: r.mode === 'photo' ? 'photo' : 'scene',
     photo,
-    version: 5,
+    version: 6,
   };
 }
 
