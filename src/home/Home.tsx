@@ -79,7 +79,7 @@ export function Home() {
   const { t } = useT();
   return (
     <div data-testid="home" className="scroll-thin h-full overflow-y-auto">
-      <section data-testid="home-hero" className="relative isolate h-[min(78vh,760px)] min-h-[560px] overflow-hidden bg-[#0e0f13] text-white">
+      <section data-testid="home-hero" className="relative isolate h-[min(64vh,700px)] min-h-[440px] overflow-hidden bg-[#0e0f13] text-white">
         <HeroSlides />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(8_8_10/0.86)_0%,rgb(8_8_10/0.55)_42%,rgb(8_8_10/0)_74%)]" />
         <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgb(8_8_10/0.55),transparent)]" />
@@ -107,18 +107,8 @@ export function Home() {
         </div>
       </section>
 
-      <section className="py-8" aria-label={t('home.made')}>
-        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-fg-muted">{t('home.made')}</h2>
-        <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]" data-testid="showcase-strip">
-          <div className="flex w-max gap-4 animate-[strip_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
-            {[...STRIP, ...STRIP].map((name, i) => (
-              <img key={i} src={shot(name)} alt="" loading="lazy" aria-hidden={i >= STRIP.length} className="h-[210px] w-[374px] shrink-0 rounded-[16px] object-cover" draggable={false} />
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-14">
+      <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-6 pt-8">
         <section id="modes" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="font-display text-[26px] font-bold">{t('home.modes')}</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -157,6 +147,16 @@ export function Home() {
         </section>
         <Recents />
       </main>
+      <section className="pb-14 pt-2" aria-label={t('home.made')}>
+        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-fg-muted">{t('home.made')}</h2>
+        <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]" data-testid="showcase-strip">
+          <div className="flex w-max gap-4 animate-[strip_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
+            {[...STRIP, ...STRIP].map((name, i) => (
+              <img key={i} src={shot(name)} alt="" loading="lazy" aria-hidden={i >= STRIP.length} className="h-[210px] w-[374px] shrink-0 rounded-[16px] object-cover" draggable={false} />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
