@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ImagePlus } from 'lucide-react';
+import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
-import { pickImages } from '@/lib/importImage';
-import { MOD } from '@/app/shortcuts';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
-import { AVAILABLE, navigate } from '@/shell/route';
+import { AVAILABLE, MODE_ORDER, navigate } from '@/shell/route';
 import { ProjectCard } from '@/library/ProjectCard';
 import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
@@ -54,21 +52,6 @@ function HeroSlides() {
   );
 }
 
-const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
-
-/** One file opens Quick with it; several open Project with all of them. */
-export function importFromHome(files: Iterable<File>) {
-  const list = [...files];
-  if (!list.length) return;
-  if (list.length > 1) {
-    navigate('project');
-    void import('@/project/store').then((m) => m.pack.add(list));
-  } else {
-    navigate('quick');
-    void import('@/quick/store').then((m) => m.quick.setImage(list[0]));
-  }
-}
-
 function Recents() {
   const { t } = useT();
   const list = useLibrary((s) => s.list);
@@ -94,7 +77,6 @@ function Recents() {
 
 export function Home() {
   const { t } = useT();
-  const [before, after] = t('home.drop').split('{paste}');
   return (
     <div data-testid="home" className="scroll-thin h-full overflow-y-auto">
       <section data-testid="home-hero" className="relative isolate h-[min(78vh,760px)] min-h-[560px] overflow-hidden bg-[#0e0f13] text-white">
@@ -108,24 +90,20 @@ export function Home() {
         <div className="relative z-10 mx-auto flex h-[calc(100%-64px)] max-w-[1180px] flex-col justify-center px-6 pb-16">
           <h1 className="font-display max-w-[640px] text-balance text-[clamp(44px,6vw,80px)] font-bold leading-[0.98] tracking-[-0.035em]">{t('home.title')}</h1>
           <p className="mt-5 max-w-[500px] text-[16.5px] leading-relaxed text-white/78">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
-          <button
-            type="button"
-            data-testid="home-drop"
-            onClick={() => pickImages(importFromHome)}
-            className="mt-8 flex w-full max-w-[500px] items-center gap-4 rounded-[18px] border-[1.5px] border-dashed border-white/45 bg-white/12 px-5 py-4 text-left backdrop-blur-xl transition-[background-color,border-color,transform] duration-150 hover:border-white/80 hover:bg-white/18 active:scale-[0.99]"
-          >
-            <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-white text-[#1d1d1f]">
-              <ImagePlus size={20} />
-            </span>
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[14.5px] font-semibold">
-                {before}
-                <kbd className="mx-0.5 rounded-md bg-white/20 px-1.5 text-[12px]">{MOD}V</kbd>
-                {after}
-              </span>
-              <span className="text-[12.5px] text-white/70">{t('home.dropHint')}</span>
-            </span>
-          </button>
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <button
+              type="button"
+              onClick={() => navigate('studio')}
+              className="flex h-12 items-center gap-2 rounded-full bg-white px-6 text-[15px] font-semibold text-[#1d1d1f] transition-[background-color,transform] duration-150 hover:bg-white/90 active:scale-[0.98]"
+            >
+              {t('home.openStudio')}
+              <ArrowRight size={17} />
+            </button>
+            <a href="#modes" className="flex items-center gap-1 text-[14px] font-medium text-white/80 transition-colors hover:text-white">
+              {t('home.otherModes')}
+              <ChevronDown size={15} />
+            </a>
+          </div>
         </div>
       </section>
 
@@ -141,27 +119,40 @@ export function Home() {
       </section>
 
       <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-14">
-        <section className="flex flex-col gap-4">
+        <section id="modes" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="font-display text-[26px] font-bold">{t('home.modes')}</h2>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {MODES.map((m) => (
-              <button
-                key={m}
-                type="button"
-                data-testid={`mode-card-${m}`}
-                disabled={!AVAILABLE[m]}
-                onClick={() => navigate(m)}
-                className="glass group flex flex-col overflow-hidden rounded-[18px] text-left transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]"
-              >
-                <span className="block aspect-[16/10] overflow-hidden bg-surface-2">
-                  <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]" draggable={false} />
-                </span>
-                <span className="flex flex-col gap-1 px-4 pb-4 pt-3">
-                  <span className="font-display text-[20px] font-bold">{t(`screen.${m}` as I18nKey)}</span>
-                  <span className="text-[13px] leading-snug text-fg-muted">{t(`home.${m}` as I18nKey)}</span>
-                </span>
-              </button>
-            ))}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {MODE_ORDER.map((m) => {
+              const main = m === 'studio';
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  data-testid={`mode-card-${m}`}
+                  disabled={!AVAILABLE[m]}
+                  onClick={() => navigate(m)}
+                  className={cx(
+                    'glass group flex overflow-hidden rounded-[18px] text-left transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]',
+                    main ? 'flex-col md:col-span-3 md:flex-row' : 'flex-col',
+                  )}
+                >
+                  <span className={cx('block overflow-hidden bg-surface-2', main ? 'aspect-[16/10] md:aspect-auto md:w-[58%]' : 'aspect-[16/10]')}>
+                    <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]" draggable={false} />
+                  </span>
+                  <span className={cx('flex flex-col gap-1.5', main ? 'justify-center px-7 py-6' : 'px-4 pb-4 pt-3')}>
+                    {main && <span className="w-fit rounded-full bg-accent/12 px-2.5 py-0.5 text-[12px] font-semibold text-accent">{t('home.main')}</span>}
+                    <span className={cx('font-display font-bold', main ? 'text-[30px]' : 'text-[20px]')}>{t(`screen.${m}` as I18nKey)}</span>
+                    <span className={cx('leading-snug text-fg-muted', main ? 'text-[15px]' : 'text-[13px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
+                    {main && (
+                      <span className="mt-3 flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-[14px] font-semibold text-white">
+                        {t('home.openStudio')}
+                        <ArrowRight size={16} />
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
         <Recents />
