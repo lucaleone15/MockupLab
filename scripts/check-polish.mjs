@@ -72,6 +72,12 @@ for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/pr
 await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);
 check(await page.getByRole('button', { name: 'Varier ma scène' }).isVisible(), 'Studio: “Vary my scene” button');
+// photo mode: once a photo is in, the hint offers to browse for the design
+await page.evaluate(() => { history.pushState(null, '', '/photo'); dispatchEvent(new PopStateEvent('popstate')); });
+await page.waitForTimeout(300);
+await page.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[0]));
+await page.waitForTimeout(2500);
+check(await page.getByRole('button', { name: 'parcourir', exact: true }).isVisible().catch(() => false), 'photo: the design hint has a “browse” button');
 // the sample brand says it is a sample, and can be cleared in one click
 await page.evaluate(() => { history.pushState(null, '', '/projet'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(500);

@@ -10,7 +10,7 @@ import { useUi } from '@/store/ui';
 import { Button, Spinner, cx } from '@/ui/primitives';
 import { aspectOf, createZone, detectZoneAt, pickSuggestion } from './editing';
 import { isConvex, type Quad, type Vec2 } from './homography';
-import { loadPhotoSamples, pickPhoto } from './importPhoto';
+import { loadPhotoSamples, pickPhoto, pickZoneImage } from './importPhoto';
 import { PhotoRenderer, type ZoneDraw } from './renderer';
 import { statsFor } from './source';
 import { ModeRole } from '@/shell/ModeRole';
@@ -426,7 +426,20 @@ function DesignHint() {
     <div className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center animate-[fade-in_300ms_ease-out]">
       <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 py-2 pl-3 pr-2 text-[12.5px] text-white/85 shadow-2xl backdrop-blur-xl">
         <ImagePlus size={16} className="text-white/60" />
-        <span>{t('photo.designHint')}</span>
+        <span>
+          {t('photo.designHint')}{' '}
+          <button
+            type="button"
+            onClick={() => {
+              const { zones, selectedZoneId } = useProject.getState().photo;
+              const zone = zones.find((z) => z.id === selectedZoneId) ?? zones[0];
+              if (zone) pickZoneImage(zone.id);
+            }}
+            className="font-medium text-white underline decoration-white/30 underline-offset-[3px] hover:decoration-white"
+          >
+            {t('stage.browse')}
+          </button>
+        </span>
         <button
           type="button"
           disabled={loading}
