@@ -6,6 +6,8 @@ import { check } from './lib/app.mjs';
 const URL = 'http://localhost:4173/MockupLab/';
 const build = (id) => execSync('npx vite build', { env: { ...process.env, BUILD_ID: id }, stdio: 'pipe' });
 build('first');
+const { readFileSync: read } = await import('node:fs');
+check(read('dist/404.html', 'utf8') === read('dist/index.html', 'utf8'), '404.html (GitHub Pages fallback for /studio, /rapide…) is the app');
 const preview = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
 const b = await chromium.launch();
@@ -31,6 +33,9 @@ try {
   await page.reload();
   await page.waitForSelector('[data-testid=home]', { timeout: 15000 }).catch(() => {});
   check(await page.getByTestId('home').isVisible(), 'the app opens offline');
+  await page.goto(URL + 'studio');
+  await page.waitForSelector('[data-testid=studio-rail]', { timeout: 15000 }).catch(() => {});
+  check(await page.getByTestId('studio-rail').isVisible(), 'a deep link (/studio) opens offline too');
   await ctx.setOffline(false);
   // a new version is published
   build('second');

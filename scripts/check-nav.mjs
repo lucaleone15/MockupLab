@@ -1,9 +1,9 @@
 // scripts/check-nav.mjs — hash ⇄ screen, project mode follows, back button, unavailable screens.
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp();
-const st = () => page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, mode: window.__mockuplab.project.getState().mode, hash: location.hash }));
+const st = () => page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, mode: window.__mockuplab.project.getState().mode, hash: location.pathname + location.hash }));
 let s = await st();
-check(s.screen === 'home' && (s.hash === '' || s.hash === '#/'), 'no hash → home');
+check(s.screen === 'home' && s.hash === '/', 'no path → home');
 await page.evaluate(() => (location.hash = '#/photo'));
 await page.waitForTimeout(200);
 s = await st();
@@ -22,7 +22,7 @@ check(s.screen === 'quick', '#/rapide → quick');
 await page.evaluate(() => (location.hash = '#/nimporte'));
 await page.waitForTimeout(200);
 s = await st();
-check(s.screen === 'home' && s.hash === '#/', 'unknown hash → home');
+check(s.screen === 'home' && s.hash === '/', 'unknown address → home');
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForTimeout(300);
 const radios = await page.getByTestId('mode-switch').getByRole('radio').allTextContents();
@@ -30,7 +30,7 @@ check(JSON.stringify(radios.map((r) => r.trim())) === JSON.stringify(['Rapide', 
 check(!(await page.getByTestId('mode-switch').getByRole('radio', { name: 'Rapide' }).isDisabled()), 'Rapide available');
 await page.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
 await page.waitForTimeout(200);
-check((await st()).hash === '#/photo', 'mode switch → #/photo');
+check((await st()).hash === '/photo', 'mode switch → /photo');
 await page.getByRole('button', { name: 'Plus' }).click();
 check(await page.getByRole('menuitem', { name: /Raccourcis clavier/ }).isVisible(), '··· menu lists shortcuts');
 await page.keyboard.press('Escape');

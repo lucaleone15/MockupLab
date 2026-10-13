@@ -5,7 +5,7 @@ const { browser, page, errors } = await openApp({ hash: '#/photo' });
 const st = () =>
   page.evaluate(() => {
     const p = window.__mockuplab.project.getState();
-    return { screen: window.__mockuplab.ui.getState().screen, mode: p.mode, hash: location.hash, past: window.__mockuplab.project.temporal.getState().pastStates.length };
+    return { screen: window.__mockuplab.ui.getState().screen, mode: p.mode, hash: location.pathname + location.hash, past: window.__mockuplab.project.temporal.getState().pastStates.length };
   });
 // 1. opening a screen is not an undo step; mode changes elsewhere move the screen
 let s = await st();
@@ -21,11 +21,11 @@ check(s.screen === 'photo' && s.mode === 'photo', `undo after switching screens 
 await page.evaluate(() => window.__mockuplab.persistence.newProject());
 await page.waitForTimeout(300);
 s = await st();
-check((s.screen === 'studio') === (s.mode === 'scene') && s.hash === (s.mode === 'scene' ? '#/studio' : '#/photo'), `New project: screen follows mode (${s.screen}/${s.mode}/${s.hash})`);
+check((s.screen === 'studio') === (s.mode === 'scene') && s.hash === (s.mode === 'scene' ? '/studio' : '/photo'), `New project: screen follows mode (${s.screen}/${s.mode}/${s.hash})`);
 await page.evaluate(() => window.__mockuplab.project.getState().setMode('photo'));
 await page.waitForTimeout(300);
 s = await st();
-check(s.screen === 'photo' && s.hash === '#/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
+check(s.screen === 'photo' && s.hash === '/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
 // 2. a paste on home with a photo-mode project opens Quick with that image (the photo project is untouched)
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(200);
