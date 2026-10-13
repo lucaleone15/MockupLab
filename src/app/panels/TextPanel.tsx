@@ -291,7 +291,7 @@ export function BrandKit() {
           {brand.colors.map((c, i) => (
             <div key={i} className="group flex items-center gap-2">
               <label className="relative size-7 shrink-0 cursor-pointer overflow-hidden rounded-md shadow-[0_0_0_1px_var(--line-strong)_inset]" style={{ background: c.hex }}>
-                <input type="color" aria-label={c.name} value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value.toUpperCase() })} className="absolute inset-0 cursor-pointer opacity-0" />
+                <input type="color" aria-label={c.name || `${t('brand.color')} ${i + 1}`} value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value.toUpperCase() })} className="absolute inset-0 cursor-pointer opacity-0" />
               </label>
               <input
                 value={c.name}
