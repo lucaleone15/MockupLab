@@ -108,4 +108,19 @@ const lid = await page.evaluate(async () => {
   return before.distanceTo(cam.position);
 });
 check(lid < 0.01, `changing a laptop's lid angle keeps the view (camera moved ${lid.toFixed(2)})`);
+// …but a TV getting bigger is framed again
+const tv = await page.evaluate(async () => {
+  const api = window.__mockuplab;
+  const s = api.project.getState();
+  s.resetAll();
+  s.addItem('tv');
+  await new Promise((r) => setTimeout(r, 600));
+  const cam = api.bridge().camera;
+  const before = cam.position.length();
+  const it = api.project.getState().items[0];
+  api.project.getState().setParam(it.id, 'size', '65');
+  await new Promise((r) => setTimeout(r, 600));
+  return [before, cam.position.length()];
+});
+check(tv[1] > tv[0] * 1.08, `a bigger TV re-frames the view (${tv.map(Math.round).join(' → ')})`);
 await done(browser, errors);

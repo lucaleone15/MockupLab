@@ -8,10 +8,11 @@ import { loadAmbience } from '@/scene/ambiences';
 import { settle } from '@/scene/exporter';
 import { loadMaterialMap } from '@/scene/realMaterials';
 import { useProject } from '@/store/project';
+import { carouselOf } from '@/export/settings';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { inSandbox } from '@/variants/render';
-import { ANIMATIONS, loops, rigFor } from './animations';
+import { ANIMATIONS, loops, rigFor, shutterTimes } from './animations';
 import { videoFps, videoSize } from './size';
 
 /*
@@ -121,11 +122,9 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
         const sub = subAt(time);
         for (const [li, l] of layers.entries()) {
           // average of the instants of this shot
-          for (let k = 0; k < sub; k++) {
+          // shutter: half a frame interval, in the shot's own time
+          for (const [k, tt] of shutterTimes(l.t, sub, step, l.scale, def.loop).entries()) {
             if (token !== cancelled) throw new Error('cancelled');
-            // shutter: half a frame interval, in the shot's own time
-            let tt = l.t + (sub > 1 ? ((k + 0.5) / sub - 0.5) * 0.5 * step * l.scale : 0);
-            tt = looping ? ((tt % 1) + 1) % 1 : Math.min(1, Math.max(0, tt));
             const f = await instant(l.rig, tt);
             lctx.globalAlpha = 1 / (k + 1);
             lctx.drawImage(f, 0, 0);
@@ -162,6 +161,12 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
 export async function exportVideo() {
   const ui = useUi.getState();
   if (ui.exporting) return;
+  // a carousel is a set of still slides, not a (17 000 px wide) video
+  const p = useProject.getState();
+  if (p.mode === 'scene' && carouselOf(p.export.ratio)) {
+    toast.info(t('social.carouselVideo'));
+    return;
+  }
   const label = () => t('video.rendering');
   ui.setExporting(label());
   ui.setCancelExport(() => {

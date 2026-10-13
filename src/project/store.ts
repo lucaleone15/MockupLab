@@ -14,6 +14,7 @@ import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whe
 import { detectSupport, modelForSupport, type Support } from '@/quick/detect';
 import { composeBoard } from './board';
 import { colourBackground, palettesFromImages } from './palettes';
+import { carouselOf } from '@/export/settings';
 
 /*
  * Project mode: several images of one project (website, app, print…), each
@@ -200,9 +201,17 @@ function changed(styles: boolean) {
   void renderMissing();
 }
 
+/** Quick and Project make single images: a carousel set in the Studio becomes one slide's format. */
+function singleSlideFormat() {
+  const p = useProject.getState();
+  const c = carouselOf(p.export.ratio);
+  if (c) p.setExport({ ratio: c.slide[0] === c.slide[1] ? 'ig-square' : 'ig-post' });
+}
+
 export const pack = {
   state: get,
   start() {
+    singleSlideFormat();
     void renderMissing();
   },
   stop() {

@@ -172,6 +172,18 @@ function montage(shots: { rig: Rig; from: number; to: number }[], fade = 0.07): 
   };
 }
 
+/**
+ * Instants averaged for motion blur around a shot's time t: half a frame interval (a 180° shutter).
+ * Only a shot that loops by itself wraps around its seam; any other shot — a montage's shots included,
+ * even under "Perfect loop" — stays within its own start and end.
+ */
+export function shutterTimes(t: number, sub: number, step: number, scale: number, nativeLoop: boolean): number[] {
+  return Array.from({ length: sub }, (_, k) => {
+    const tt = t + (sub > 1 ? ((k + 0.5) / sub - 0.5) * 0.5 * step * scale : 0);
+    return nativeLoop ? ((tt % 1) + 1) % 1 : Math.min(1, Math.max(0, tt));
+  });
+}
+
 /** A shot played forth and back: its last frame is its first (a seamless loop). */
 export function loopRig(rig: Rig): Rig {
   const pp = (t: number) => 1 - Math.abs(1 - 2 * t);

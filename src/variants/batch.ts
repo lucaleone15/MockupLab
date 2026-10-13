@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { t } from '@/i18n';
-import { download, encodeCanvas, formatBytes, slugify } from '@/export/exportImage';
+import { download, encodeCanvas, formatBytes, renderCarouselSlides, slugify } from '@/export/exportImage';
 import { fileToAsset } from '@/lib/importImage';
 import { ZipWriter } from '@/lib/zip';
 import { composePhoto } from '@/photo/exportPhoto';
@@ -12,6 +12,7 @@ import { useUi } from '@/store/ui';
 import { getModel } from '@/models/registry';
 import type { Look } from './looks';
 import { inSandbox, renderFull, showLook } from './render';
+import { carouselOf } from '@/export/settings';
 
 /*
  * Batch: several designs through the same style. Each image goes, in turn,
@@ -117,8 +118,13 @@ export const batch = {
               p.setSurface(target.id, target.slot, { assetId: asset.id, align: 0 });
               await loadImage(asset.url);
               await settle(4);
-              const { blob, ext } = await renderFull();
-              await zip.add(`${name}${style ? `-${slugify(style.label)}` : ''}.${ext}`, blob);
+              const base = `${name}${style ? `-${slugify(style.label)}` : ''}`;
+              // a carousel: each design gives its slides
+              if (carouselOf(useProject.getState().export.ratio)) for (const f of await renderCarouselSlides()) await zip.add(`${base}-${f.name}`, f.blob);
+              else {
+                const { blob, ext } = await renderFull();
+                await zip.add(`${base}.${ext}`, blob);
+              }
             }
             done++;
             useBatch.setState({ job: { done, total } });

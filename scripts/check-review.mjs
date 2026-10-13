@@ -26,7 +26,7 @@ await page.evaluate(() => window.__mockuplab.project.getState().setMode('photo')
 await page.waitForTimeout(300);
 s = await st();
 check(s.screen === 'photo' && s.hash === '/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
-// 2. a paste on home with a photo-mode project opens Quick with that image (the photo project is untouched)
+// 2. a paste on home with a photo-mode project stays on home (pick a mode first) and leaves the photo project untouched
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(200);
 await page.evaluate(async () => {
@@ -45,7 +45,7 @@ const landed = await page.evaluate(() => {
   const q = api.quick.state();
   return { screen: api.ui.getState().screen, image: q.assetId && api.assetName(q.assetId), zones: api.project.getState().photo.zones.map((z) => z.surface.assetId && api.assetName(z.surface.assetId)) };
 });
-check(landed.screen === 'quick' && landed.image === 'home-paste.png' && !landed.zones.includes('home-paste.png'), `paste on home → Quick with the image, photo zones untouched (${JSON.stringify(landed)})`);
+check(landed.screen === 'home' && landed.image !== 'home-paste.png' && !landed.zones.includes('home-paste.png'), `paste on home stays on home, nothing imported, photo zones untouched (${JSON.stringify(landed)})`);
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForTimeout(300);
 // 3. a leftover video kind does not hijack the image export
