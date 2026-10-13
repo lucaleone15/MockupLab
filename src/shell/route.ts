@@ -26,6 +26,9 @@ export const urlOf = (screen: Screen) => BASE + SCREEN_PATH[screen];
 /** Screens that can be opened in this version. */
 export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: true, project: true, studio: true, photo: true };
 
+/** The modes, main one first: Studio · Rapide · Projet · Photo. */
+export const MODE_ORDER: Screen[] = ['studio', 'quick', 'project', 'photo'];
+
 function screenFromSegment(segment: string): Screen | null {
   const found = (Object.keys(SCREEN_PATH) as Screen[]).find((s) => SCREEN_PATH[s] === segment);
   return found && AVAILABLE[found] ? found : null;

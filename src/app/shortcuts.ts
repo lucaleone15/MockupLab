@@ -4,11 +4,12 @@ import { importImages, pickImages } from '@/lib/importImage';
 import { picking } from '@/scene/interaction';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
+import { toast } from '@/store/toasts';
+import { t } from '@/i18n';
 import { MODEL_DRAG_TYPE } from './LibraryPanel';
 import { saveProjectFile } from './projectFiles';
 import { nudge } from '@/photo/editing';
 import { photoPicking } from '@/photo/PhotoView';
-import { importFromHome } from '@/home/Home';
 
 export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl ';
@@ -152,7 +153,7 @@ function onPhotoKey(e: KeyboardEvent, key: string) {
 /** Pasted or dropped files go where the screen expects them. */
 function routeFiles(files: File[]) {
   const screen = useUi.getState().screen;
-  if (screen === 'home') importFromHome(files);
+  if (screen === 'home') toast.info(t('home.pickMode'));
   else if (screen === 'quick') void import('@/quick/store').then((m) => files[0] && m.quick.setImage(files[0]));
   else if (screen === 'project') void import('@/project/store').then((m) => m.pack.add(files));
   else void importImages(files);
