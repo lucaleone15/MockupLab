@@ -27,6 +27,9 @@ export interface DeviceFinish {
 
 export type ParamValue = number | string | boolean;
 
+/** Width / height of the images placed on a model's surfaces, by slot id. */
+export type ImageAspects = Record<string, number>;
+
 /** User-tweakable model parameter, rendered automatically in the properties panel. */
 export type ParamDef =
   | { id: string; kind: 'slider'; label: I18nString; min: number; max: number; step: number; default: number; unit?: string }
@@ -86,13 +89,15 @@ export interface DeviceModule {
    * Size that depends on the parameters (layout, format…), for framing and
    * layout. `y0` is the height of the box bottom (e.g. a poster on a wall).
    */
-  sizeFor?: (params: Record<string, ParamValue>) => { size: [number, number, number]; y0?: number; focus?: [number, number, number] };
+  sizeFor?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => { size: [number, number, number]; y0?: number; focus?: [number, number, number] };
   /**
    * Objects that hang on / lean against a wall: local Z of that wall (behind
    * the object) and its colour, or null. The stage draws one shared wall for
    * the whole scene and snaps every wall object onto it.
    */
-  wallFor?: (params: Record<string, ParamValue>) => { z: number } | null;
+  wallFor?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => { z: number } | null;
+  /** Printed models: width × height of the paper in cm (shown next to the size). */
+  paperSize?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => [number, number];
   /** What the surfaces are: lit screens (default) or printed / lit materials. */
   surfaceKind?: 'screen' | 'print';
   anchor?: 'center' | 'bottom';
@@ -112,8 +117,8 @@ export interface DeviceModule {
 }
 
 /** Bounding box of a model for the given parameters. */
-export function sizeOf(model: DeviceModule, params: Record<string, ParamValue>): { size: [number, number, number]; y0: number; focus?: [number, number, number] } {
-  const s = model.sizeFor?.({ ...defaultParams(model), ...params });
+export function sizeOf(model: DeviceModule, params: Record<string, ParamValue>, aspects?: ImageAspects): { size: [number, number, number]; y0: number; focus?: [number, number, number] } {
+  const s = model.sizeFor?.({ ...defaultParams(model), ...params }, aspects);
   return { size: s?.size ?? model.size, y0: s?.y0 ?? 0, focus: s?.focus };
 }
 

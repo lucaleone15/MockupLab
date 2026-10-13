@@ -21,7 +21,7 @@ export function itemsRadius(items: SceneItem[]) {
   let r = 6;
   for (const it of items) {
     const model = getModel(it.modelId);
-    const [w, h, d] = sizeOf(model, it.params).size;
+    const [w, h, d] = sizeOf(model, it.params, aspectsOf(it.surfaces)).size;
     const flat = it.pose === 'flat' && model.anchor !== 'bottom';
     r = Math.max(r, Math.hypot(it.position[0], it.position[2]) + Math.hypot(w / 2, flat ? h / 2 : d / 2));
   }
@@ -164,6 +164,7 @@ function Surface({ decor }: { decor: Decor }) {
 
 export { TABLE_BACK } from '@/lib/arrange';
 import { SWEEP_BACK, TABLE_BACK } from '@/lib/arrange';
+import { aspectsOf } from '@/models/imageAspects';
 
 /**
  * Product-photography table set: a real-material table top pushed against a

@@ -5,6 +5,7 @@ import { getModel } from '@/models/registry';
 import { sizeOf } from '@/models/types';
 import { useProject } from '@/store/project';
 import { decorLayout } from './Decor';
+import { aspectsOf } from '@/models/imageAspects';
 
 /**
  * Centre and radius of the composition (devices may hang on a wall or stand
@@ -19,7 +20,7 @@ export function useCompositionBounds() {
     const box = new THREE.Box3();
     for (const it of items) {
       const f = footprint(it);
-      const { y0 } = sizeOf(getModel(it.modelId), it.params);
+      const { y0 } = sizeOf(getModel(it.modelId), it.params, aspectsOf(it.surfaces));
       const r = Math.hypot(f.w, f.d) / 2;
       box.expandByPoint(new THREE.Vector3(it.position[0] - r, floorY + y0, it.position[2] - r));
       box.expandByPoint(new THREE.Vector3(it.position[0] + r, floorY + y0 + f.h, it.position[2] + r));

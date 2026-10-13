@@ -6,6 +6,7 @@ import { decorLayout } from '@/scene/Decor';
 import { ratioValue } from '@/export/settings';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type AnimationId, type CameraSettings, type SceneItem, type Vec3, type WorkMode } from '@/store/project';
+import { aspectsOf } from '@/models/imageAspects';
 
 /*
  * Animations, as a function of time: a "rig" captures the scene once, then
@@ -100,7 +101,7 @@ interface CamKey {
 }
 
 /** Items that can move: things hanging on a wall stay where they are. */
-const movable = (it: SceneItem) => it.visible && !getModel(it.modelId).wallFor?.(it.params);
+const movable = (it: SceneItem) => it.visible && !getModel(it.modelId).wallFor?.(it.params, aspectsOf(it.surfaces));
 
 function cameraRig(keys: CamKey[], ease: (x: number) => number, base: CameraView | undefined, cam: CameraSettings): Rig {
   const off = base ? base.position.clone().sub(base.target) : new THREE.Vector3(0, 0, 1);

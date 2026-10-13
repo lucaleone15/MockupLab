@@ -7,6 +7,7 @@ import { roundedRectOutline } from '@/lib/geometry/outline';
 import { getModel } from '@/models/registry';
 import { useUi } from '@/store/ui';
 import { useProject, type SceneItem } from '@/store/project';
+import { aspectsOf } from '@/models/imageAspects';
 
 /*
  * Direct manipulation of devices in the 3D view: click to select, drag to
@@ -164,7 +165,7 @@ export function Interactive({ item, children }: { item: SceneItem; children: Rea
     const depth = e.point.clone().sub(cam.position).dot(cam.getWorldDirection(new THREE.Vector3()));
     const perPx = (2 * Math.tan(THREE.MathUtils.degToRad(cam.fov / 2)) * depth) / gl.domElement.clientHeight;
     const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).setY(0).normalize();
-    const onWall = !!getModel(item.modelId).wallFor?.({ ...item.params });
+    const onWall = !!getModel(item.modelId).wallFor?.({ ...item.params }, aspectsOf(item.surfaces));
     const wallHit = onWall ? picking.wall?.(e.nativeEvent.clientX, e.nativeEvent.clientY, e.point.z) : null;
     active.drag = {
       id: item.id,

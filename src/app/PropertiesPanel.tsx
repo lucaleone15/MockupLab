@@ -3,10 +3,11 @@ import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
 import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import type { ParamDef, ParamValue } from '@/models/types';
+import { defaultParams, type ParamDef, type ParamValue } from '@/models/types';
+import { aspectsOf } from '@/models/imageAspects';
 import { pickImages } from '@/lib/importImage';
 import { useAssets } from '@/store/assets';
-import { selectSelectedItem, useProject } from '@/store/project';
+import { selectSelectedItem, useProject, type SceneItem } from '@/store/project';
 import { ModelSwitcher } from './ModelSwitcher';
 import { photoOutputSize } from '@/photo/exportPhoto';
 import { useUi } from '@/store/ui';
@@ -142,8 +143,26 @@ export function ImageSection() {
   );
 }
 
-/** Controls generated from the model's parameter definitions. */
-function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamValue | undefined; onChange: (v: ParamValue) => void }) {
+/** The model's own settings; `only` keeps some of them (e.g. the paper size on the Devices page). */
+export function DeviceParams({ item, only }: { item: SceneItem; only?: string[] }) {
+  const setParam = useProject((s) => s.setParam);
+  const assets = useAssets((s) => s.assets);
+  const model = getModel(item.modelId);
+  const paper = model.paperSize?.({ ...defaultParams(model), ...item.params }, aspectsOf(item.surfaces, assets));
+  const real = paper ? `≈ ${Math.round(paper[0])} × ${Math.round(paper[1])} cm` : undefined;
+  return (
+    <>
+      {model.params
+        ?.filter((def) => !only || only.includes(def.id))
+        .map((def) => (
+          <ParamControl key={def.id} def={def} value={item.params[def.id]} onChange={(v) => setParam(item.id, def.id, v)} aside={def.id === 'format' ? real : undefined} />
+        ))}
+    </>
+  );
+}
+
+/** Controls generated from the model's parameter definitions. `aside` shows next to the label (e.g. the real size). */
+export function ParamControl({ def, value, onChange, aside }: { def: ParamDef; value: ParamValue | undefined; onChange: (v: ParamValue) => void; aside?: string }) {
   const { tr } = useT();
   switch (def.kind) {
     case 'slider': {
@@ -155,8 +174,31 @@ function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamVal
       );
     }
     case 'choice':
+      // long lists (paper sizes) wrap as chips instead of a cramped segmented control
+      if (def.options.length > 5)
+        return (
+          <Field label={tr(def.label)} value={aside ? <span className="font-sans text-[11.5px]">{aside}</span> : undefined}>
+            <div role="radiogroup" aria-label={tr(def.label)} className="flex flex-wrap gap-1.5">
+              {def.options.map((o) => {
+                const on = String(value ?? def.default) === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => onChange(o.value)}
+                    className={cx('h-7 rounded-full px-3 text-[12px] font-medium transition-colors', on ? 'bg-fg text-bg' : 'bg-surface-3 text-fg-muted hover:text-fg')}
+                  >
+                    {tr(o.label)}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        );
       return (
-        <Field label={tr(def.label)}>
+        <Field label={tr(def.label)} value={aside ? <span className="font-sans text-[11.5px]">{aside}</span> : undefined}>
           <Segmented
             size={def.options.length > 2 ? 'sm' : 'md'}
             value={String(value ?? def.default)}
@@ -213,7 +255,6 @@ export function DeviceSection() {
   const { t, tr } = useT();
   const item = useProject(selectSelectedItem);
   const updateItem = useProject((s) => s.updateItem);
-  const setParam = useProject((s) => s.setParam);
   const setPose = useProject((s) => s.setPose);
   if (!item) return null;
   const model = getModel(item.modelId);
@@ -234,9 +275,7 @@ export function DeviceSection() {
           />
         </Field>
       )}
-      {model.params?.map((def) => (
-        <ParamControl key={def.id} def={def} value={item.params[def.id]} onChange={(v) => setParam(item.id, def.id, v)} />
-      ))}
+      <DeviceParams item={item} />
       {model.finishes.length > 1 && (
       <Field label={t('props.finish')} value={<span className="font-sans text-[11.5px]">{tr(finish.name)}</span>}>
         <div className="flex gap-2">

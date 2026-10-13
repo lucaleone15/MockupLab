@@ -10,6 +10,7 @@ import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type CameraPresetId, type CameraSettings, type SceneItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Accumulator, applyLensSample, type LensSetup } from './accumulator';
+import { aspectsOf } from '@/models/imageAspects';
 
 /* ------------------------------------------------------------ optics */
 
@@ -66,7 +67,7 @@ export function focusPoint(item: SceneItem, floorY: number): THREE.Vector3 {
   const model = getModel(item.modelId);
   let local: THREE.Vector3;
   if (model.anchor === 'bottom') {
-    const sz = sizeOf(model, item.params);
+    const sz = sizeOf(model, item.params, aspectsOf(item.surfaces));
     local = new THREE.Vector3(...(sz.focus ?? model.focus ?? [0, sz.y0 + sz.size[1] / 2, 0]));
   }
   else {
@@ -103,7 +104,7 @@ export const CAMERA_PRESETS: Record<Exclude<CameraPresetId, 'custom'>, PresetDef
 /** Bounding box corners of an item in world space. */
 function itemCorners(item: SceneItem, floorY: number): THREE.Vector3[] {
   const model = getModel(item.modelId);
-  const { size, y0 } = sizeOf(model, item.params);
+  const { size, y0 } = sizeOf(model, item.params, aspectsOf(item.surfaces));
   const [w, h, d] = size;
   const landscape = isLandscape(item.params) && model.anchor !== 'bottom';
   const flat = item.pose === 'flat' && model.anchor !== 'bottom';
