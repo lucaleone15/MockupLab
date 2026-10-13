@@ -10,6 +10,9 @@ const table = [
   [400, 440, 'watch'],
   [3000, 1000, 'screen'],
   [1536, 2048, 'tablet'],
+  [1700, 1100, 'print'],
+  [3024, 1964, 'laptop'],
+  [2880, 1800, 'laptop'],
 ];
 for (const [w, h, want] of table) {
   const got = await page.evaluate(([w, h]) => window.__mockuplab.quick.detectSupport(w, h), [w, h]);
@@ -17,6 +20,12 @@ for (const [w, h, want] of table) {
 }
 const near = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1150, 1000));
 check(near.confident === false, '1150×1000 sits near a boundary → to confirm');
+const named = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1440, 900, false, 'carte-de-visite-recto.png'));
+check(named.support === 'print', 'a file named like a business card → print');
+const flyer = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1920, 1080, false, 'Flyer_A5.jpg'));
+check(flyer.support === 'print', 'a file named like a flyer → print');
+const cardModel = await page.evaluate(() => [window.__mockuplab.quick.modelForSupport('print', 1700, 1100), window.__mockuplab.quick.modelForSupport('print', 1414, 2000)]);
+check(cardModel[0] === 'business-card' && cardModel[1] === 'poster', `a card-shaped print goes on a business card, a tall one on a poster (${cardModel})`);
 const pdf = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1000, 1000, true));
 check(pdf.support === 'print', 'PDF → print');
 // 2. the gallery renders with a sample, without an image of ours
