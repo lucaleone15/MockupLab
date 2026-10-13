@@ -5,7 +5,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { ratioValue } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import { isLandscape, sizeOf } from '@/models/types';
+import { isLandscape, defaultParams, sizeOf } from '@/models/types';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type CameraPresetId, type CameraSettings, type SceneItem } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -236,8 +236,15 @@ export function CameraRig({ floorY }: { floorY: number }) {
   const frameKey = [
     resetToken,
     settings.preset,
-    // the size counts too: a bigger poster (or one adapted to a landscape image) is framed again
-    items.map((i) => `${i.modelId}:${i.params.orientation}:${i.pose}:${sizeOf(getModel(i.modelId), i.params, aspectsOf(i.surfaces)).size.map((v) => Math.round(v)).join('x')}`).join(','),
+    // a print's paper size counts too (a bigger poster, or one adapted to a landscape image, is framed again);
+    // other size changes — a laptop's lid — keep the user's view
+    items
+      .map((i) => {
+        const model = getModel(i.modelId);
+        const paper = model.paperSize?.({ ...defaultParams(model), ...i.params }, aspectsOf(i.surfaces));
+        return `${i.modelId}:${i.params.orientation}:${i.pose}:${paper ? paper.map((v) => Math.round(v)).join('x') : ''}`;
+      })
+      .join(','),
     ratio,
     floorY.toFixed(2),
   ].join('|');

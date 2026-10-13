@@ -112,8 +112,8 @@ function stage(target: 'hero' | string, style = get().style) {
 /** The pack colour of a scene: its own, the palette's next one (varied) or the first one; none without a palette. */
 function sceneColor(target: 'hero' | string): string | null {
   const { palette, vary, perScene } = get().colors;
-  if (perScene[target]) return perScene[target];
   if (!palette?.length) return null;
+  if (perScene[target]) return perScene[target];
   if (!vary) return palette[0];
   const i = target === 'hero' ? 0 : get().files.findIndex((f) => f.id === target) + 1;
   return palette[Math.max(0, i) % palette.length];
@@ -126,7 +126,11 @@ async function suggest() {
   set((s) => {
     const colors = { ...s.colors, suggestions };
     // a palette taken from the images follows them
-    if (colors.source === 'images') colors.palette = suggestions[colors.index] ?? null;
+    if (colors.source === 'images') {
+      colors.palette = suggestions[colors.index] ?? null;
+      // no colour left in the images: back to the style's
+      if (!colors.palette) colors.source = 'style';
+    }
     return { colors };
   });
 }
@@ -270,7 +274,8 @@ export const pack = {
   },
   /** Pack colours: a palette (from the images, the brand or picked) or none (the style's own colours). */
   setPalette(source: PackColors['source'], palette: string[] | null, index = 0) {
-    set((s) => ({ colors: { ...s.colors, source, index, palette: source === 'style' ? null : palette } }));
+    // back to the style's colours: scenes drop their own colours too
+    set((s) => ({ colors: { ...s.colors, source, index, palette: source === 'style' ? null : palette, perScene: source === 'style' ? {} : s.colors.perScene } }));
     changed(true);
   },
   setVary(vary: boolean) {

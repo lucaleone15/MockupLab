@@ -60,6 +60,15 @@ check(new Set(varied).size >= 2 && varied.every((c) => pal.map((x) => x.toLowerC
 await page.evaluate((id) => window.__mockuplab.pack.setSceneColor(id, '#123456'), ids[1]);
 check((await bgOf(ids[1])).toLowerCase() === '#123456', 'one scene can have its own colour');
 
+// back to the style's colours: no scene keeps a colour of its own
+await page.getByRole('radio', { name: 'Couleurs du style' }).click();
+await page.waitForTimeout(200);
+check((await bgOf(ids[1])).toLowerCase() !== '#123456', 'back to the style colours, no scene keeps its own colour');
+
+// the sample brand is not offered as "my brand"; a filled-in brand is
+check((await page.getByRole('radio', { name: 'Ma marque' }).count()) === 0, '“My brand” is not offered with the sample brand');
+await page.evaluate(() => window.__mockuplab.project.getState().setBrand({ colors: [{ hex: '#0A7E8C', name: 'Lagon' }, { hex: '#F2C14E', name: 'Sable' }] }));
+await page.waitForTimeout(200);
 // brand palette and free picker
 await page.getByRole('radio', { name: 'Ma marque' }).click();
 await page.waitForTimeout(200);
