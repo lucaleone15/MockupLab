@@ -76,4 +76,20 @@ check(seen.length === 10, `ten poster sizes offered (${seen.join(', ')})`);
 check(await page.getByRole('switch', { name: 'Adapter à mon image' }).isVisible(), '“Adapt to my image” switch shown');
 check(await page.getByText('≈ 59 × 33 cm').first().isVisible().catch(() => false), 'the real size is shown (≈ 59 × 33 cm)');
 
+// the size is chosen right where the poster was picked (Devices page)
+await page.evaluate(() => window.__mockuplab.project.getState().resetAll());
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
+await page.getByTestId('library-tabs').getByRole('button', { name: 'Print' }).click();
+await page.getByTestId('rail-page').getByRole('button', { name: 'Affiche', exact: true }).click();
+await page.waitForTimeout(300);
+check(await page.getByTestId('rail-page').getByRole('switch', { name: 'Adapter à mon image' }).isVisible().catch(() => false), 'Devices page: “Adapt to my image” right after picking the poster');
+check(await page.getByTestId('rail-page').getByRole('radio', { name: 'A1', exact: true }).isVisible().catch(() => false), 'Devices page: the sizes right after picking the poster');
+// a bigger size re-frames the view (the poster stays in the frame)
+const dist = () => page.evaluate(() => { const c = window.__mockuplab.bridge().camera; return c.position.length(); });
+await page.waitForTimeout(500);
+const d0 = await dist();
+await page.getByTestId('rail-page').getByRole('radio', { name: 'A0', exact: true }).click();
+await page.waitForTimeout(800);
+const d1 = await dist();
+check(d1 > d0 * 1.4, `A2 → A0 re-frames the view (camera ${Math.round(d0)} → ${Math.round(d1)})`);
 await done(browser, errors);

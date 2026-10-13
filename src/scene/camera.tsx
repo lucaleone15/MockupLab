@@ -230,7 +230,8 @@ export function CameraRig({ floorY }: { floorY: number }) {
   const frameKey = [
     resetToken,
     settings.preset,
-    items.map((i) => `${i.modelId}:${i.params.orientation}:${i.pose}`).join(','),
+    // the size counts too: a bigger poster (or one adapted to a landscape image) is framed again
+    items.map((i) => `${i.modelId}:${i.params.orientation}:${i.pose}:${sizeOf(getModel(i.modelId), i.params, aspectsOf(i.surfaces)).size.map((v) => Math.round(v)).join('x')}`).join(','),
     ratio,
     floorY.toFixed(2),
   ].join('|');
