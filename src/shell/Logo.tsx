@@ -1,5 +1,5 @@
 import { useT } from '@/i18n';
-import { navigate, SCREEN_HASH } from './route';
+import { navigate, urlOf } from './route';
 
 /** "Mockup" + "Lab" in Syne; the brand orange lives only here. Links to the home page. */
 export function Logo({ asLink = true, tone }: { asLink?: boolean; tone?: 'light' }) {
@@ -16,7 +16,7 @@ export function Logo({ asLink = true, tone }: { asLink?: boolean; tone?: 'light'
   if (!asLink) return mark;
   return (
     <a
-      href={SCREEN_HASH.home}
+      href={urlOf('home')}
       aria-label={t('logo.home')}
       onClick={(e) => {
         e.preventDefault();

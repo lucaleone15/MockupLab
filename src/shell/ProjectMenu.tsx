@@ -72,7 +72,7 @@ export function ProjectMenu() {
             <DropdownMenu.Item className={item} onSelect={() => void saveProjectFile()}>
               <Save size={15} />
               <span className="flex-1">{t('project.save')}</span>
-              <Kbd>{MOD}S</Kbd>
+              {window.mockuplabDesktop && <Kbd>{MOD}S</Kbd>}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
