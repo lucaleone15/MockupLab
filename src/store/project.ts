@@ -155,8 +155,6 @@ export interface Decor {
   podiumFinish: 'paint' | 'material';
   shape: 'cylinder' | 'block';
   arch: boolean;
-  /** Table set: plain wall behind the table. */
-  wall: string;
   ambience: AmbienceId;
   gobo: GoboId;
 }
@@ -350,7 +348,7 @@ export function makeItem(model: DeviceModule): SceneItem {
 
 /** The scene is still the lone sample phone of a new project, never edited and without an image. */
 function isUntouchedSample(items: SceneItem[]) {
-  return items.length === 1 && items[0].sample === true && Object.values(items[0].surfaces).every((b) => !b.assetId);
+  return items.length === 1 && items[0].sample === true && items[0].modelId === 'phone-pro' && Object.values(items[0].surfaces).every((b) => !b.assetId);
 }
 
 export const DEFAULT_BRAND: Brand = {
@@ -375,7 +373,6 @@ export const DEFAULT_DECOR: Decor = {
   podiumFinish: 'paint',
   shape: 'cylinder',
   arch: false,
-  wall: '#ece6dc',
   ambience: 'day',
   gobo: 'window',
 };
@@ -519,15 +516,8 @@ export const useProject = create<ProjectState>()(
               : it,
           ),
         })),
-      // the studio cyclo takes the background colour; anything but a plain colour turns it off
-      setBackground: (background) =>
-        set((s) =>
-          s.decor.kind !== 'sweep'
-            ? { background }
-            : background.kind === 'solid'
-              ? { background, decor: { ...s.decor, color: background.color } }
-              : { background, decor: { ...s.decor, kind: 'none' } },
-        ),
+      // walls, the table's wall and the studio cyclo all show the background
+      setBackground: (background) => set({ background }),
       setDecor: (patch) =>
         set((s) => {
           const decor = { ...s.decor, ...patch };
@@ -634,6 +624,7 @@ export const useProject = create<ProjectState>()(
               return {
                 ...it,
                 modelId,
+                sample: false,
                 finishId: model.finishes.some((f) => f.id === it.finishId) ? it.finishId : model.defaultFinish,
                 params: defaultParams(model),
                 surfaces,

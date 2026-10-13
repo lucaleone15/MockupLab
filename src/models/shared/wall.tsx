@@ -1,17 +1,4 @@
-import { useEffect, useMemo } from 'react';
-import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-
-/** Matte painted wall whose colour follows a parameter. */
-export function useWall(color: string) {
-  const invalidate = useThree((s) => s.invalidate);
-  const m = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.96 }), []);
-  useEffect(() => {
-    m.color.set(color);
-    invalidate();
-  }, [m, color, invalidate]);
-  return m;
-}
 
 let aoTex: THREE.Texture | null = null;
 /** Soft dark rounded-rect falloff: the ambient shadow an object casts on a wall right behind it. */

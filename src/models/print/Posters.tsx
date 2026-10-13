@@ -121,7 +121,7 @@ export const poster: DeviceModule = {
     if (p.wallOn === false) return null;
     const d = posterDims(p);
     const z = p.mount !== 'lean' ? -d.depth / 2 - 0.05 : -d.depth / 2 - Math.sin(LEAN) * d.fh - 0.2;
-    return { z, color: String(p.wall) };
+    return { z };
   },
   surfaces: [{ id: 'poster', label: { fr: 'Affiche', en: 'Poster' }, aspect: 1 / A, nativeSize: [4961, 7016] }],
   finishes: NO_FINISH,
@@ -162,20 +162,6 @@ export const poster: DeviceModule = {
       default: 'wall',
     },
     { id: 'wallOn', kind: 'toggle', label: { fr: 'Mur', en: 'Wall' }, default: true },
-    {
-      id: 'wall',
-      kind: 'swatch',
-      label: { fr: 'Couleur du mur', en: 'Wall colour' },
-      options: [
-        { value: '#ece6dc', label: { fr: 'Blanc chaud', en: 'Warm white' } },
-        { value: '#d9c8b0', label: { fr: 'Sable', en: 'Sand' } },
-        { value: '#b9c2ae', label: { fr: 'Sauge', en: 'Sage' } },
-        { value: '#c98a6b', label: { fr: 'Terracotta', en: 'Terracotta' } },
-        { value: '#aebccb', label: { fr: 'Bleu poudré', en: 'Powder blue' } },
-        { value: '#3a3a3d', label: { fr: 'Anthracite', en: 'Charcoal' } },
-      ],
-      default: '#ece6dc',
-    },
     PAPER_PARAM,
   ],
   view: { target: [0, 0, 0], offset: [18, 4, 100] },

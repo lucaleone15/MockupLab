@@ -77,7 +77,6 @@ export function decorWallZ(decor: Pick<Decor, 'kind'>): number | null {
 
 export interface SceneWall {
   z: number;
-  color: string;
   /** False when the set already has its own wall (table, studio). */
   draw: boolean;
 }
@@ -92,10 +91,9 @@ export function sceneWall(items: SceneItem[], decor: Pick<Decor, 'kind'>): Scene
   const hanging = items.filter((it) => it.visible !== false && wallOf(it));
   if (!hanging.length) return null;
   const first = hanging[0];
-  const color = wallOf(first)!.color;
   const decorZ = decorWallZ(decor);
-  if (decorZ !== null) return { z: decorZ, color, draw: false };
-  return { z: first.position[2] + wallOf(first)!.z, color, draw: true };
+  if (decorZ !== null) return { z: decorZ, draw: false };
+  return { z: first.position[2] + wallOf(first)!.z, draw: true };
 }
 
 /**

@@ -4,7 +4,7 @@ import { roundedPlane, roundedSlab } from '@/lib/geometry/sweep';
 import { brushedMetal, coverGlass, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
 import { WallShadow } from '../shared/wall';
-import { type DeviceFinish, type DeviceModule, type DeviceProps, type ParamDef } from '../types';
+import { type DeviceFinish, type DeviceModule, type DeviceProps } from '../types';
 
 /*
  * Digital signage: TVs, a free-standing digital totem and a backlit street
@@ -19,19 +19,6 @@ const HOUSINGS: DeviceFinish[] = [
   { id: 'silver', name: { fr: 'Aluminium', en: 'Aluminium' }, swatch: '#c9cbce', colors: { body: '#c9cbce', metal: '#c9cbce' } },
   { id: 'white', name: { fr: 'Blanc', en: 'White' }, swatch: '#ecebe7', colors: { body: '#ecebe7', metal: '#d6d6d4' } },
 ];
-
-const WALL_PARAM: ParamDef = {
-  id: 'wall',
-  kind: 'swatch',
-  label: { fr: 'Couleur du mur', en: 'Wall colour' },
-  options: [
-    { value: '#ece6dc', label: { fr: 'Blanc chaud', en: 'Warm white' } },
-    { value: '#d9c8b0', label: { fr: 'Sable', en: 'Sand' } },
-    { value: '#b9c2ae', label: { fr: 'Sauge', en: 'Sage' } },
-    { value: '#3a3a3d', label: { fr: 'Anthracite', en: 'Charcoal' } },
-  ],
-  default: '#ece6dc',
-};
 
 /** Flat panel: thin body, edge-to-edge glass, display. Centred on its origin, facing +Z. */
 function FlatPanel({ w, h, bezel, depth, finish, material }: { w: number; h: number; bezel: number; depth: number; finish: DeviceFinish; material: THREE.Material }) {
@@ -103,7 +90,7 @@ export const tv: DeviceModule = {
     const onWall = p.mount === 'wall';
     return { size: [d.fw, d.fh + (onWall ? 0 : TV_STAND_H), onWall ? 3 : 24], y0: onWall ? TV_WALL_BOTTOM : 0, focus: [0, (onWall ? TV_WALL_BOTTOM : TV_STAND_H) + d.fh / 2, 0] };
   },
-  wallFor: (p) => (p.mount === 'wall' ? { z: -1.6, color: String(p.wall) } : null),
+  wallFor: (p) => (p.mount === 'wall' ? { z: -1.6 } : null),
   surfaces: [{ id: 'screen', label: { fr: 'Écran', en: 'Screen' }, aspect: 16 / 9, nativeSize: [3840, 2160] }],
   finishes: HOUSINGS,
   defaultFinish: 'black',
@@ -140,7 +127,6 @@ export const tv: DeviceModule = {
       ],
       default: 'wall',
     },
-    WALL_PARAM,
   ],
   view: { target: [0, 0, 0], offset: [30, 6, 110] },
   yaw: 0,

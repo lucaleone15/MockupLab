@@ -92,7 +92,7 @@ export interface DeviceModule {
    * the object) and its colour, or null. The stage draws one shared wall for
    * the whole scene and snaps every wall object onto it.
    */
-  wallFor?: (params: Record<string, ParamValue>) => { z: number; color: string } | null;
+  wallFor?: (params: Record<string, ParamValue>) => { z: number } | null;
   /** What the surfaces are: lit screens (default) or printed / lit materials. */
   surfaceKind?: 'screen' | 'print';
   anchor?: 'center' | 'bottom';

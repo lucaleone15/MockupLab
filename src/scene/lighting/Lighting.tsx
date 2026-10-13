@@ -18,6 +18,7 @@ const SHADOW_PROPS = {
   'shadow-mapSize': [2048, 2048] as [number, number],
   'shadow-blurSamples': 24,
   'shadow-bias': -0.0005,
+  'shadow-normalBias': 0.6,
 };
 
 const direction = (azimuth: number, elevation: number, distance: number, from: THREE.Vector3 = new THREE.Vector3()): [number, number, number] => {

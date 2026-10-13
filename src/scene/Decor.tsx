@@ -5,7 +5,8 @@ import { roundedSlab } from '@/lib/geometry/sweep';
 import { getModel } from '@/models/registry';
 import { sizeOf } from '@/models/types';
 import type { Decor, SceneItem } from '@/store/project';
-import { loadMaterialMap, useRealMaterial } from './realMaterials';
+import { useRealMaterial } from './realMaterials';
+import { useBackdropMaterial } from './backdrop';
 
 /*
  * 3D set dressing: a seamless studio sweep, a podium (painted or in a real
@@ -95,7 +96,7 @@ function sweepGeometry(width: number) {
 export function DecorScene({ decor, items }: { decor: Decor; items: SceneItem[] }) {
   switch (decor.kind) {
     case 'sweep':
-      return <Sweep color={decor.color} />;
+      return <Sweep />;
     case 'podium':
       return <Podium decor={decor} items={items} />;
     case 'surface':
@@ -107,13 +108,11 @@ export function DecorScene({ decor, items }: { decor: Decor; items: SceneItem[] 
   }
 }
 
-function Sweep({ color }: { color: string }) {
+/** Seamless studio backdrop: it shows the background, curving from the floor up the wall. */
+function Sweep() {
   const geo = useMemo(() => sweepGeometry(16000), []);
-  return (
-    <mesh geometry={geo} receiveShadow>
-      <meshStandardMaterial color={color} roughness={0.92} metalness={0} />
-    </mesh>
-  );
+  const material = useBackdropMaterial({ roughness: 0.92 });
+  return <mesh geometry={geo} material={material} receiveShadow />;
 }
 
 function Podium({ decor, items }: { decor: Decor; items: SceneItem[] }) {
@@ -163,42 +162,12 @@ function Surface({ decor }: { decor: Decor }) {
   );
 }
 
-/** Plain painted wall: a flat colour with a faint plaster relief. */
-function useWallMaterial(color: string) {
-  const invalidate = useThree((s) => s.invalidate);
-  const material = useMemo(() => new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 }), []);
-  useEffect(() => {
-    material.color.set(color);
-    invalidate();
-  }, [material, color, invalidate]);
-  useEffect(() => {
-    let alive = true;
-    let tex: THREE.Texture | null = null;
-    loadMaterialMap('concrete', 'normal').then((n) => {
-      if (!alive) return;
-      tex = n.clone();
-      tex.repeat.set(4, 2);
-      tex.needsUpdate = true;
-      material.normalMap = tex;
-      material.normalScale.set(0.25, 0.25);
-      material.needsUpdate = true;
-      invalidate();
-    });
-    return () => {
-      alive = false;
-      tex?.dispose();
-    };
-  }, [material, invalidate]);
-  useEffect(() => () => material.dispose(), [material]);
-  return material;
-}
-
 export { TABLE_BACK } from '@/lib/arrange';
 import { SWEEP_BACK, TABLE_BACK } from '@/lib/arrange';
 
 /**
  * Product-photography table set: a real-material table top pushed against a
- * plain wall. Both are real geometry, so depth of field blurs the wall
+ * wall that shows the background. Both are real geometry, so depth of field blurs the wall
  * naturally and the key light's projected shadows land on it.
  */
 function TableSet({ decor }: { decor: Decor }) {
@@ -208,7 +177,7 @@ function TableSet({ decor }: { decor: Decor }) {
     [],
   );
   const top = useRealMaterial(decor.material, 600, depth);
-  const wall = useWallMaterial(decor.wall);
+  const wall = useBackdropMaterial({ plaster: true });
   return (
     <group>
       <mesh geometry={table} material={top} position={[0, -2, TABLE_BACK + depth / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow />
