@@ -95,7 +95,7 @@ export const useUi = create<UiState>((set) => ({
   },
   screen: 'home',
   setScreen: (screen) => set({ screen }),
-  studioPage: 'settings',
+  studioPage: 'devices',
   setStudioPage: (studioPage) => set({ studioPage }),
   photoPage: 'photos',
   setPhotoPage: (photoPage) => set({ photoPage }),
