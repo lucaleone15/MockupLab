@@ -1,4 +1,6 @@
 // scripts/check-social.mjs — social formats (exact pixel sizes, safe zones), Reel/TikTok video preset, Instagram carousel.
+import { execSync } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const exportSize = () => page.evaluate(async () => {
@@ -64,4 +66,40 @@ const gap = await page.evaluate(async () => {
   return [a.distanceTo(b), a.distanceTo(mid)];
 });
 check(gap[0] < 0.5 && gap[1] > 5, `perfect loop: the last frame is the first (${gap[0].toFixed(2)}), the middle moves (${gap[1].toFixed(1)})`);
+// Instagram carousel: a strip of slides with cut guides, devices spread one per slide, a ZIP of slides
+await page.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
+await page.evaluate(() => {
+  const s = window.__mockuplab.project.getState();
+  s.resetAll();
+  s.addItem('phone-pro');
+  s.addItem('phone-pro');
+  s.addItem('phone-pro');
+  s.setExport({ kind: 'image', format: 'png', resolution: '1080' });
+});
+await page.getByRole('button', { name: /Réseaux/ }).click();
+await page.getByRole('menuitemradio', { name: /Carrousel Insta/ }).click();
+await page.waitForTimeout(300);
+const box = await page.getByTestId('frame').boundingBox();
+check(Math.abs(box.width / box.height - 2.4) < 0.05, `carousel of 3 slides 4:5: a 2.4:1 strip (${(box.width / box.height).toFixed(2)})`);
+check((await page.getByTestId('carousel-cut').count()) === 2, 'two cut guides between the three slides');
+await page.getByRole('button', { name: 'Ajouter une slide' }).click();
+await page.waitForTimeout(200);
+check((await page.evaluate(() => window.__mockuplab.project.getState().export.ratio)) === 'c4-4x5', 'a slide can be added');
+await page.getByRole('button', { name: 'Retirer une slide' }).click();
+await page.waitForTimeout(200);
+await page.getByRole('button', { name: 'Disposer' }).click();
+await page.waitForTimeout(400);
+const xs = await page.evaluate(() => window.__mockuplab.project.getState().items.map((i) => i.position[0]).sort((a, b) => a - b));
+check(xs[1] - xs[0] > 12 && xs[2] - xs[1] > 12 && Math.abs(xs[1] - xs[0] - (xs[2] - xs[1])) < 1, `Arrange spreads the devices evenly along the strip (${xs.map(Math.round)})`);
+mkdirSync('out/social', { recursive: true });
+await page.getByRole('button', { name: 'Exporter' }).first().click();
+const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 120000 }), page.getByRole('button', { name: 'Télécharger', exact: true }).click()]);
+await dl.saveAs('out/social/' + dl.suggestedFilename());
+const list = /\.zip$/.test(dl.suggestedFilename()) ? execSync(`unzip -Z1 out/social/${dl.suggestedFilename()}`).toString().trim().split('\n') : [];
+check(JSON.stringify(list) === JSON.stringify(['01.png', '02.png', '03.png']), `carousel export: a ZIP of slides (${dl.suggestedFilename()}: ${list.join(', ')})`);
+if (list.length) {
+  execSync(`rm -rf out/social/slides && mkdir -p out/social/slides && unzip -o -q out/social/${dl.suggestedFilename()} -d out/social/slides`);
+  const dims = execSync('sips -g pixelWidth -g pixelHeight out/social/slides/01.png').toString().match(/\d+/g).slice(-2).join('×');
+  check(dims === '1080×1350', `each slide is 1080 × 1350 (${dims})`);
+}
 await done(browser, errors);

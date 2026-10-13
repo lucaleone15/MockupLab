@@ -4,7 +4,8 @@ import type { Fit } from '@/scene/screenMaterial';
 import { getModel } from '@/models/registry';
 import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
-import { arrangeItems, besideOthers, constrainItems } from '@/lib/arrange';
+import { arrangeInRow, arrangeItems, besideOthers, constrainItems } from '@/lib/arrange';
+import { carouselOf } from '@/export/settings';
 import { useAssets } from './assets';
 import type { Quad } from '@/photo/homography';
 
@@ -573,7 +574,8 @@ export const useProject = create<ProjectState>()(
           const items = constrainItems(s.items.filter((it) => it.id !== id), s.decor);
           return { items, selectedId: s.selectedId === id ? items[items.length - 1].id : s.selectedId };
         }),
-      arrange: () => set((s) => ({ items: constrainItems(arrangeItems(s.items), s.decor) })),
+      // a carousel lines the devices up along its strip, one per slide
+      arrange: () => set((s) => ({ items: constrainItems(carouselOf(s.export.ratio) ? arrangeInRow(s.items) : arrangeItems(s.items), s.decor) })),
       addOverlay: (overlay) => set((s) => ({ overlays: [...s.overlays, overlay] })),
       updateOverlay: (id, patch) =>
         set((s) => ({ overlays: s.overlays.map((o) => (o.id === id ? ({ ...o, ...patch } as Overlay) : o)) })),

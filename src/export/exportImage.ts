@@ -7,7 +7,8 @@ import { photoOutputSize, renderPhotoImage } from '@/photo/exportPhoto';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { FORMATS, outputSize, supersampleFor } from './settings';
+import { FORMATS, carouselOf, outputSize, supersampleFor } from './settings';
+import { ZipWriter } from '@/lib/zip';
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -128,6 +129,24 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
 }
 
 /** Exports what is asked (default: the project's current kind, i.e. a video on the Video page). */
+/** Cuts a carousel strip into N slides of equal width: a ZIP of 01.png, 02.png… */
+export async function sliceCarousel(strip: Blob, slides: number, ext: string): Promise<Blob> {
+  const bmp = await createImageBitmap(strip);
+  const w = Math.round(bmp.width / slides);
+  const mime = FORMATS.find((f) => f.ext === ext)?.mime ?? 'image/png';
+  const zip = new ZipWriter();
+  for (let i = 0; i < slides; i++) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = bmp.height;
+    c.getContext('2d')!.drawImage(bmp, i * w, 0, w, bmp.height, 0, 0, w, bmp.height);
+    const blob = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('encode'))), mime, 0.92));
+    await zip.add(`${String(i + 1).padStart(2, '0')}.${ext}`, blob);
+  }
+  bmp.close();
+  return zip.finish();
+}
+
 export async function exportImage(kind: 'image' | 'video' = useProject.getState().export.kind) {
   const ui = useUi.getState();
   if (ui.exporting) return;
@@ -144,8 +163,16 @@ export async function exportImage(kind: 'image' | 'video' = useProject.getState(
     await nextFrame();
     await nextFrame();
     const res = await renderImage();
-    download(res.blob, res.filename);
-    toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
+    const carousel = project.mode === 'scene' ? carouselOf(project.export.ratio) : null;
+    if (carousel) {
+      // an Instagram carousel: the strip, cut into its slides, in posting order
+      const zip = await sliceCarousel(res.blob, carousel.slides, res.filename.replace(/^.*\.([a-z]+)$/, '$1'));
+      download(zip, res.filename.replace(/\.[a-z]+$/, '.zip'));
+      toast.success(t('social.carouselDone', { n: carousel.slides, size: formatBytes(zip.size) }));
+    } else {
+      download(res.blob, res.filename);
+      toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
+    }
   } catch (e) {
     toast.error(t('export.failed', { reason: e instanceof Error ? e.message : String(e) }));
   } finally {

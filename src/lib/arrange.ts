@@ -69,6 +69,19 @@ export function arrangeItems(input: SceneItem[]): SceneItem[] {
   return items.map((it) => out.get(it.id)!);
 }
 
+/** A row along a wide strip (an Instagram carousel): evenly spaced, in their current left-to-right order. */
+export function arrangeInRow(items: SceneItem[]): SceneItem[] {
+  const visible = items.filter((it) => it.visible).sort((a, b) => a.position[0] - b.position[0]);
+  if (!visible.length) return items;
+  const pitch = Math.max(...visible.map((it) => footprint(it).w)) * 1.45 + GAP;
+  const out = new Map<string, SceneItem>();
+  visible.forEach((it, i) => {
+    const yaw = (getModel(it.modelId).yaw ?? -0.3) * 0.5;
+    out.set(it.id, { ...it, position: [(i - (visible.length - 1) / 2) * pitch, 0, 0], rotation: [0, yaw, 0] });
+  });
+  return items.map((it) => out.get(it.id) ?? it);
+}
+
 /* ------------------------------------------------------------ walls & limits */
 
 /** Back walls of the 3D sets (table set, studio sweep), local Z. */
