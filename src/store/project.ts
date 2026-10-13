@@ -282,7 +282,7 @@ export interface PhotoScene {
 export type WorkMode = 'scene' | 'photo';
 
 export interface Project {
-  version: 5;
+  version: 6;
   /** 3D scene or photo mock-up. */
   mode: WorkMode;
   photo: PhotoScene;
@@ -383,7 +383,7 @@ export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 5
 export function initialProject(): Project {
   const item = { ...makeItem(getModel('phone-pro')), sample: true };
   return {
-    version: 5,
+    version: 6,
     mode: 'scene',
     photo: structuredClone(EMPTY_PHOTO),
     brand: structuredClone(DEFAULT_BRAND),

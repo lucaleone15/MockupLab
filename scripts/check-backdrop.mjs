@@ -82,4 +82,20 @@ const steps = reds.slice(1).map((r, i) => r - reds[i]);
 check(steps.every((d) => d <= 6) && Math.max(...steps.map(Math.abs)) < 40, `4K tiles: the wall gradient is continuous (red down the wall: ${reds.join(' ')})`);
 await page.evaluate(() => window.__mockuplab.project.getState().setExport({ resolution: '1080' }));
 
+// older projects (v5): a wall colour becomes the background when the background was the default one
+const mig = await page.evaluate(() => {
+  const m = window.__mockuplab.persistence.migrateProject;
+  const def = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#2a2a31', at: 0 }, { color: '#0d0d10', at: 1 }] };
+  const table = m({ version: 5, background: def, decor: { kind: 'table', wall: '#b9c2ae', material: 'oak' }, items: [{ id: 'a', modelId: 'phone-pro', params: {} }] });
+  const red = m({ version: 5, background: { kind: 'solid', color: '#ff0000' }, decor: { kind: 'table', wall: '#b9c2ae' }, items: [{ id: 'a', modelId: 'phone-pro', params: {} }] });
+  const poster = m({ version: 5, background: def, decor: { kind: 'none' }, items: [{ id: 'p', modelId: 'poster', params: { wall: '#c98a6b', format: 'a2' } }] });
+  return {
+    table: [table.version, table.background, 'wall' in table.decor],
+    red: red.background,
+    poster: [poster.background, 'wall' in poster.items[0].params],
+  };
+});
+check(mig.table[0] === 6 && mig.table[1].kind === 'solid' && mig.table[1].color === '#b9c2ae' && !mig.table[2], `v5 table wall → plain background (${JSON.stringify(mig.table)})`);
+check(mig.red.kind === 'solid' && mig.red.color === '#ff0000', 'a chosen background is kept over an old wall colour');
+check(mig.poster[0].kind === 'solid' && mig.poster[0].color === '#c98a6b' && !mig.poster[1], `v5 poster wall → plain background, param dropped (${JSON.stringify(mig.poster)})`);
 await done(browser, errors);
