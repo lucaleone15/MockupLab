@@ -11,7 +11,7 @@ import { makeItem, useProject, type SceneItem } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
-import { SUPPORT_MODELS, detectSupport, type Support } from '@/quick/detect';
+import { detectSupport, modelForSupport, type Support } from '@/quick/detect';
 import { composeBoard } from './board';
 
 /*
@@ -55,7 +55,8 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const HERO_MODELS: Partial<Record<Support, string>> = { print: 'flyer' };
 
 function deviceFor(file: PackFile, hero = false): SceneItem {
-  const model = getModel((hero && HERO_MODELS[file.support]) || SUPPORT_MODELS[file.support]);
+  const asset = useAssets.getState().assets[file.assetId];
+  const model = getModel((hero && HERO_MODELS[file.support]) || modelForSupport(file.support, asset?.width, asset?.height));
   const item = makeItem(model);
   const slot = model.surfaces[0];
   if (slot) item.surfaces = { ...item.surfaces, [slot.id]: { ...item.surfaces[slot.id], assetId: file.assetId, align: 0 } };
@@ -160,7 +161,7 @@ export const pack = {
       if (!file || !file.type.startsWith('image/')) continue;
       const asset = await fileToAsset(file, file.name || 'image');
       useAssets.getState().add(asset);
-      const { support, confident } = detectSupport(asset.width, asset.height, pdf);
+      const { support, confident } = detectSupport(asset.width, asset.height, pdf, file.name);
       const pages = pdf ? await pdfPageCount(original) : 0;
       added.push({ id: uid(), name: file.name, assetId: asset.id, support, confident, pdf: pages > 1 ? { file: original, pages } : undefined });
     }

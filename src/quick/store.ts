@@ -15,7 +15,7 @@ import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { AXES, applyLook, generateLooks, type Look } from '@/variants/looks';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
-import { SUPPORT_MODELS, detectSupport, type Support } from './detect';
+import { detectSupport, modelForSupport, type Support } from './detect';
 import { TEMPLATES, type QuickTag, type QuickTemplate } from './templates';
 
 /*
@@ -62,10 +62,17 @@ onCancelSandboxes(() => run++);
 
 const currentKey = () => `${get().support}|${get().assetId ?? 'sample'}|${useProject.getState().export.ratio}`;
 
+/** The model the current support is shown on, for the current image. */
+function modelOfCurrent() {
+  const { support, assetId } = get();
+  const asset = assetId ? useAssets.getState().assets[assetId] : undefined;
+  return modelForSupport(support, asset?.width, asset?.height);
+}
+
 /** The device of the current support, with the design (or a sample) on its first face. */
 async function stagedItem(): Promise<SceneItem> {
-  const { support, assetId } = get();
-  const model = getModel(SUPPORT_MODELS[support]);
+  const { assetId } = get();
+  const model = getModel(modelOfCurrent());
   const item = { ...makeItem(model), id: ITEM_ID };
   const slot = model.surfaces[0];
   if (!slot) return item;
@@ -134,6 +141,7 @@ export const labelOf = (tile: QuickTile) => (typeof tile.label === 'string' ? ti
 export const quick = {
   state: get,
   detectSupport,
+  modelForSupport,
   /** Starts (or resumes) rendering; called when the Quick screen shows. */
   start() {
     void renderMissing();
@@ -147,7 +155,7 @@ export const quick = {
     if (!file) return;
     const asset = await fileToAsset(file, file.name || 'image');
     useAssets.getState().add(asset);
-    const { support, confident } = detectSupport(asset.width, asset.height, pdf);
+    const { support, confident } = detectSupport(asset.width, asset.height, pdf, file.name);
     dropThumbs();
     set({ assetId: asset.id, support, confident, selected: [] });
     void renderMissing();
@@ -172,7 +180,7 @@ export const quick = {
   },
   /** Six more looks generated around the current device. */
   async more() {
-    const base: Project = { ...snapshot(), items: [await (async () => ({ ...makeItem(getModel(SUPPORT_MODELS[get().support])), id: ITEM_ID }))()] };
+    const base: Project = { ...snapshot(), items: [await (async () => ({ ...makeItem(getModel(modelOfCurrent())), id: ITEM_ID }))()] };
     const looks = generateLooks(6, AXES, Math.floor(Math.random() * 1e9), base);
     set((s) => ({ tiles: [...s.tiles, ...looks.map((look) => ({ id: look.id, label: look.label, tags: [] as QuickTag[], look }))], filter: 'all' }));
     void renderMissing();
