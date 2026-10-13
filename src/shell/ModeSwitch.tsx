@@ -1,12 +1,10 @@
 import type { KeyboardEvent } from 'react';
 import { useT, type I18nKey } from '@/i18n';
-import { useUi, type Screen } from '@/store/ui';
-import { cx } from '@/ui/primitives';
-import { AVAILABLE, navigate } from './route';
+import { useUi } from '@/store/ui';
+import { Tooltip, cx } from '@/ui/primitives';
+import { AVAILABLE, MODE_ORDER, navigate } from './route';
 
-const MODES: Screen[] = ['quick', 'project', 'studio', 'photo'];
-
-/** Rapide · Projet · Studio · Photo — a pill segmented control; unbuilt modes say "Soon". */
+/** Studio · Rapide · Projet · Photo — a pill segmented control; each mode says what it is for on hover, unbuilt modes say "Soon". */
 export function ModeSwitch() {
   const { t } = useT();
   const screen = useUi((s) => s.screen);
@@ -15,7 +13,7 @@ export function ModeSwitch() {
     const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
     if (!step) return;
     e.preventDefault();
-    const open = MODES.filter((m) => AVAILABLE[m]);
+    const open = MODE_ORDER.filter((m) => AVAILABLE[m]);
     const i = Math.max(0, open.indexOf(screen));
     const target = open[(i + step + open.length) % open.length];
     navigate(target);
@@ -23,10 +21,10 @@ export function ModeSwitch() {
   };
   return (
     <div role="radiogroup" aria-label={t('screen.home')} data-testid="mode-switch" className="flex rounded-full bg-surface-3 p-[3px]" onKeyDown={onKeyDown}>
-      {MODES.map((m) => {
+      {MODE_ORDER.map((m) => {
         const active = m === screen;
         const available = AVAILABLE[m];
-        return (
+        const button = (
           <button
             key={m}
             type="button"
@@ -45,6 +43,13 @@ export function ModeSwitch() {
           >
             {t(`screen.${m}` as I18nKey)}
           </button>
+        );
+        return available ? (
+          <Tooltip key={m} label={t(`mode.${m}.role` as I18nKey)}>
+            {button}
+          </Tooltip>
+        ) : (
+          button
         );
       })}
     </div>
