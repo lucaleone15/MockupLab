@@ -42,6 +42,8 @@ export interface SceneItem {
   visible: boolean;
   /** Locked devices cannot be moved with the mouse. */
   locked: boolean;
+  /** The sample phone a new project starts with, until it is edited: the first device picked replaces it. */
+  sample?: boolean;
 }
 
 /** Built-in faces, or the brand kit's heading / body typefaces. */
@@ -346,11 +348,9 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
-/** The scene is still the lone sample phone of a new project: no image, not moved. */
+/** The scene is still the lone sample phone of a new project, never edited and without an image. */
 function isUntouchedSample(items: SceneItem[]) {
-  if (items.length !== 1) return false;
-  const [it] = items;
-  return it.modelId === 'phone-pro' && it.position.every((v) => v === 0) && Object.values(it.surfaces).every((b) => !b.assetId);
+  return items.length === 1 && items[0].sample === true && Object.values(items[0].surfaces).every((b) => !b.assetId);
 }
 
 export const DEFAULT_BRAND: Brand = {
@@ -384,7 +384,7 @@ export const DEFAULT_VIDEO: VideoSettings = { animation: 'reveal', duration: 6, 
 export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0 };
 
 export function initialProject(): Project {
-  const item = makeItem(getModel('phone-pro'));
+  const item = { ...makeItem(getModel('phone-pro')), sample: true };
   return {
     version: 5,
     mode: 'scene',
@@ -507,7 +507,7 @@ export const useProject = create<ProjectState>()(
       updateItem: (id, patch) =>
         set((s) => ({
           items: constrainItems(
-            s.items.map((it) => (it.id === id ? { ...it, ...(typeof patch === 'function' ? patch(it) : patch) } : it)),
+            s.items.map((it) => (it.id === id ? { ...it, ...(typeof patch === 'function' ? patch(it) : patch), sample: false } : it)),
             s.decor,
           ),
         })),
@@ -515,7 +515,7 @@ export const useProject = create<ProjectState>()(
         set((s) => ({
           items: s.items.map((it) =>
             it.id === itemId
-              ? { ...it, surfaces: { ...it.surfaces, [slot]: { ...(it.surfaces[slot] ?? DEFAULT_SURFACE), ...patch } } }
+              ? { ...it, sample: false, surfaces: { ...it.surfaces, [slot]: { ...(it.surfaces[slot] ?? DEFAULT_SURFACE), ...patch } } }
               : it,
           ),
         })),

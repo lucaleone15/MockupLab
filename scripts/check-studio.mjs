@@ -63,4 +63,14 @@ await rail.getByRole('tab', { name: 'Lumière', exact: true }).focus();
 await page.keyboard.press('ArrowDown');
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'camera', 'ArrowDown in the rail moves to the next page');
 check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'Caméra', 'focus follows the keyboard in the rail');
+// only the untouched sample phone of a new project is replaced — not a phone picked on purpose, not an edited one
+const after = (setup) => page.evaluate((setup) => {
+  const api = window.__mockuplab.project;
+  api.getState().resetAll();
+  new Function('s', setup)(api.getState());
+  return api.getState().items.map((i) => i.modelId).join();
+}, setup);
+check((await after(`s.addItem('phone-pro'); s.addItem('laptop-14');`)) === 'phone-pro,laptop-14', 'a phone picked on purpose stays when a laptop is added');
+check((await after(`const id = s.items[0].id; s.updateItem(id, { rotation: [0, 0.5, 0] }); s.addItem('laptop-14');`)).split(',').length === 2, 'an edited sample phone stays');
+check((await after(`s.addItem('laptop-14');`)) === 'laptop-14', 'an untouched sample phone is replaced');
 await done(browser, errors);
