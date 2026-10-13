@@ -16,7 +16,7 @@ import { ReflectiveFloor } from './ReflectiveFloor';
 import { useAmbience } from './ambiences';
 import { useCompositionBounds } from './bounds';
 import { sceneWall } from '@/lib/arrange';
-import { useWall } from '@/models/shared/wall';
+import { useBackdropMaterial } from './backdrop';
 import { InteractionBridge, Interactive, SelectionRing } from './interaction';
 
 /** Resting height of a device lying on its back (camera bumps included). */
@@ -119,16 +119,17 @@ function Ground({ floorY, top }: { floorY: number; top: THREE.BufferGeometry | n
   );
 }
 
-/** The scene's single wall, when objects hang on one and the set has none of its own. */
+/** The scene's single wall, when objects hang on one and the set has none of its own: it shows the background. */
 function SharedWall() {
   const items = useProject((s) => s.items);
   const decor = useProject((s) => s.decor);
   const wall = useMemo(() => sceneWall(items, decor), [items, decor]);
-  const material = useWall(wall?.color ?? '#ece6dc');
+  const material = useBackdropMaterial({ plaster: true });
   if (!wall?.draw) return null;
+  // large enough that no edge shows, even looking down from above
   return (
-    <mesh material={material} position={[0, 60, wall.z]} receiveShadow>
-      <planeGeometry args={[1600, 640]} />
+    <mesh material={material} position={[0, 1200, wall.z]} receiveShadow>
+      <planeGeometry args={[6000, 3000]} />
     </mesh>
   );
 }
