@@ -126,7 +126,7 @@ function itemCorners(item: SceneItem, floorY: number): THREE.Vector3[] {
  * corner is projected in the camera basis and the distance is the smallest
  * one keeping them inside `fill` of the frame.
  */
-export function frame(items: SceneItem[], dir: THREE.Vector3, fovDeg: number, aspect: number, floorY: number, fill = 0.76) {
+export function frame(items: SceneItem[], dir: THREE.Vector3, fovDeg: number, aspect: number, floorY: number, fill = items.length > 1 ? 0.8 : 0.86) {
   const corners = items.flatMap((it) => itemCorners(it, floorY));
   const box = new THREE.Box3().setFromPoints(corners);
   const target = box.getCenter(new THREE.Vector3());
