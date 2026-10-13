@@ -13,12 +13,14 @@ await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mu
     await p.getByRole('button', { name: 'Affiche', exact: true }).click(T);
   });
   await u.step('Mettre son visuel sur l’affiche', () => u.upload(p.getByRole('button', { name: 'parcourir' }), 'public/samples/sample-poster.png'));
-  await u.step('Choisir le format A1', async () => {
+  await u.step('Choisir le format A1 (adapté à l’image)', async () => {
+    if (!(await p.getByRole('switch', { name: 'Adapter à mon image' }).isVisible().catch(() => false))) u.friction('surprenant', 'pas d’option « Adapter à mon image » à côté du format');
     if (!(await p.getByRole('radio', { name: 'A1', exact: true }).isVisible())) {
       u.friction('surprenant', 'le format de l’affiche n’est pas à côté de la liste des appareils : il faut chercher dans « Réglages »');
       await p.getByRole('tab', { name: 'Réglages' }).click(T);
     }
     await u.choose('A1');
+    if (!(await p.getByText(/≈ \d+ × \d+ cm/).first().isVisible().catch(() => false))) u.friction('surprenant', 'la taille réelle de l’affiche n’est pas affichée');
   });
   await u.step('Changer la couleur du fond (le mur suit)', async () => {
     if (await p.getByText('Couleur du mur').count()) u.friction('surprenant', 'une couleur de mur séparée du fond existe encore');
