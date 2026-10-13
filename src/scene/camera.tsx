@@ -175,7 +175,13 @@ export function leadItem(items: SceneItem[], selected: SceneItem | null): SceneI
  * on the floor in front of a wall, not so much that the wall disappears.
  */
 function composedDirection(dir: THREE.Vector3, preset: CameraPresetId, items: SceneItem[]) {
-  if (preset !== 'threeQuarter' || items.filter((it) => it.visible).length < 2) return dir;
+  const visible = items.filter((it) => it.visible);
+  // only compositions with something on a wall or prints lying on the floor need it
+  const mixed = visible.some((it) => {
+    const model = getModel(it.modelId);
+    return model.category === 'print' || !!model.wallFor?.(it.params, aspectsOf(it.surfaces));
+  });
+  if (preset !== 'threeQuarter' || visible.length < 2 || !mixed) return dir;
   const el = Math.asin(THREE.MathUtils.clamp(dir.y / dir.length(), -1, 1));
   const clamped = THREE.MathUtils.clamp(el, THREE.MathUtils.degToRad(20), THREE.MathUtils.degToRad(32));
   const h = Math.hypot(dir.x, dir.z) || 1;

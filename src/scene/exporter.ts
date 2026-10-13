@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Accumulator, applyLensSample, type LensSetup } from './accumulator';
 import { cameraState } from './camera';
+import { setBackdropTile } from './backdrop';
 
 /**
  * Offline renderer for exports.
@@ -134,6 +135,8 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
         const ih = Math.min(step, rh - y);
         // the lens shift moves the whole window sideways
         const rect = { x: x - pad - shift * rw, y: y - pad, width: tile, height: tile };
+        // walls show the background at this tile's place in the image (without the shift)
+        setBackdropTile((x - pad) / rw, (y - pad) / rh, tile / rw, tile / rh);
         if (accumulator) {
           accumulator.reset(gl, tile, tile);
           for (let i = 0; i < samples; i++) {
@@ -158,6 +161,7 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
       }
     }
   } finally {
+    setBackdropTile();
     camera.clearViewOffset();
     accumulator?.dispose();
     gl.setClearColor(prevClear, prevClearAlpha);

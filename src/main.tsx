@@ -89,6 +89,7 @@ if (import.meta.env.DEV) {
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),
+        looks: () => import('./variants/looks'),
         itemSize: async (id: string) => {
           const [{ sizeOf }, { aspectsOf }] = await Promise.all([import('./models/types'), import('./models/imageAspects')]);
           const it = pr.useProject.getState().items.find((x) => x.id === id)!;
