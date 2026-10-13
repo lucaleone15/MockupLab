@@ -10,6 +10,7 @@ import { Button, Chip, GroupTitle, Spinner, cx } from '@/ui/primitives';
 import { SUPPORTS } from './detect';
 import { QUICK_TAGS } from './templates';
 import { labelOf, quick, useQuick, type QuickTile } from './store';
+import { ModeRole } from '@/shell/ModeRole';
 
 const FORMATS = RATIOS.filter((r) => ['16:9', '4:3', '1:1', '4:5', '9:16'].includes(r.id));
 
@@ -72,6 +73,7 @@ export function QuickScreen() {
     <div className="flex min-h-0 flex-1 gap-2 p-2" data-testid="quick-screen">
       <aside className="glass flex w-[280px] shrink-0 flex-col gap-6 overflow-y-auto rounded-[14px] p-5">
         <div className="flex flex-col gap-3">
+          {!asset && <ModeRole screen="quick" className="text-fg" />}
           <GroupTitle>{t('quick.design')}</GroupTitle>
           <button
             type="button"

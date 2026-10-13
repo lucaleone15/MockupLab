@@ -13,6 +13,7 @@ import { isConvex, type Quad, type Vec2 } from './homography';
 import { loadPhotoSamples, pickPhoto } from './importPhoto';
 import { PhotoRenderer, type ZoneDraw } from './renderer';
 import { statsFor } from './source';
+import { ModeRole } from '@/shell/ModeRole';
 
 /** Lets global handlers (drop) find the zone under the pointer. */
 export const photoPicking: { zoneAt?: (clientX: number, clientY: number) => string | undefined } = {};
@@ -404,6 +405,7 @@ function PhotoEmpty() {
       </div>
       <div>
         <h2 className="font-display text-[24px] font-bold">{t('photo.empty.title')}</h2>
+        <ModeRole screen="photo" className="mt-2 text-[14px] font-medium text-fg" />
         <p className="mt-2 text-[14px] leading-relaxed text-fg-muted">{t('photo.empty.body')}</p>
       </div>
       <Button variant="primary" size="lg" onClick={pickPhoto}>

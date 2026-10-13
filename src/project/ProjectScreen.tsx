@@ -11,6 +11,7 @@ import { useProject } from '@/store/project';
 import { Button, Spinner, Switch, cx } from '@/ui/primitives';
 import { SUPPORTS } from '@/quick/detect';
 import { STYLES, pack, usePack, type PackFile } from './store';
+import { ModeRole } from '@/shell/ModeRole';
 
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
@@ -106,6 +107,7 @@ export function ProjectScreen() {
         <Step n={1} title={t('project.step.images')}>
           <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
             <div className="flex flex-col gap-2">
+              {!s.files.length && <ModeRole screen="project" className="mb-1 text-[14px] text-fg" />}
               {s.files.length > 0 && (
                 <ul className="flex flex-col gap-2">
                   {s.files.map((f, i) => (

@@ -43,10 +43,12 @@ export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
         </button>
       </Tooltip>
       <span className="mx-1 h-5 w-px bg-line-strong" />
-      <button type="button" className={cx(btn, 'text-fg')} onClick={() => variants.open()} data-testid="open-variants">
-        <Sparkles size={15} />
-        {t('stage.ideas')}
-      </button>
+      <Tooltip label={t('stage.ideasHint')}>
+        <button type="button" className={cx(btn, 'text-fg')} onClick={() => variants.open()} data-testid="open-variants">
+          <Sparkles size={15} />
+          {t('stage.ideas')}
+        </button>
+      </Tooltip>
     </div>
   );
 }

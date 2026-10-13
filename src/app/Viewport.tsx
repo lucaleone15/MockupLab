@@ -13,6 +13,7 @@ import { Spinner, cx } from '@/ui/primitives';
 import { FloatingBar } from '@/shell/FloatingBar';
 import { MOD } from './shortcuts';
 import { OverlayLayer } from './OverlayLayer';
+import { ModeRole } from '@/shell/ModeRole';
 
 /** While an animation preview plays: the app is frozen (the scene is a temporary copy), with a stop button. */
 export function PreviewOverlay() {
@@ -84,7 +85,8 @@ function EmptyHint() {
   const [loading, setLoading] = useState(false);
   const [before, after] = t('stage.emptyHint').split('{paste}');
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-5 flex justify-center animate-[fade-in_300ms_ease-out]">
+    <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 animate-[fade-in_300ms_ease-out]">
+      <ModeRole screen="studio" className="rounded-full bg-black/45 px-3 py-1 text-[12px] text-white/80 backdrop-blur-xl" />
       <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-black/55 py-2 pl-3 pr-2 text-[12.5px] text-white/85 shadow-2xl backdrop-blur-xl">
         <ImagePlus size={16} className="text-white/60" />
         <span>

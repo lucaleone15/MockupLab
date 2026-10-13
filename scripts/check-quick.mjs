@@ -51,7 +51,7 @@ await page.waitForTimeout(300);
 check((await tiles.count()) === n0 + 6, `more ideas adds 6 tiles (${n0} → ${await tiles.count()})`);
 // 6. customize → studio with the laptop and our image
 await tiles.nth(1).hover();
-await tiles.nth(1).getByRole('button', { name: /Personnaliser/ }).click();
+await tiles.nth(1).getByRole('button', { name: /Affiner dans le Studio/ }).click();
 await page.waitForTimeout(1500);
 const st = await page.evaluate(() => {
   const api = window.__mockuplab;

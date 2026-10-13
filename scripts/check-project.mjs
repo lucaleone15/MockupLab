@@ -29,7 +29,7 @@ await dl.saveAs('out/project/' + dl.suggestedFilename());
 const list = execSync(`unzip -Z1 out/project/${dl.suggestedFilename()}`).toString().trim().split('\n');
 check(list.length === 5 && list.some((f) => /^00-hero/.test(f)) && list.some((f) => /planche/.test(f)), `ZIP has hero, 3 mock-ups and the board (${list.join(', ')})`);
 // open the hero in the Studio
-await page.getByTestId('pack-item').first().getByRole('button', { name: /Ouvrir dans le Studio/ }).click();
+await page.getByTestId('pack-item').first().getByRole('button', { name: /Affiner dans le Studio/ }).click();
 await page.waitForTimeout(1500);
 const st = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, models: window.__mockuplab.project.getState().items.map((it) => it.modelId) }));
 check(st.screen === 'studio' && st.models.length === 3, `hero opens in the Studio with 3 devices (${JSON.stringify(st)})`);
