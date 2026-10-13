@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronLeft, ChevronRight, ImagePlus, MousePointerClick, Sparkles, Wand2 } from 'lucide-react';
 import { useT } from '@/i18n';
+import { accentColor } from '@/ui/accent';
 import { DropOverlay, ExportOverlay, useFrameSize } from '@/app/Viewport';
 import { OverlayLayer } from '@/app/OverlayLayer';
 import { loadImage, useAssets } from '@/store/assets';
@@ -108,7 +109,7 @@ function Loupe({ at, frame, quad }: { at: Vec2 | null; frame: { w: number; h: nu
       g.drawImage(img, cx - span / 2, cy - span / 2, span, span, 0, 0, LOUPE, LOUPE);
       // zone edges near the point
       if (quad && quad.length > 1) {
-        g.strokeStyle = 'rgba(255,92,53,0.95)';
+        g.strokeStyle = accentColor();
         g.lineWidth = 1.25;
         g.beginPath();
         quad.forEach(([x, y], i) => {
@@ -142,7 +143,7 @@ function Loupe({ at, frame, quad }: { at: Vec2 | null; frame: { w: number; h: nu
   return (
     <div className="pointer-events-none absolute z-20 overflow-hidden rounded-full shadow-2xl ring-2 ring-white/85" style={{ left, top, width: LOUPE, height: LOUPE }}>
       <canvas ref={ref} className="h-full w-full" />
-      <div className="absolute inset-x-0 bottom-2 text-center font-mono text-[10px] text-white/85 [text-shadow:0_1px_2px_#000]">
+      <div className="absolute inset-x-0 bottom-2 text-center text-[10px] text-white/85 [text-shadow:0_1px_2px_#000]">
         {Math.round(at[0] * asset.width)}, {Math.round(at[1] * asset.height)}
       </div>
     </div>
@@ -490,7 +491,7 @@ export function PhotoView() {
       )}
       {asset && (
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 flex h-[72px] items-center justify-center gap-3 text-[11.5px] text-fg-subtle">
-          <span className="font-mono tabular-nums">
+          <span className="tabular-nums">
             {asset.width} × {asset.height}
           </span>
           <span className="size-1 rounded-full bg-fg-subtle/50" />

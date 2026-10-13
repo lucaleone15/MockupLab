@@ -512,7 +512,15 @@ export const useProject = create<ProjectState>()(
               : it,
           ),
         })),
-      setBackground: (background) => set({ background }),
+      // the studio cyclo takes the background colour; anything but a plain colour turns it off
+      setBackground: (background) =>
+        set((s) =>
+          s.decor.kind !== 'sweep'
+            ? { background }
+            : background.kind === 'solid'
+              ? { background, decor: { ...s.decor, color: background.color } }
+              : { background, decor: { ...s.decor, kind: 'none' } },
+        ),
       setDecor: (patch) =>
         set((s) => {
           const decor = { ...s.decor, ...patch };

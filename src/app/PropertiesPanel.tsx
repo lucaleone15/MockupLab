@@ -50,7 +50,7 @@ function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { i
         <div className="min-w-0">
           {label && <div className="text-[12px] font-medium text-fg-muted">{label}</div>}
           <div className="truncate text-[12.5px] font-medium">{asset?.name ?? t('props.noImage')}</div>
-          <div className="font-mono text-[11px] tabular-nums text-fg-subtle">
+          <div className="text-[11px] tabular-nums text-fg-subtle">
             {asset ? `${asset.width} × ${asset.height}` : nativeSize ? `${nativeSize[0]} × ${nativeSize[1]}` : ''}
           </div>
         </div>
@@ -202,7 +202,7 @@ function ParamControl({ def, value, onChange }: { def: ParamDef; value: ParamVal
             placeholder={def.placeholder}
             spellCheck={false}
             onChange={(e) => onChange(e.target.value)}
-            className="h-8 rounded-lg bg-surface-2 px-2.5 font-mono text-[12px] text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none placeholder:text-fg-subtle focus:shadow-[0_0_0_1px_var(--accent)_inset]"
+            className="h-8 rounded-lg bg-surface-2 px-2.5 text-[12px] text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none placeholder:text-fg-subtle focus:shadow-[0_0_0_1px_var(--accent)_inset]"
           />
         </Field>
       );
@@ -349,7 +349,7 @@ export function ExportForm() {
       )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
         <span className="text-fg-muted">{t('props.output')}</span>
-        <span className="font-mono tabular-nums">
+        <span className="tabular-nums">
           {width} × {height}
           <span className="text-fg-subtle"> · {FORMATS.find((f) => f.id === settings.format)?.label}</span>
         </span>

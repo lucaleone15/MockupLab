@@ -85,7 +85,7 @@ export function Kbd({ children, inverted }: { children: ReactNode; inverted?: bo
   return (
     <kbd
       className={cx(
-        'rounded-md px-1.5 font-mono text-[11px] leading-[18px]',
+        'rounded-md px-1.5 text-[11.5px] font-medium leading-[18px]',
         inverted ? 'bg-black/10 text-current/80 dark:bg-black/15' : 'bg-surface-3 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset]',
       )}
     >
@@ -124,7 +124,7 @@ export function Field({ label, value, children }: { label: string; value?: React
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between text-[12.5px]">
         <span className="text-fg-muted">{label}</span>
-        {value !== undefined && <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{value}</span>}
+        {value !== undefined && <span className="text-[11px] tabular-nums text-fg-subtle">{value}</span>}
       </div>
       {children}
     </div>
@@ -227,7 +227,7 @@ export function ColorField({ value, onChange, label }: { value: string; onChange
           className="absolute inset-0 cursor-pointer opacity-0"
         />
       </span>
-      <span className="font-mono text-[11.5px] uppercase tabular-nums text-fg-muted">{value}</span>
+      <span className="text-[11.5px] uppercase tabular-nums text-fg-muted">{value}</span>
     </label>
   );
 }

@@ -120,7 +120,7 @@ function GradientEditor({ stops, onChange }: { stops: GradientStop[]; onChange: 
             onChange={(color) => onChange(stops.map((s, j) => (j === sel ? { ...s, color } : s)))}
           />
         </div>
-        <span className="w-10 text-right font-mono text-[11px] tabular-nums text-fg-subtle">{Math.round(stops[sel].at * 100)}%</span>
+        <span className="w-10 text-right text-[11px] tabular-nums text-fg-subtle">{Math.round(stops[sel].at * 100)}%</span>
         <Button
           size="sm"
           variant="ghost"

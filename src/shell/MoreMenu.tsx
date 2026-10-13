@@ -10,7 +10,7 @@ const row = 'flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 
 const label = 'flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11.5px] font-medium text-fg-subtle';
 
 /** Language, theme, shortcuts and "start over", out of the top bar. */
-export function MoreMenu() {
+export function MoreMenu({ tone }: { tone?: 'light' } = {}) {
   const { t } = useT();
   const lang = useLang((s) => s.lang);
   const setLang = useLang((s) => s.setLang);
@@ -22,7 +22,7 @@ export function MoreMenu() {
     <>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button type="button" aria-label={t('more.open')} data-testid="more-menu" className="grid size-8 place-items-center rounded-[10px] text-fg-muted hover:bg-surface-3 hover:text-fg">
+          <button type="button" aria-label={t('more.open')} data-testid="more-menu" className={tone === 'light' ? 'grid size-8 place-items-center rounded-[10px] text-white/85 hover:bg-white/15 hover:text-white' : 'grid size-8 place-items-center rounded-[10px] text-fg-muted hover:bg-surface-3 hover:text-fg'}>
             <Ellipsis size={18} />
           </button>
         </DropdownMenu.Trigger>

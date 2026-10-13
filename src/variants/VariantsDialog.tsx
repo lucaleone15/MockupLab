@@ -61,7 +61,7 @@ function Card({ id, index, onZoom }: { id: string; index: number; onZoom: () => 
           >
             <Check size={14} strokeWidth={3} />
           </span>
-          <span className="absolute right-3 top-3 rounded-full bg-black/55 px-2 py-0.5 font-mono text-[10.5px] text-white/85 backdrop-blur">{String(index + 1).padStart(2, '0')}</span>
+          <span className="absolute right-3 top-3 rounded-full bg-black/55 px-2 py-0.5 text-[10.5px] text-white/85 backdrop-blur">{String(index + 1).padStart(2, '0')}</span>
         </button>
         {ready && (
           <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
@@ -125,7 +125,7 @@ function Viewer({ ids, start, onClose }: { ids: string[]; start: number; onClose
             <div key={id} className="flex min-h-0 flex-col gap-2">
               <Thumb id={id} />
               <div className="flex items-center gap-2 text-[12.5px] text-fg-muted">
-                <span className="font-mono text-fg-subtle">{k === 0 ? 'A' : 'B'}</span>
+                <span className="text-fg-subtle">{k === 0 ? 'A' : 'B'}</span>
                 <span className="truncate">{label(id)}</span>
                 <Button size="sm" variant="primary" className="ml-auto" onClick={() => void variants.apply(id)}>
                   <Check size={13} />
@@ -270,7 +270,7 @@ export function VariantsDialog() {
               </div>
             )}
             <div className="ml-auto flex items-center gap-3">
-              <span className="font-mono text-[11.5px] tabular-nums text-fg-subtle">
+              <span className="text-[11.5px] tabular-nums text-fg-subtle">
                 {out.width} × {out.height} · {format}
               </span>
               <Button variant="primary" onClick={() => void variants.exportSelected()} disabled={!selected.length || exporting} data-testid="variants-export">

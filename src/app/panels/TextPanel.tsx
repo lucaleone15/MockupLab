@@ -286,7 +286,7 @@ export function BrandKit() {
                 aria-label={t('brand.colorName')}
                 className="h-7 min-w-0 flex-1 rounded-md bg-transparent px-1.5 text-[12.5px] text-fg outline-none hover:bg-surface-2 focus:bg-surface-2"
               />
-              <span className="font-mono text-[11px] uppercase text-fg-subtle">{c.hex}</span>
+              <span className="text-[11px] uppercase text-fg-subtle">{c.hex}</span>
               <button
                 type="button"
                 aria-label={t('text.delete')}

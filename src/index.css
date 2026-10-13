@@ -110,6 +110,13 @@ body {
   overflow: hidden;
 }
 
+/* shortcuts and codes use the interface font too (no monospace in the UI) */
+kbd,
+code {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
 ::selection {
   background: var(--accent-soft);
 }
@@ -155,6 +162,11 @@ body {
   from {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
+  }
+}
+@keyframes strip {
+  to {
+    transform: translateX(-50%);
   }
 }
 @keyframes page-in {
