@@ -10,6 +10,8 @@ const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els
 check(order.join() === 'studio,quick,project,photo', `mode cards in order (${order})`);
 const [studioCard, quickCard] = await Promise.all([page.getByTestId('mode-card-studio').boundingBox(), page.getByTestId('mode-card-quick').boundingBox()]);
 check(studioCard.width > quickCard.width * 1.5, 'Studio card is the big one');
+const studioTitle = await page.getByTestId('mode-card-studio').getByText('Studio', { exact: true }).boundingBox();
+check(!!studioTitle && studioTitle.y + studioTitle.height <= 720, `the Studio card and its name show in the first screen at 1280×720 (title bottom ${studioTitle && Math.round(studioTitle.y + studioTitle.height)})`);
 for (const m of ['studio', 'quick', 'project', 'photo']) check((await page.getByTestId(`mode-card-${m}`).innerText()).length > 20, `${m} card explains its role`);
 // pasting on home does not import: it asks to pick a mode
 await page.evaluate(async () => {
