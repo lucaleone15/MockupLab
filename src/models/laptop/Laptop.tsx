@@ -294,6 +294,7 @@ const finishes: DeviceFinish[] = [
   { id: 'silver', name: { fr: 'Argent', en: 'Silver' }, swatch: '#d8d9db', colors: { frame: '#d8d9db' } },
   { id: 'midnight', name: { fr: 'Minuit', en: 'Midnight' }, swatch: '#2e3646', colors: { frame: '#2e3646' } },
   { id: 'starlight', name: { fr: 'Lumière stellaire', en: 'Starlight' }, swatch: '#e3dccf', colors: { frame: '#e3dccf' } },
+  { id: 'gray', name: { fr: 'Gris sidéral', en: 'Space gray' }, swatch: '#7d7e81', colors: { frame: '#7d7e81' } },
 ];
 
 function defineLaptop(spec: LaptopSpec, view: DeviceModule['view']): DeviceModule {
@@ -373,7 +374,7 @@ export const laptop14 = defineLaptop(
       ],
     },
     grilles: true,
-    finishes: [finishes[1], finishes[0]],
+    finishes: [finishes[1], finishes[4], finishes[0]],
   },
   { target: [0, 9.5, -2], offset: [22, 17, 54] },
 );
@@ -402,7 +403,7 @@ export const laptopAir = defineLaptop(
       right: [['jack', -7.7]],
     },
     grilles: false,
-    finishes: [finishes[2], finishes[3], finishes[1], finishes[0]],
+    finishes: [finishes[2], finishes[3], finishes[1], finishes[4], finishes[0]],
   },
   { target: [0, 9, -2], offset: [22, 17, 54] },
 );
