@@ -161,4 +161,20 @@ await page.evaluate(() => {
 await pageEl.getByTestId('support-sweep').click();
 check((await state()).decor.kind === 'sweep', '“Studio photo” turns a bare scene into the photo studio');
 
+// a composition of different models of one family keeps each model (a poster, a flyer and a card stay three prints)
+const mixed = await page.evaluate(() => {
+  const s = window.__mockuplab.project.getState();
+  s.setComposition(['poster'], 'auto');
+  s.setComposition(['poster', 'flyer', 'business-card'], 'auto');
+  return window.__mockuplab.project.getState().items.map((i) => i.modelId).join();
+});
+check(mixed === 'poster,flyer,business-card', `different models of one family stay different (${mixed})`);
+const kept = await page.evaluate(() => {
+  const s = window.__mockuplab.project.getState();
+  s.setComposition(['phone-neo'], 'auto');
+  s.setComposition(['phone-pro', 'phone-pro', 'phone-pro'], 'fan');
+  return window.__mockuplab.project.getState().items.map((i) => i.modelId).join();
+});
+check(kept === 'phone-neo,phone-neo,phone-neo', `the phone already chosen is the model of a phones scene (${kept})`);
+
 await done(browser, errors);

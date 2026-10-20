@@ -274,6 +274,9 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
+/** Families whose devices stand in for one another in a ready-made scene (any phone for a phone…). */
+const SCREEN_FAMILIES = ['phone', 'tablet', 'laptop', 'desktop', 'wearable', 'browser'];
+
 /** The devices laid out the scene's way. */
 function laidOut(items: SceneItem[], s: Pick<Project, 'arrangement' | 'decor'>) {
   return constrainItems(layoutItems(items, s.arrangement), s.decor);
@@ -506,22 +509,27 @@ export const useProject = create<ProjectState>()(
         breakBurst();
         set((s) => {
           const pool = [...s.items];
-          const kept: SceneItem[] = [];
+          // what each slot of the composition asked for, and the device that fills it
+          const kept: { asked: string; item: SceneItem }[] = [];
           const items = modelIds.map((modelId) => {
             const category = getModel(modelId).category;
-            const i = pool.findIndex((it) => getModel(it.modelId).category === category);
+            // a screen device of the scene fills a slot of its family (the user's phone stays their phone);
+            // prints and objects only fill a slot of their own model (a flyer is not a poster)
+            const fits = (it: SceneItem) => it.modelId === modelId || (SCREEN_FAMILIES.includes(category) && getModel(it.modelId).category === category);
+            const i = pool.findIndex(fits);
             if (i >= 0) {
               const [it] = pool.splice(i, 1);
-              kept.push(it);
+              kept.push({ asked: modelId, item: it });
               return { ...it, visible: true, pose: 'standing' as const, scale: 1 };
             }
-            const sibling = kept.find((it) => getModel(it.modelId).category === category);
+            // another slot asking for the same model takes the same device as the first one (model, finish, images)
+            const sibling = kept.find((k) => k.asked === modelId)?.item;
             const item = makeItem(getModel(sibling?.modelId ?? modelId));
             if (sibling) {
               item.finishId = sibling.finishId;
               item.surfaces = structuredClone(sibling.surfaces);
             }
-            kept.push(item);
+            kept.push({ asked: modelId, item });
             return item;
           });
           // a kept device without an image takes the first image of its kind, so every screen starts filled

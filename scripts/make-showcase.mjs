@@ -1,45 +1,130 @@
-// scripts/make-showcase.mjs — the real mock-ups shown on the home page, rendered by MockupLab itself
-// from the bundled sample designs, and the Studio at work (dev server on :5173). Output: public/showcase/*
-import { mkdirSync } from 'node:fs';
+// scripts/make-showcase.mjs — every visual of the home page, rendered by MockupLab itself from the bundled sample
+// designs, on classy backgrounds with studio light (dev server on :5173). Output: public/showcase/*
+// Usage: node scripts/make-showcase.mjs [name…]   (no name: everything)
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { openApp } from './lib/app.mjs';
 mkdirSync('public/showcase', { recursive: true });
-const { browser, page } = await openApp({ hash: '#/rapide', colorScheme: 'light' });
-const exportAs = (ratio) => page.evaluate((r) => window.__mockuplab.project.getState().setExport({ resolution: '1080', format: 'webp', quality: 0.84, ratio: r }), ratio);
-const file = (n) => page.evaluate(async (n) => { const b = await (await fetch('/samples/' + n)).blob(); window.__f = new File([b], n, { type: 'image/png' }); }, n);
-const save = async (name, trigger) => {
-  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 300000 }), trigger()]);
-  await dl.saveAs(`public/showcase/${name}.webp`);
-  console.log('saved', name);
+const only = process.argv.slice(2);
+const want = (name) => !only.length || only.includes(name);
+const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
+const write = (file, base64) => {
+  writeFileSync(`public/showcase/${file}`, Buffer.from(base64, 'base64'));
+  console.log('saved', file);
 };
-// single devices (Quick)
-for (const [name, img, tile, ratio] of [
-  ['phone-aurora', 'sample-app.png', 'aurora', '16:9'],
-  ['laptop-marble', 'sample-web.png', 'table-marble-sand', '16:9'],
-  ['laptop-concrete', 'sample-web.png', 'table-concrete-blue', '16:9'],
-  ['phone-oak', 'sample-app.png', 'table-oak-white', '16:9'],
-  ['phone-terrazzo', 'sample-app.png', 'podium-terrazzo', '16:9'],
-]) {
-  await exportAs(ratio);
-  await file(img);
-  await page.evaluate(() => window.__mockuplab.quick.setImage(window.__f));
-  await save(name, () => page.evaluate((t) => window.__mockuplab.quick.download([t]), tile));
+
+/** Puts devices (with their sample designs) in a scene preset (or a custom set) and waits for it to settle. */
+async function scene({ models, layout = 'auto', preset, background, decor, light, camera, ratio = '16:9' }) {
+  await page.evaluate(
+    async ({ models, layout, preset, background, decor, light, camera, ratio }) => {
+      const api = window.__mockuplab;
+      const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
+      const s = api.project.getState();
+      s.setSocial({ network: null, withInterface: false });
+      s.setComposition(models, layout);
+      for (const it of api.project.getState().items) await api.loadSamples(it.id);
+      if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
+      if (background) s.setBackground(background);
+      if (decor) s.setDecor(decor);
+      if (light) s.applyLightPreset(light);
+      if (camera) s.setCamera(camera);
+      s.setExport({ ratio, format: 'webp', quality: 0.86, resolution: '2k' });
+      api.ui.getState().resetView();
+    },
+    { models, layout, preset, background, decor, light, camera, ratio },
+  );
+  await page.waitForTimeout(3500);
 }
-// several devices together (Project hero)
-await exportAs('16:9');
-await page.evaluate(() => (location.hash = '#/projet'));
-await page.waitForTimeout(500);
-for (const n of ['sample-web.png', 'sample-app.png', 'sample-poster.png']) {
-  await file(n);
-  await page.evaluate(() => window.__mockuplab.pack.add([window.__f]));
+
+async function still(file) {
+  const b64 = await page.evaluate(async () => {
+    const { blob } = await window.__mockuplab.renderImage();
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    let s = '';
+    for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+    return btoa(s);
+  });
+  write(file, b64);
 }
-for (const style of ['table-black-marble', 'table-oak-white', 'studio-light']) {
-  await page.evaluate((s) => window.__mockuplab.pack.setStyle(s), style);
-  await save('hero-' + style, () => page.evaluate(() => window.__mockuplab.pack.downloadOne('hero')));
+
+// deep night studio: a dark blue gradient behind the sweep
+const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
+
+if (want('hero-still')) {
+  await scene({ models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night });
+  await still('hero-still.webp');
+}
+if (want('devices-phones')) {
+  await scene({ models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'fan', preset: 'studio-dark', background: night });
+  await still('devices-phones.webp');
+}
+if (want('devices-print')) {
+  await scene({ models: ['poster', 'flyer', 'business-card'], preset: 'table-oak-white' });
+  await still('devices-print.webp');
+}
+if (want('devices-desk')) {
+  await scene({ models: ['desktop-24', 'laptop-14', 'tablet-pro-11', 'phone-pro'], preset: 'studio-light' });
+  await still('devices-desk.webp');
+}
+if (want('studio-marble')) {
+  await scene({ models: ['laptop-14', 'phone-pro'], preset: 'table-black-marble' });
+  await still('studio-marble.webp');
+}
+if (want('studio-podium')) {
+  await scene({ models: ['phone-pro'], preset: 'podium-terrazzo', background: { kind: 'solid', color: '#e7e2f3' } });
+  await still('studio-podium.webp');
+}
+if (want('studio-travertine')) {
+  await scene({ models: ['tablet-pro-11', 'phone-pro'], preset: 'table-travertine-terracotta' });
+  await still('studio-travertine.webp');
+}
+if (want('social-story')) {
+  await scene({ models: ['phone-pro'], preset: 'podium-arch', ratio: 'story' });
+  await page.evaluate(() => window.__mockuplab.project.getState().setSocial({ network: 'story', withInterface: true, caption: '' }));
+  await page.evaluate(() => window.__mockuplab.project.getState().setExport({ resolution: '1080' }));
+  await page.waitForTimeout(1500);
+  await still('social-story.webp');
+}
+if (want('motion')) {
+  // a turntable of the phone, looping, for the “it moves” section (MP4 and WebM) and its still
+  await scene({ models: ['phone-pro'], preset: 'studio-dark', background: night });
+  await still('motion-still.webp');
+  for (const format of ['mp4', 'webm']) {
+    const b64 = await page.evaluate(async (format) => {
+      const api = window.__mockuplab;
+      const s = api.project.getState();
+      s.setExport({ video: { ...s.export.video, animation: 'turntable', duration: 6, resolution: '720', fps: 30, format, quality: 'cinema' } });
+      const { blob } = await api.renderVideo();
+      const buf = new Uint8Array(await blob.arrayBuffer());
+      let out = '';
+      for (let i = 0; i < buf.length; i += 0x8000) out += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      return btoa(out);
+    }, format);
+    write(`motion.${format}`, b64);
+  }
+}
+// several devices of one client (Project hero)
+if (want('clients-pack')) {
+  await page.evaluate(() => {
+    history.pushState(null, '', '/projet');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await page.waitForTimeout(500);
+  await page.evaluate(() => window.__mockuplab.project.getState().setExport({ resolution: '2k', format: 'webp', quality: 0.86, ratio: '16:9' }));
+  for (const n of ['sample-web.png', 'sample-app.png', 'sample-poster.png']) {
+    await page.evaluate(async (n) => {
+      const b = await (await fetch('/samples/' + n)).blob();
+      await window.__mockuplab.pack.add([new File([b], n, { type: 'image/png' })]);
+    }, n);
+  }
+  await page.evaluate((s) => window.__mockuplab.pack.setStyle(s), 'table-walnut-sage');
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 300000 }), page.evaluate(() => window.__mockuplab.pack.downloadOne('hero'))]);
+  await dl.saveAs('public/showcase/clients-pack.webp');
+  console.log('saved clients-pack.webp');
 }
 await browser.close();
 
-// the Studio at work: a laptop and a phone side by side in the photo studio, the Décor page open (home page, under the title)
-{
+// the Studio at work (home page): a laptop and a phone side by side in the photo studio, the Décor page open
+if (want('studio-ui')) {
   const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
   await page.evaluate(async () => {
     const api = window.__mockuplab;
@@ -54,6 +139,6 @@ await browser.close();
   });
   await page.waitForTimeout(4000);
   await page.screenshot({ path: 'public/showcase/studio-ui.jpg', type: 'jpeg', quality: 86 });
-  console.log('saved studio-ui');
+  console.log('saved studio-ui.jpg');
   await browser.close();
 }
