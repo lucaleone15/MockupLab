@@ -7,61 +7,86 @@
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
-/* Light, "Apple": light grey page, white panels, system blue accent. */
+/*
+ * The app is a photo studio: frosted panels float over a soft, lit field like
+ * softbox diffusers. One light from above: every shadow falls down, tinted by
+ * the night-blue of the scene (never plain grey). Three levels: panels, menus
+ * and windows, floating bars. Text on the glass stays at 4.5:1 or more.
+ */
 :root,
 :root[data-theme='light'] {
-  --bg: #f5f5f7;
-  --surface: #ffffff;
-  --surface-2: #f5f5f7;
-  --surface-3: #ececf0;
-  --surface-4: #e3e3e8;
-  --line: rgb(0 0 0 / 0.07);
-  --line-strong: rgb(0 0 0 / 0.13);
-  --fg: #1d1d1f;
-  --fg-muted: #6e6e73;
-  --fg-subtle: #8a8a8e;
+  --bg: #e6e8ee;
+  --app-bg:
+    radial-gradient(60% 55% at 78% 8%, rgb(47 107 255 / 0.13), transparent 70%),
+    radial-gradient(55% 60% at 6% 96%, rgb(140 110 255 / 0.1), transparent 70%),
+    linear-gradient(180deg, #eef0f5, #e2e5ec);
+  --surface: rgb(255 255 255 / 0.66);
+  --surface-2: rgb(255 255 255 / 0.62);
+  --surface-3: rgb(20 30 70 / 0.07);
+  --surface-4: rgb(20 30 70 / 0.12);
+  --line: rgb(20 30 70 / 0.08);
+  --line-strong: rgb(20 30 70 / 0.14);
+  --fg: #16171b;
+  --fg-muted: #5c5d66;
+  --fg-subtle: #6b6c75;
   --accent: #0071e3;
   --accent-hover: #0077ed;
   --accent-soft: rgb(0 113 227 / 0.1);
   --accent-fg: #ffffff;
   --brand: #0071e3;
-  --panel-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.05);
-  --panel-blur: none;
-  --menu-bg: rgb(255 255 255 / 0.92);
+  /* glass: a lit inner edge, brighter on top */
+  --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.95);
+  --glass-blur: blur(24px) saturate(1.7);
+  --shadow-1: 0 1px 2px rgb(22 32 72 / 0.06), 0 12px 32px -10px rgb(22 32 72 / 0.18);
+  --shadow-2: 0 0 0 0.5px rgb(22 32 72 / 0.12), 0 4px 10px rgb(22 32 72 / 0.08), 0 28px 64px -16px rgb(22 32 72 / 0.3);
+  --shadow-3: 0 0 0 0.5px rgb(22 32 72 / 0.12), 0 6px 16px rgb(22 32 72 / 0.1), 0 36px 80px -18px rgb(22 32 72 / 0.36);
+  --panel-shadow: var(--glass-edge), var(--shadow-1);
+  --panel-blur: var(--glass-blur);
+  --menu-bg: rgb(250 251 253 / 0.78);
+  --overlay: rgb(16 22 48 / 0.22);
   --stage: #ececf0;
-  --stage-bg: linear-gradient(180deg, #fafafa, #e8e8ed);
-  --frame-shadow: 0 30px 70px -24px rgb(0 0 0 / 0.28), 0 0 0 1px rgb(0 0 0 / 0.05);
+  --stage-bg: radial-gradient(90% 80% at 50% 30%, #f7f8fb, #e3e6ed);
+  --frame-shadow: 0 30px 70px -24px rgb(22 32 72 / 0.32), 0 0 0 1px rgb(22 32 72 / 0.06);
   --success: #1f9d55;
   --danger: #d70015;
   color-scheme: light;
 }
 
-/* Dark, frosted glass: translucent panels over a deep gradient, white accent. */
+/* Dark: a night studio, graphite with a cool field; the same glass, dimmer. */
 :root[data-theme='dark'],
 /* a part of the page that is always dark (the home page) */
 [data-theme='dark'] {
-  --bg: #0b0b0e;
-  --app-bg: linear-gradient(180deg, #14151a, #0b0b0e);
-  --surface: rgb(40 40 46 / 0.55);
+  --bg: #121318;
+  --app-bg:
+    radial-gradient(60% 55% at 78% 6%, rgb(47 107 255 / 0.16), transparent 70%),
+    radial-gradient(55% 60% at 6% 96%, rgb(120 90 255 / 0.09), transparent 70%),
+    linear-gradient(180deg, #1b1c22, #111216);
+  --surface: rgb(34 35 42 / 0.6);
   --surface-2: rgb(255 255 255 / 0.06);
   --surface-3: rgb(255 255 255 / 0.1);
   --surface-4: rgb(255 255 255 / 0.16);
   --line: rgb(255 255 255 / 0.07);
   --line-strong: rgb(255 255 255 / 0.14);
-  --fg: #f5f5f7;
-  --fg-muted: #98989d;
-  --fg-subtle: #86868b;
+  --fg: #f3f3f6;
+  --fg-muted: #a2a3aa;
+  --fg-subtle: #8e8f97;
   --accent: #f5f5f7;
   --accent-hover: #ffffff;
   --accent-soft: rgb(255 255 255 / 0.12);
   --accent-fg: #1d1d1f;
   --brand: #4b8bff;
-  --panel-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07), 0 10px 30px rgb(0 0 0 / 0.25);
-  --panel-blur: blur(20px) saturate(1.4);
-  --menu-bg: rgb(44 44 50 / 0.85);
+  --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.11);
+  --glass-blur: blur(24px) saturate(1.5);
+  --shadow-1: 0 1px 2px rgb(2 4 16 / 0.3), 0 14px 36px -10px rgb(2 6 24 / 0.55);
+  --shadow-2: 0 0 0 0.5px rgb(0 0 0 / 0.4), 0 6px 14px rgb(2 6 24 / 0.35), 0 30px 70px -16px rgb(2 6 28 / 0.7);
+  --shadow-3: 0 0 0 0.5px rgb(0 0 0 / 0.4), 0 8px 18px rgb(2 6 24 / 0.4), 0 40px 90px -18px rgb(2 6 28 / 0.75);
+  --panel-shadow: var(--glass-edge), var(--shadow-1);
+  --panel-blur: var(--glass-blur);
+  --menu-bg: rgb(40 41 49 / 0.8);
+  --overlay: rgb(2 4 14 / 0.45);
   --stage: #121317;
   --stage-bg: radial-gradient(120% 90% at 50% 35%, #23252c, #0e0f13);
-  --frame-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(255 255 255 / 0.06);
+  --frame-shadow: 0 30px 80px -20px rgb(2 6 24 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.06);
   --success: #30d158;
   --danger: #ff453a;
   color-scheme: dark;
@@ -91,6 +116,10 @@
   --color-brand: var(--brand);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* motion (Emil Kowalski): strong ease-out for what enters or answers, ease-in-out for what moves on screen */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 html,
@@ -140,7 +169,7 @@ code {
   background: var(--stage-bg);
 }
 
-/* Panels: white cards in light, frosted glass in dark. */
+/* Level 1, panels (rail, page panel, screens): frosted glass with a lit edge. */
 .glass {
   background: var(--surface);
   box-shadow: var(--panel-shadow);
@@ -148,12 +177,41 @@ code {
   backdrop-filter: var(--panel-blur);
 }
 
-/* Menus and dialogs: opaque enough to read over the stage. */
+/* Level 2, menus and windows: denser glass, a deeper shadow. */
 .menu-surface {
   background: var(--menu-bg);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  backdrop-filter: blur(24px) saturate(1.5);
-  box-shadow: 0 0 0 1px var(--line-strong), 0 18px 50px rgb(0 0 0 / 0.18);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow: var(--glass-edge), var(--shadow-2);
+}
+
+/* Level 3, what floats over the stage (the bottom bar, toasts). */
+.glass-float {
+  background: var(--menu-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(28px) saturate(1.6);
+  box-shadow: var(--glass-edge), var(--shadow-3);
+}
+
+/* The top bar: a band of glass with a hairline under it. */
+.glass-bar {
+  background: var(--menu-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 -1px 0 var(--line), inset 0 1px 0 rgb(255 255 255 / 0.06), 0 8px 24px -16px rgb(22 32 72 / 0.25);
+}
+
+/* What can be pressed gives a little under the finger (in the base layer: a utility class still wins). */
+@layer base {
+  button {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: 160ms;
+    transition-timing-function: var(--ease-out);
+  }
+  button:not(:disabled):active,
+  [role='button']:not([aria-disabled='true']):active {
+    transform: scale(0.97);
+  }
 }
 
 .font-display {
@@ -243,12 +301,21 @@ code {
 
 /* Reduced transparency: frosted surfaces become solid. */
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-theme='dark'] {
-    --surface: #26262b;
-    --menu-bg: #2c2c32;
+  :root,
+  :root[data-theme='light'] {
+    --surface: #f8f9fb;
+    --surface-2: #f1f2f6;
+    --menu-bg: #fbfbfd;
+  }
+  :root[data-theme='dark'],
+  [data-theme='dark'] {
+    --surface: #24252b;
+    --menu-bg: #2a2b31;
   }
   .glass,
-  .menu-surface {
+  .menu-surface,
+  .glass-float,
+  .glass-bar {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

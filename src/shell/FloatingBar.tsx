@@ -13,7 +13,7 @@ const btn = 'flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[12.5px] f
 export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
   const { t } = useT();
   return (
-    <div className="menu-surface pointer-events-auto flex items-center gap-1 rounded-[14px] p-1" data-testid="floating-bar">
+    <div className="glass-float pointer-events-auto flex items-center gap-1 rounded-full p-1" data-testid="floating-bar">
       <Formats />
       <span className="mx-1 h-5 w-px bg-line-strong" />
       <Tooltip label={t('stage.resetView')} shortcut="F">

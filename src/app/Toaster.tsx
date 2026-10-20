@@ -15,7 +15,7 @@ export function Toaster() {
           <div
             key={toast.id}
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className="menu-surface pointer-events-auto flex max-w-[460px] items-center gap-2.5 rounded-[14px] py-2 pl-3.5 pr-1.5 text-[13px] text-fg animate-[toast-in_220ms_var(--ease-out-quart)]"
+            className="glass-float pointer-events-auto flex max-w-[460px] items-center gap-2.5 rounded-[14px] py-2 pl-3.5 pr-1.5 text-[13px] text-fg animate-[toast-in_220ms_var(--ease-out-quart)]"
           >
             <Icon size={15} className={cx('shrink-0', toast.kind === 'success' && 'text-success', toast.kind === 'error' && 'text-danger', toast.kind === 'info' && 'text-fg-muted')} />
             <span className="leading-snug">{toast.message}</span>

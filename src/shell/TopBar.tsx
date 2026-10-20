@@ -19,7 +19,7 @@ export function TopBar() {
   const canRedo = useStore(useProject.temporal, (s) => s.futureStates.length > 0);
   const editor = screen === 'studio';
   return (
-    <header className="relative z-20 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-line bg-[var(--menu-bg)] px-4 backdrop-blur-xl">
+    <header className="glass-bar relative z-20 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4">
       <div className="flex min-w-0 items-center gap-3">
         <Logo />
         <span className="text-fg-subtle">/</span>

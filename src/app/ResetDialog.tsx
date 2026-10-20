@@ -21,7 +21,7 @@ export function ResetDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] animate-[fade-in_150ms_ease-out]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--overlay)] backdrop-blur-[4px] animate-[fade-in_150ms_ease-out]" />
         <Dialog.Content className="menu-surface fixed left-1/2 top-1/2 z-50 w-[440px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-[18px] p-6 animate-[toast-in_200ms_var(--ease-out-quart)]">
           <div className="mb-4 flex items-center justify-between">
             <Dialog.Title className="font-display text-[20px] font-bold">{t('reset.title')}</Dialog.Title>
