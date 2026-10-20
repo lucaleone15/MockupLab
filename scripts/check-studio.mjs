@@ -4,7 +4,7 @@ const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const rail = page.getByTestId('studio-rail');
 check((await rail.getByRole('tab', { selected: true }).textContent()).trim() === 'Appareils', 'a fresh Studio opens on Appareils (add or change devices first)');
 const names = (await rail.getByRole('tab').allTextContents()).map((s) => s.trim());
-check(JSON.stringify(names) === JSON.stringify(['Appareils', 'Réglages', 'Ambiance', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']), `rail: ${names}`);
+check(JSON.stringify(names) === JSON.stringify(['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']), `rail: ${names}`);
 for (const n of names) {
   await rail.getByRole('tab', { name: n, exact: true }).click();
   await page.waitForTimeout(250);
@@ -54,8 +54,6 @@ await page.waitForTimeout(500);
 check(await page.getByTestId('variants').isVisible(), 'Ideas opens the variants grid');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
-await rail.getByRole('tab', { name: 'Ambiance', exact: true }).click();
-check(await page.getByTestId('rail-page').getByRole('button', { name: /Chêne · mur blanc/ }).isVisible(), 'Ambiance lists the moods');
 await rail.getByRole('tab', { name: 'Marque', exact: true }).click();
 check(await page.getByTestId('rail-page').getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand page has the brand board');
 await rail.getByRole('tab', { name: 'Texte', exact: true }).click();

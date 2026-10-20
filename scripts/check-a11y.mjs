@@ -30,7 +30,7 @@ await p.waitForTimeout(500);
 report.push(await sweep('Accueil'));
 await p.goto('http://localhost:5173/#/studio');
 await p.waitForTimeout(800);
-for (const tab of ['Appareils', 'Réglages', 'Ambiance', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
+for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
   await p.getByTestId('studio-rail').getByRole('tab', { name: tab, exact: true }).click();
   await p.waitForTimeout(300);
   report.push(await sweep(`Studio · ${tab}`));

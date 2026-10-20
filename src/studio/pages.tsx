@@ -1,4 +1,4 @@
-import { BackgroundSection, CameraSection, DecorSection, GroundSection, LightSection, Looks } from '@/app/panels/ScenePanel';
+import { BackgroundSection, CameraSection, DecorSection, GroundSection, LightSection } from '@/app/panels/ScenePanel';
 import { BrandPage, TextPage } from '@/app/panels/TextPanel';
 import type { StudioPage } from '@/store/ui';
 import { VideoPage } from './VideoPage';
@@ -6,8 +6,6 @@ import { VideoPage } from './VideoPage';
 /** Body of the rail pages built from the existing panel sections. */
 export function StudioPageBody({ page }: { page: StudioPage }) {
   switch (page) {
-    case 'ambiance':
-      return <Looks />;
     case 'decor':
       return (
         <>

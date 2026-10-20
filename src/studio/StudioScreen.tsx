@@ -1,4 +1,4 @@
-import { Armchair, Camera, Clapperboard, Palette, SlidersHorizontal, Smartphone, Sparkles, Sun, Type } from 'lucide-react';
+import { Armchair, Camera, Clapperboard, Palette, SlidersHorizontal, Smartphone, Sun, Type } from 'lucide-react';
 import { useT } from '@/i18n';
 import { Viewport } from '@/app/Viewport';
 import { Rail, RailPage, type RailItem } from '@/shell/Rail';
@@ -18,7 +18,6 @@ export function StudioScreen() {
   const items: RailItem<StudioPage>[] = [
     { id: 'devices', label: t('page.devices'), icon: <Smartphone size={ICON} /> },
     { id: 'settings', label: t('page.settings'), icon: <SlidersHorizontal size={ICON} /> },
-    { id: 'ambiance', label: t('page.ambiance'), icon: <Sparkles size={ICON} /> },
     { id: 'decor', label: t('page.decor'), icon: <Armchair size={ICON} /> },
     { id: 'light', label: t('page.light'), icon: <Sun size={ICON} /> },
     { id: 'camera', label: t('page.camera'), icon: <Camera size={ICON} /> },

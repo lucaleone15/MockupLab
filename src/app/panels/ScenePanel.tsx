@@ -5,7 +5,6 @@ import { CAMERA_PRESETS, fNumber } from '@/scene/camera';
 import { LIGHT_PRESETS, LIGHT_PRESET_ORDER } from '@/scene/lighting/presets';
 import { AMBIENCES, AMBIENCE_ORDER } from '@/scene/ambiences';
 import { MATERIAL_ORDER, REAL_MATERIALS, materialUrl } from '@/scene/realMaterials';
-import { SCENE_PRESETS, applyScenePreset, type ScenePreset } from '@/scene/scenePresets';
 import { useProject, type AmbienceId, type CameraPresetId, type Decor, type GoboId, type MaterialId } from '@/store/project';
 import { Advanced, ColorField, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 import { BackgroundEditor } from './BackgroundEditor';
@@ -43,48 +42,6 @@ function MaterialPicker({ value, onChange }: { value: MaterialId; onChange: (m: 
           />
         </Tooltip>
       ))}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ looks */
-
-function presetActive(p: ScenePreset, s: ReturnType<typeof useProject.getState>) {
-  if (p.decor.kind === 'table')
-    return s.decor.kind === 'table' && s.decor.material === p.decor.material && JSON.stringify(s.background) === JSON.stringify(p.background) && s.decor.gobo === p.decor.gobo;
-  return (
-    s.decor.kind === p.decor.kind &&
-    (!p.decor.material || s.decor.material === p.decor.material) &&
-    JSON.stringify(s.background) === JSON.stringify(p.background) &&
-    (!p.light || s.lighting.preset === p.light)
-  );
-}
-
-export function Looks() {
-  const { tr } = useT();
-  const state = useProject();
-  return (
-    <div className="px-5 pt-3">
-      <div className="grid grid-cols-2 gap-2">
-        {SCENE_PRESETS.map((p) => {
-          const active = presetActive(p, state);
-          const thumb = p.thumb;
-          const style = { background: thumb.css };
-          return (
-            <button key={p.id} type="button" onClick={() => applyScenePreset(p)} className="group flex flex-col gap-1.5 text-left">
-              <span className={cx('relative block aspect-[16/10] w-full overflow-hidden rounded-lg transition-[box-shadow,transform] duration-150 group-hover:scale-[1.02]', ring(active))} style={style}>
-                {thumb.material && (
-                  <span
-                    className="absolute inset-x-0 bottom-0 h-[38%] bg-cover bg-center shadow-[0_-1px_0_rgb(255_255_255/0.25)]"
-                    style={{ backgroundImage: `url(${materialUrl(thumb.material, 'thumb')})` }}
-                  />
-                )}
-              </span>
-              <span className={cx('truncate text-[11.5px]', active ? 'text-fg' : 'text-fg-muted group-hover:text-fg')}>{tr(p.name)}</span>
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }

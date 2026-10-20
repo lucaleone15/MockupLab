@@ -29,7 +29,6 @@ const STEPS: Step[] = [
   { id: 'scene', target: '[data-testid="frame"]' },
   { id: 'devices', page: 'devices', target: PANEL },
   { id: 'settings', page: 'settings', target: PANEL },
-  { id: 'ambiance', page: 'ambiance', target: PANEL },
   { id: 'decor', page: 'decor', target: PANEL },
   { id: 'light', page: 'light', target: PANEL },
   { id: 'camera', page: 'camera', target: PANEL },

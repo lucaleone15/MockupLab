@@ -4,7 +4,7 @@ export type Theme = 'dark' | 'light';
 /** What the user picked: follow the system, or force one theme. */
 export type ThemePref = 'auto' | 'light' | 'dark';
 export type Screen = 'home' | 'quick' | 'project' | 'studio';
-export type StudioPage = 'devices' | 'settings' | 'ambiance' | 'decor' | 'light' | 'camera' | 'text' | 'brand' | 'video';
+export type StudioPage = 'devices' | 'settings' | 'decor' | 'light' | 'camera' | 'text' | 'brand' | 'video';
 
 interface UiState {
   /** The theme in use (resolved from the preference and the system). */

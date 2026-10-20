@@ -10,7 +10,7 @@ for (const scheme of ['light', 'dark']) {
   await page.waitForTimeout(1500);
   await page.getByRole('button', { name: 'Essayer un exemple' }).click().catch(() => {});
   await page.waitForTimeout(1500);
-  for (const tab of ['Appareils', 'Réglages', 'Ambiance', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
+  for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
     await page.getByTestId('studio-rail').getByRole('tab', { name: tab, exact: true }).click();
     await page.waitForTimeout(500);
     await shot(`studio-${tab}`);

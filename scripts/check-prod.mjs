@@ -17,8 +17,9 @@ await p.goto(url + '#/studio');
 await p.getByTestId('frame').waitFor();
 console.log('first view in', Date.now() - t0, 'ms');
 await p.getByRole('button', { name: 'Essayer un exemple' }).click();
-await p.getByTestId('studio-rail').getByRole('tab', { name: 'Ambiance', exact: true }).click();
-await p.getByRole('button', { name: /Chêne · mur blanc/ }).click();
+// a table set (decor ‘Vraie table’)
+await p.evaluate(() => window.__mockuplab.project.getState().setDecor({ kind: 'table' }));
+});
 await p.waitForTimeout(3500);
 await p.screenshot({ path: 'out/prod/table.png' });
 await p.getByTestId('top-export').click();
