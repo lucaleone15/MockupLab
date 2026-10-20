@@ -110,6 +110,8 @@ await page.getByTestId('confirm-dialog').getByRole('button', { name: 'Supprimer'
 await page.waitForTimeout(500);
 check((await cards.count()) === 1, 'card menu deletes (after confirmation)');
 await cards.first().getByRole('button', { name: /Ouvrir/ }).click();
+// a card opens the project's page; its button opens the Studio
+await page.getByTestId('project-page').getByRole('button', { name: 'Ouvrir dans le Studio' }).click();
 await page.waitForTimeout(500);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'studio', 'opening a card goes to its screen');
 await done(browser, errors);

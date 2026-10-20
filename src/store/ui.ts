@@ -25,6 +25,9 @@ interface UiState {
   reopenExport: boolean;
   setReopenExport: (v: boolean) => void;
   allProjectsOpen: boolean;
+  /** Project whose page (its exports) is open, from the home page. */
+  projectPageId: string | null;
+  setProjectPageId: (id: string | null) => void;
   setAllProjectsOpen: (v: boolean) => void;
   /** Incremented to ask the camera rig to return to the default view. */
   viewResetToken: number;
@@ -98,6 +101,8 @@ export const useUi = create<UiState>((set) => ({
   reopenExport: false,
   setReopenExport: (reopenExport) => set({ reopenExport }),
   allProjectsOpen: false,
+  projectPageId: null,
+  setProjectPageId: (projectPageId) => set({ projectPageId }),
   setAllProjectsOpen: (allProjectsOpen) => set({ allProjectsOpen }),
   viewResetToken: 0,
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),

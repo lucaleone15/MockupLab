@@ -129,6 +129,8 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
 export async function exportImage(kind: 'image' | 'video' = 'image') {
   const ui = useUi.getState();
   if (ui.exporting) return;
+  // an untitled project is named before its first export
+  await (await import('@/library/NameDialog')).ensureNamed();
   if (kind === 'video') {
     const { exportVideo } = await import('@/animation/actions');
     return exportVideo();

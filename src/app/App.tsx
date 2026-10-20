@@ -11,6 +11,8 @@ import { useRouteSync } from '@/shell/route';
 import { HelpDialog } from './HelpDialog';
 import { Tour } from '@/shell/Tour';
 import { AppDialogs } from '@/ui/dialogs';
+import { NameDialog } from '@/library/NameDialog';
+import { ProjectPage } from '@/library/ProjectPage';
 import { Toaster } from './Toaster';
 import { TopBar } from '@/shell/TopBar';
 import { ExportSheet } from '@/shell/ExportSheet';
@@ -85,6 +87,8 @@ export function App() {
       <HelpDialog />
       <Tour />
       <AppDialogs />
+      <NameDialog />
+      <ProjectPage />
       <VariantsDialog />
       <PreviewOverlay />
       <SmallScreenNotice />

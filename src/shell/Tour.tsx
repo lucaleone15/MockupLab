@@ -5,6 +5,7 @@ import { useT, type I18nKey } from '@/i18n';
 import { useUi, type StudioPage } from '@/store/ui';
 import { Button } from '@/ui/primitives';
 import { MOD } from '@/app/shortcuts';
+import { useNameDialogOpen } from '@/library/NameDialog';
 
 /*
  * The first-visit guide: a short tour of the Studio, one part at a time — the
@@ -58,12 +59,14 @@ function markSeen() {
 
 /** Opens the guide the first time the Studio is shown. */
 export function useFirstVisitTour() {
+  // a new project is named first; the guide comes after
+  const naming = useNameDialogOpen();
   useEffect(() => {
     // automated browsers (the check scripts) are not first-time visitors
-    if (seen() || navigator.webdriver) return;
+    if (seen() || navigator.webdriver || naming) return;
     const timer = setTimeout(() => useUi.getState().setTourStep(0), 700);
     return () => clearTimeout(timer);
-  }, []);
+  }, [naming]);
 }
 
 function close() {

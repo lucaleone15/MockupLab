@@ -143,6 +143,7 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
 export async function exportVideo() {
   const ui = useUi.getState();
   if (ui.exporting) return;
+  await (await import('@/library/NameDialog')).ensureNamed();
   const label = () => t('video.rendering');
   ui.setExporting(label());
   ui.setCancelExport(() => {

@@ -33,9 +33,11 @@ interface LibraryState {
   currentId: string | null;
   /** Object URLs of the thumbnails, by project id. */
   thumbs: Record<string, string>;
+  /** Counts the projects loaded into the editor (a new one, an opened one): tells one editing session from the next. */
+  loads: number;
 }
 
-export const useLibrary = create<LibraryState>(() => ({ list: [], currentId: null, thumbs: {} }));
+export const useLibrary = create<LibraryState>(() => ({ list: [], currentId: null, thumbs: {}, loads: 0 }));
 
 export const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 

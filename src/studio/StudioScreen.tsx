@@ -3,6 +3,9 @@ import { useT } from '@/i18n';
 import { Viewport } from '@/app/Viewport';
 import { Rail, RailPage, type RailItem } from '@/shell/Rail';
 import { useFirstVisitTour } from '@/shell/Tour';
+import { useEffect } from 'react';
+import { askNameIfNew } from '@/library/NameDialog';
+import { useLibrary } from '@/library/store';
 import { useUi, type StudioPage } from '@/store/ui';
 import { DevicesPage } from './DevicesPage';
 import { SettingsPage } from './SettingsPage';
@@ -15,6 +18,9 @@ export function StudioScreen() {
   const page = useUi((s) => s.studioPage);
   const setPage = useUi((s) => s.setStudioPage);
   useFirstVisitTour();
+  // a project never named is named first
+  const loads = useLibrary((s) => s.loads);
+  useEffect(() => askNameIfNew(), [loads]);
   const items: RailItem<StudioPage>[] = [
     { id: 'devices', label: t('page.devices'), icon: <Smartphone size={ICON} /> },
     { id: 'settings', label: t('page.settings'), icon: <SlidersHorizontal size={ICON} /> },

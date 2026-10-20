@@ -3,8 +3,9 @@ import { DropdownMenu } from 'radix-ui';
 import { Copy, Ellipsis, PencilLine, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
 import { library } from '@/store/persistence';
+import { useUi } from '@/store/ui';
 import { cx } from '@/ui/primitives';
-import { openProject, relativeTime } from './actions';
+import { relativeTime } from './actions';
 import { useLibrary, type ProjectMeta } from './store';
 
 const row = 'flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-fg';
@@ -17,7 +18,10 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
   const name = meta.name === 'Untitled' || !meta.name ? t('project.untitled') : meta.name;
   return (
     <div data-testid="project-card" className="glass group relative flex flex-col overflow-hidden rounded-[16px]">
-      <button type="button" aria-label={`${t('home.open')} ${name}`} onClick={() => void openProject(meta)} className="flex flex-col text-left">
+      <button type="button" aria-label={`${t('home.open')} ${name}`} onClick={() => {
+          useUi.getState().setAllProjectsOpen(false);
+          useUi.getState().setProjectPageId(meta.id);
+        }} className="flex flex-col text-left">
         <span className={cx('grid aspect-[16/10] place-items-center overflow-hidden bg-surface-2 text-fg-subtle')}>
           {thumb ? (
             <img src={thumb} alt="" className="h-full w-full object-cover transition-transform duration-300 ease-[var(--ease-out-quart)] group-hover:scale-[1.03]" draggable={false} />

@@ -37,6 +37,8 @@ await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
 check((await page.getByTestId('project-card').count()) >= 1, 'recent projects shown');
 await page.getByTestId('project-card').first().getByRole('button', { name: /Ouvrir/ }).click();
+// a card opens the project's page; its button opens the Studio
+await page.getByTestId('project-page').getByRole('button', { name: 'Ouvrir dans le Studio' }).click();
 await page.waitForTimeout(400);
 const r = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, name: window.__mockuplab.project.getState().name }));
 check(r.screen === 'studio' && r.name === 'Reprise', `resume opens the Studio with the project (${r.screen}/${r.name})`);

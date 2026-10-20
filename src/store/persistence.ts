@@ -156,6 +156,7 @@ async function registerBrandFonts(project: Project) {
 }
 
 function load(project: Project) {
+  useLibrary.setState((s) => ({ loads: s.loads + 1 }));
   void registerBrandFonts(project);
   useProject.getState().loadProject(project);
   useProject.temporal.getState().clear();
