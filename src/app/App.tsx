@@ -9,6 +9,7 @@ import { Logo } from '@/shell/Logo';
 import { useGlobalInput } from './shortcuts';
 import { useRouteSync } from '@/shell/route';
 import { HelpDialog } from './HelpDialog';
+import { Tour } from '@/shell/Tour';
 import { Toaster } from './Toaster';
 import { TopBar } from '@/shell/TopBar';
 import { ExportSheet } from '@/shell/ExportSheet';
@@ -18,7 +19,6 @@ import { PreviewOverlay } from './Viewport';
 import { useUi } from '@/store/ui';
 import { Home } from '@/home/Home';
 import { StudioScreen } from '@/studio/StudioScreen';
-import { PhotoScreen } from '@/photo/PhotoScreen';
 import { VariantsDialog } from '@/variants/VariantsDialog';
 import { BatchDialog } from '@/variants/BatchDialog';
 
@@ -74,7 +74,7 @@ export function App() {
           <>
             <TopBar />
             <ErrorBoundary label={t(`screen.${screen}` as I18nKey)} key={screen}>
-              {screen === 'photo' ? <PhotoScreen /> : screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
+              {screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
             </ErrorBoundary>
           </>
         )}
@@ -82,6 +82,7 @@ export function App() {
       </div>
       <Toaster />
       <HelpDialog />
+      <Tour />
       <VariantsDialog />
       <PreviewOverlay />
       <SmallScreenNotice />

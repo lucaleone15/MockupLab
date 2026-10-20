@@ -1,10 +1,10 @@
 import { IMAGE_OR_PDF, expandPdfs } from './pdf';
 import { t } from '@/i18n';
 import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
+import { detectSupport, modelForSupport } from '@/quick/detect';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { importIntoPhoto } from '@/photo/importPhoto';
 
 const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
 
@@ -48,8 +48,6 @@ export async function fileToAsset(file: Blob, name: string): Promise<Asset> {
 /** Imports images (drop, paste, picker) and binds the first one to a device screen (the selected one by default). */
 export async function importImages(files: Iterable<File>, targetItemId?: string) {
   const list = await expandPdfs(files);
-  // photo mode: the photo itself, or the design of a zone (targetItemId is then a zone id)
-  if (useProject.getState().mode === 'photo') return importIntoPhoto(list, targetItemId);
   const images = list.filter((f) => ACCEPTED.test(f.type));
   for (const f of list) if (!ACCEPTED.test(f.type)) toast.error(t('image.unsupported', { name: f.name || 'file' }));
   if (!images.length) return;
@@ -59,6 +57,8 @@ export async function importImages(files: Iterable<File>, targetItemId?: string)
   try {
     const asset = await fileToAsset(file, file.name || 'image');
     useAssets.getState().add(asset);
+    // an empty scene gets the device that suits the image
+    if (!useProject.getState().items.length) useProject.getState().addItem(modelForSupport(detectSupport(asset.width, asset.height, false, file.name).support, asset.width, asset.height));
     const state = useProject.getState();
     const item = (targetItemId && state.items.find((it) => it.id === targetItemId)) || selectSelectedItem(state);
     if (item) {

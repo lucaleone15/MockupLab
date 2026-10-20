@@ -3,7 +3,6 @@ import { Dialog } from 'radix-ui';
 import { Download, ImagePlus, Layers, X } from 'lucide-react';
 import { useT } from '@/i18n';
 import { FORMATS, outputSize } from '@/export/settings';
-import { photoOutputSize } from '@/photo/exportPhoto';
 import { useProject } from '@/store/project';
 import { Button, Segmented, Spinner, cx } from '@/ui/primitives';
 import { batch, batchTarget, useBatch } from './batch';
@@ -24,17 +23,16 @@ export function BatchDialog() {
   const files = useBatch((s) => s.files);
   const style = useBatch((s) => s.style);
   const job = useBatch((s) => s.job);
-  const photoMode = useProject((s) => s.mode === 'photo');
   const exportSettings = useProject((s) => s.export);
-  useProject((s) => `${s.selectedId}:${s.photo.selectedZoneId}`);
+  useProject((s) => s.selectedId);
   const allLooks = useVariants((s) => s.looks);
   const selectedIds = useVariants((s) => s.selected);
   const looks = useMemo(() => allLooks.filter((l) => selectedIds.includes(l.id)), [allLooks, selectedIds]);
   const [over, setOver] = useState(false);
   const target = open ? batchTarget() : null;
-  const styles = !photoMode && style === 'variants' ? looks : [];
+  const styles = style === 'variants' ? looks : [];
   const total = files.length * Math.max(1, styles.length);
-  const size = photoMode ? photoOutputSize() : outputSize(exportSettings);
+  const size = outputSize(exportSettings);
   const format = FORMATS.find((f) => f.id === exportSettings.format)?.label;
 
   return (
@@ -114,24 +112,20 @@ export function BatchDialog() {
             <div className="flex flex-col gap-2 rounded-xl bg-surface-2 p-3.5 shadow-[0_0_0_1px_var(--line)_inset]">
               <div className="text-[12px] text-fg-muted">
                 {target
-                  ? target.kind === 'zone'
-                    ? t('batch.targetZone', { name: target.name || t('photo.zone') })
-                    : t('batch.targetDevice', { name: tr(target.model.name), slot: target.model.surfaces.length > 1 ? ` · ${tr(target.model.surfaces.find((s) => s.id === target.slot)!.label)}` : '' })
+                  ? t('batch.targetDevice', { name: tr(target.model.name), slot: target.model.surfaces.length > 1 ? ` · ${tr(target.model.surfaces.find((s) => s.id === target.slot)!.label)}` : '' })
                   : t('batch.noTarget')}
               </div>
-              {!photoMode && (
-                <div className="w-[360px] max-w-full">
-                  <Segmented
-                    value={style}
-                    onChange={(v) => batch.setStyle(v)}
-                    options={[
-                      { value: 'current', label: t('batch.style.current') },
-                      { value: 'variants', label: t('batch.style.variants', { n: looks.length }) },
-                    ]}
-                  />
-                </div>
-              )}
-              {!photoMode && style === 'variants' && !looks.length && <p className="text-[11.5px] text-fg-subtle">{t('batch.noVariants')}</p>}
+              <div className="w-[360px] max-w-full">
+                <Segmented
+                  value={style}
+                  onChange={(v) => batch.setStyle(v)}
+                  options={[
+                    { value: 'current', label: t('batch.style.current') },
+                    { value: 'variants', label: t('batch.style.variants', { n: looks.length }) },
+                  ]}
+                />
+              </div>
+              {style === 'variants' && !looks.length && <p className="text-[11.5px] text-fg-subtle">{t('batch.noVariants')}</p>}
             </div>
           </div>
 
@@ -152,7 +146,7 @@ export function BatchDialog() {
                 {t('batch.summary', { n: total })} · {size.width} × {size.height} · {format}
               </div>
             )}
-            <Button variant="primary" disabled={!files.length || !target || !!job || (style === 'variants' && !photoMode && !looks.length)} onClick={() => void batch.run(styles)} data-testid="batch-run">
+            <Button variant="primary" disabled={!files.length || !target || !!job || (style === 'variants' && !looks.length)} onClick={() => void batch.run(styles)} data-testid="batch-run">
               <Download size={15} />
               {t('batch.run')}
             </Button>

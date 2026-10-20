@@ -17,7 +17,7 @@ export function TopBar() {
   const exporting = useUi((s) => s.exporting);
   const canUndo = useStore(useProject.temporal, (s) => s.pastStates.length > 0);
   const canRedo = useStore(useProject.temporal, (s) => s.futureStates.length > 0);
-  const editor = screen === 'studio' || screen === 'photo';
+  const editor = screen === 'studio';
   return (
     <header className="relative z-20 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-line bg-[var(--menu-bg)] px-4 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-3">

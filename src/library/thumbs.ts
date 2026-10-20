@@ -17,17 +17,9 @@ const last = new Map<string, number>();
 let busy = false;
 
 async function render(): Promise<Blob | null> {
-  const p = useProject.getState();
-  let source: HTMLCanvasElement;
-  if (p.mode === 'photo') {
-    if (!p.photo.assetId) return null;
-    const { composePhoto } = await import('@/photo/exportPhoto');
-    source = (await composePhoto()).canvas;
-  } else {
-    if (!hasRenderer()) return null;
-    const { composeScene } = await import('@/export/exportImage');
-    source = (await composeScene({ width: W, height: Math.round(W * 9 / 16), supersample: 1, samples: 1 })).canvas;
-  }
+  if (!hasRenderer()) return null;
+  const { composeScene } = await import('@/export/exportImage');
+  const source = (await composeScene({ width: W, height: Math.round(W * 9 / 16), supersample: 1, samples: 1 })).canvas;
   const out = document.createElement('canvas');
   out.width = W;
   out.height = Math.round((W * source.height) / source.width);
@@ -39,7 +31,7 @@ async function render(): Promise<Blob | null> {
 /** A thumbnail can be taken now (no export, preview or render sandbox running). */
 export function canCapture() {
   const ui = useUi.getState();
-  return !busy && !ui.exporting && !ui.previewing && !sandboxRunning() && (ui.screen === 'studio' || ui.screen === 'photo');
+  return !busy && !ui.exporting && !ui.previewing && !sandboxRunning() && ui.screen === 'studio';
 }
 
 export async function captureThumb() {
@@ -47,7 +39,7 @@ export async function captureThumb() {
   if (!id || !canCapture()) {
     // busy editor: try again a little later (not from other screens, nothing to capture there)
     const screen = useUi.getState().screen;
-    if (id && (screen === 'studio' || screen === 'photo')) scheduleThumb(4000);
+    if (id && screen === 'studio') scheduleThumb(4000);
     return;
   }
   busy = true;

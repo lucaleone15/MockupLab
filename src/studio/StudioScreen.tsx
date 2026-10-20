@@ -2,6 +2,7 @@ import { Armchair, Camera, Clapperboard, Palette, SlidersHorizontal, Smartphone,
 import { useT } from '@/i18n';
 import { Viewport } from '@/app/Viewport';
 import { Rail, RailPage, type RailItem } from '@/shell/Rail';
+import { useFirstVisitTour } from '@/shell/Tour';
 import { useUi, type StudioPage } from '@/store/ui';
 import { DevicesPage } from './DevicesPage';
 import { SettingsPage } from './SettingsPage';
@@ -13,6 +14,7 @@ export function StudioScreen() {
   const { t } = useT();
   const page = useUi((s) => s.studioPage);
   const setPage = useUi((s) => s.setStudioPage);
+  useFirstVisitTour();
   const items: RailItem<StudioPage>[] = [
     { id: 'devices', label: t('page.devices'), icon: <Smartphone size={ICON} /> },
     { id: 'settings', label: t('page.settings'), icon: <SlidersHorizontal size={ICON} /> },

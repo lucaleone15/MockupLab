@@ -52,17 +52,7 @@ await render('scroll', { animation: 'scroll', format: 'webm', resolution: '720',
 await render('orbit', { animation: 'orbit', format: 'gif', resolution: '720', fps: 24, duration: 3 });
 await render('swing', { animation: 'swing', format: 'mp4', resolution: '1080', fps: 30, duration: 2 });
 await render('float', { animation: 'float', format: 'mp4', resolution: '720', fps: 24, duration: 2 });
-// photo mode: zoom and scroll
-await p.evaluate(async () => {
-  const api = window.__mockuplab;
-  await api.photo.applyTemplate(api.photo.templates.find((t) => t.id === 'laptop-desk'));
-  await api.photo.loadSamples();
-});
-await p.waitForTimeout(600);
-await render('photo-zoom', { animation: 'zoom', format: 'mp4', resolution: '720', fps: 24, duration: 3 });
 // preview: starts, the UI is frozen, Escape stops it and the scene is back
-await p.evaluate(() => window.__mockuplab.project.getState().setMode('scene'));
-await p.waitForTimeout(800);
 const before2 = await scene();
 await p.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video', video: { ...window.__mockuplab.project.getState().export.video, animation: 'turntable' } }));
 await p.getByTestId('studio-rail').getByRole('tab', { name: 'Vidéo', exact: true }).click();

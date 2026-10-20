@@ -40,17 +40,12 @@ if (import.meta.env.DEV) {
     import('./lib/overlays'),
     import('./store/ui'),
     import('./store/assets'),
-    import('./photo/templates'),
-    import('./photo/importPhoto'),
-    import('./photo/detect'),
-    import('./photo/source'),
-    import('./photo/editing'),
     import('./variants/store'),
     import('./library/exports'),
     import('./quick/store'),
     import('./project/store'),
     import('./library/thumbs'),
-  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, pt, pi, pd, ps, pe2, va, lx, qk, pk, th]) => {
+  ]).then(([ex, im, pr, reg, rf, pe, ia, sa, bf, ba, ov, ui, as, va, lx, qk, pk, th]) => {
     Object.assign(window, {
       __mockuplab: {
         renderImage: ex.renderImage,
@@ -75,17 +70,6 @@ if (import.meta.env.DEV) {
         asset: (id: string) => as.useAssets.getState().assets[id],
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
-        photo: {
-          templates: pt.PHOTO_TEMPLATES,
-          applyTemplate: pt.applyTemplate,
-          saveCurrentAsTemplate: pt.saveCurrentAsTemplate,
-          loadSamples: pi.loadPhotoSamples,
-          importIntoPhoto: pi.importIntoPhoto,
-          detectQuad: pd.detectQuad,
-          assetPixels: ps.assetPixels,
-          detectZoneAt: pe2.detectZoneAt,
-          createZone: pe2.createZone,
-        },
         importFromUrl: im.importFromUrl,
         project: pr.useProject,
         models: reg.MODELS.map((m) => ({ id: m.id, aspect: m.surfaces[0]?.aspect ?? 1 })),

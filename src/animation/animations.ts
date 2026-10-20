@@ -5,7 +5,7 @@ import { cameraHandle, cameraState, focusPoint, frame, presetDirection, type Cam
 import { decorLayout } from '@/scene/Decor';
 import { ratioValue } from '@/export/settings';
 import { useAssets } from '@/store/assets';
-import { selectSelectedItem, useProject, type AnimationId, type CameraSettings, type SceneItem, type Vec3, type VideoSettings, type WorkMode } from '@/store/project';
+import { selectSelectedItem, useProject, type AnimationId, type CameraSettings, type SceneItem, type Vec3, type VideoSettings } from '@/store/project';
 import { aspectsOf } from '@/models/imageAspects';
 
 /*
@@ -23,7 +23,6 @@ export interface AnimationDef {
   id: AnimationId;
   label: I18nKey;
   hint: I18nKey;
-  modes: WorkMode[];
   /** Seamless loop (a GIF can repeat it forever). */
   loop: boolean;
   /** Group in the picker. */
@@ -31,23 +30,20 @@ export interface AnimationDef {
 }
 
 export const ANIMATIONS: AnimationDef[] = [
-  { id: 'reveal', label: 'anim.reveal', hint: 'anim.reveal.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'dive', label: 'anim.dive', hint: 'anim.dive.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'dutch', label: 'anim.dutch', hint: 'anim.dutch.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'flip', label: 'anim.flip', hint: 'anim.flip.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'drop', label: 'anim.drop', hint: 'anim.drop.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'crane', label: 'anim.crane', hint: 'anim.crane.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'vertigo', label: 'anim.vertigo', hint: 'anim.vertigo.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'trailer', label: 'anim.trailer', hint: 'anim.trailer.hint', modes: ['scene'], loop: false, group: 'cinematic' },
-  { id: 'turntable', label: 'anim.turntable', hint: 'anim.turntable.hint', modes: ['scene'], loop: true, group: 'classic' },
-  { id: 'swing', label: 'anim.swing', hint: 'anim.swing.hint', modes: ['scene'], loop: true, group: 'classic' },
-  { id: 'orbit', label: 'anim.orbit', hint: 'anim.orbit.hint', modes: ['scene'], loop: false, group: 'classic' },
-  { id: 'scroll', label: 'anim.scroll', hint: 'anim.scroll.hint', modes: ['scene', 'photo'], loop: false, group: 'classic' },
-  { id: 'float', label: 'anim.float', hint: 'anim.float.hint', modes: ['scene'], loop: true, group: 'classic' },
-  { id: 'zoom', label: 'anim.zoom', hint: 'anim.zoom.hint', modes: ['photo'], loop: false, group: 'classic' },
+  { id: 'reveal', label: 'anim.reveal', hint: 'anim.reveal.hint', loop: false, group: 'cinematic' },
+  { id: 'dive', label: 'anim.dive', hint: 'anim.dive.hint', loop: false, group: 'cinematic' },
+  { id: 'dutch', label: 'anim.dutch', hint: 'anim.dutch.hint', loop: false, group: 'cinematic' },
+  { id: 'flip', label: 'anim.flip', hint: 'anim.flip.hint', loop: false, group: 'cinematic' },
+  { id: 'drop', label: 'anim.drop', hint: 'anim.drop.hint', loop: false, group: 'cinematic' },
+  { id: 'crane', label: 'anim.crane', hint: 'anim.crane.hint', loop: false, group: 'cinematic' },
+  { id: 'vertigo', label: 'anim.vertigo', hint: 'anim.vertigo.hint', loop: false, group: 'cinematic' },
+  { id: 'trailer', label: 'anim.trailer', hint: 'anim.trailer.hint', loop: false, group: 'cinematic' },
+  { id: 'turntable', label: 'anim.turntable', hint: 'anim.turntable.hint', loop: true, group: 'classic' },
+  { id: 'swing', label: 'anim.swing', hint: 'anim.swing.hint', loop: true, group: 'classic' },
+  { id: 'orbit', label: 'anim.orbit', hint: 'anim.orbit.hint', loop: false, group: 'classic' },
+  { id: 'scroll', label: 'anim.scroll', hint: 'anim.scroll.hint', loop: false, group: 'classic' },
+  { id: 'float', label: 'anim.float', hint: 'anim.float.hint', loop: true, group: 'classic' },
 ];
-
-export const animationsFor = (mode: WorkMode) => ANIMATIONS.filter((a) => a.modes.includes(mode));
 
 /* ------------------------------------------------------------ easing */
 
@@ -68,8 +64,6 @@ const rad = THREE.MathUtils.degToRad;
 export interface Rig {
   /** Sets the scene at time t (0..1). */
   at(t: number): void;
-  /** Photo mode zoom factor at t, applied when composing (1 = none). */
-  zoom(t: number): number;
   /** Devices move (the view must redraw shadows between instants). */
   moves: boolean;
   /** Instants to average for motion blur at t (fast moves need more); 6 when absent. */
@@ -121,7 +115,6 @@ function cameraRig(keys: CamKey[], ease: (x: number) => number, base: CameraView
   };
   return {
     moves: false,
-    zoom: () => 1,
     at(t) {
       if (!base) return;
       const az = value(t, 'az', 0);
@@ -163,7 +156,6 @@ function montage(shots: { rig: Rig; from: number; to: number }[], fade = 0.07): 
       const top = layers(t)[0];
       return top?.rig.blur?.(top.t) ?? 6;
     },
-    zoom: () => 1,
     layers,
     at(t) {
       const top = layers(t)[0];
@@ -189,7 +181,6 @@ export function loopRig(rig: Rig): Rig {
   const pp = (t: number) => 1 - Math.abs(1 - 2 * t);
   return {
     at: (t) => rig.at(pp(t)),
-    zoom: (t) => rig.zoom(pp(t)),
     moves: rig.moves,
     blur: rig.blur && ((t) => rig.blur!(pp(t))),
     layers: rig.layers && ((t) => rig.layers!(pp(t))),
@@ -233,7 +224,6 @@ export function makeRig(id: AnimationId): Rig {
     const camera = camKeys ? cameraRig(camKeys, easeInOut, view, cam) : null;
     return {
       moves: true,
-      zoom: () => 1,
       blur,
       at(t) {
         f(t);
@@ -309,7 +299,6 @@ export function makeRig(id: AnimationId): Rig {
       const endDist = front.position.distanceTo(front.target) * 0.74;
       return {
         moves: false,
-        zoom: () => 1,
         at(t) {
           const k = cinematic(t);
           const target = view.target.clone().lerp(screen, easeInOut(clamp01(t * 1.3)));
@@ -376,8 +365,6 @@ export function makeRig(id: AnimationId): Rig {
       return objectRig((t) => useProject.setState({ items: pose(Math.sin(t * Math.PI * 2) * rad(7), (1 - Math.cos(t * Math.PI * 2)) / 2) }), undefined, () => 3);
     case 'scroll':
       return scrollRig(view);
-    case 'zoom':
-      return { moves: false, at: () => undefined, zoom: (t) => 1 + 0.12 * easeInOut(t) };
   }
 }
 
@@ -386,35 +373,28 @@ function scrollRig(view: CameraView | undefined): Rig {
   const p = useProject.getState();
   const assets = useAssets.getState().assets;
   const target = selectSelectedItem(p);
-  const slots =
-    p.mode === 'photo'
-      ? []
-      : p.items.flatMap((it) =>
-          Object.entries(it.surfaces)
-            .filter(([, b]) => b.assetId && b.fit === 'cover' && assets[b.assetId])
-            .filter(() => !target || it.id === target.id || p.items.length === 1)
-            .map(([slot]) => [it.id, slot] as const),
-        );
-  const zones = p.mode === 'photo' ? p.photo.zones.filter((z) => z.surface.assetId && z.surface.fit === 'cover').map((z) => z.id) : [];
+  const slots = p.items.flatMap((it) =>
+    Object.entries(it.surfaces)
+      .filter(([, b]) => b.assetId && b.fit === 'cover' && assets[b.assetId])
+      .filter(() => !target || it.id === target.id || p.items.length === 1)
+      .map(([slot]) => [it.id, slot] as const),
+  );
   return {
     moves: true,
-    zoom: () => 1,
     // a slow scroll: a few instants are enough for smooth text
     blur: () => 3,
     at(t) {
       const align = held(t);
-      if (p.mode === 'photo') for (const z of zones) useProject.getState().setZoneSurface(z, { align });
-      else
-        useProject.setState((s) => ({
-          items: s.items.map((it) => {
-            const mine = slots.filter(([id]) => id === it.id);
-            if (!mine.length) return it;
-            const surfaces = { ...it.surfaces };
-            for (const [, slot] of mine) surfaces[slot] = { ...surfaces[slot], align };
-            return { ...it, surfaces };
-          }),
-        }));
-      if (p.mode === 'scene' && view) {
+      useProject.setState((s) => ({
+        items: s.items.map((it) => {
+          const mine = slots.filter(([id]) => id === it.id);
+          if (!mine.length) return it;
+          const surfaces = { ...it.surfaces };
+          for (const [, slot] of mine) surfaces[slot] = { ...surfaces[slot], align };
+          return { ...it, surfaces };
+        }),
+      }));
+      if (view) {
         const off = view.position.clone().sub(view.target).multiplyScalar(1 - 0.06 * easeInOut(t));
         cameraHandle.restore?.({ position: off.add(view.target), target: view.target, fov: view.fov });
       }
@@ -430,7 +410,6 @@ export function hasScrollable() {
     const a = assetId ? assets[assetId] : undefined;
     return !!a && a.width / a.height < aspect * 0.9;
   };
-  if (p.mode === 'photo') return p.photo.zones.some((z) => z.surface.fit === 'cover' && tall(z.surface.assetId, z.aspect));
   return p.items.some((it) => {
     const model = getModel(it.modelId);
     return model.surfaces.some((s) => it.surfaces[s.id]?.fit === 'cover' && tall(it.surfaces[s.id]?.assetId ?? null, s.aspect));

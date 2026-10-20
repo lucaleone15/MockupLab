@@ -4,14 +4,13 @@ import { db } from './db';
 
 /*
  * Several projects, each autosaved under its own key. The index keeps what
- * the home page needs (name, mode, date, images used, number of exports) so
+ * the home page needs (name, date, images used, number of exports) so
  * listing projects or cleaning unused images never loads every project.
  */
 
 export interface ProjectMeta {
   id: string;
   name: string;
-  mode: 'scene' | 'photo';
   updatedAt: number;
   /** Image ids the project uses (images are shared between projects). */
   assets: string[];

@@ -130,6 +130,8 @@ function itemCorners(item: SceneItem, floorY: number): THREE.Vector3[] {
  */
 export function frame(items: SceneItem[], dir: THREE.Vector3, fovDeg: number, aspect: number, floorY: number, fill = items.length > 1 ? 0.78 : 0.82) {
   const corners = items.flatMap((it) => itemCorners(it, floorY));
+  // an empty scene: frame the room a phone would take
+  if (!corners.length) corners.push(new THREE.Vector3(-8, floorY, -4), new THREE.Vector3(8, floorY + 16, 4));
   const box = new THREE.Box3().setFromPoints(corners);
   const target = box.getCenter(new THREE.Vector3());
   const forward = dir.clone().normalize().negate();
@@ -225,6 +227,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
   const items = useProject((s) => s.items);
   const item = useProject(selectSelectedItem);
   const ratio = useProject((s) => s.export.ratio);
+  const arrangement = useProject((s) => s.arrangement);
 
   const latest = useRef({ items, item, ratio, settings, floorY });
   latest.current = { items, item, ratio, settings, floorY };
@@ -248,6 +251,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
       })
       .join(','),
     ratio,
+    arrangement,
     floorY.toFixed(2),
   ].join('|');
 

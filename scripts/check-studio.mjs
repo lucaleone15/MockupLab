@@ -8,8 +8,11 @@ check(JSON.stringify(names) === JSON.stringify(['Appareils', 'Réglages', 'Ambia
 for (const n of names) {
   await rail.getByRole('tab', { name: n, exact: true }).click();
   await page.waitForTimeout(250);
-  const collapsible = await page.getByTestId('rail-page').locator('[aria-expanded]:not([aria-haspopup])').count();
-  check(collapsible === 0, `${n}: no collapsible section`);
+  // only fine-tuning folds away, under “Paramètres avancés”, closed at first
+  const folds = page.getByTestId('rail-page').locator('[aria-expanded]:not([aria-haspopup])');
+  const labels = (await folds.allTextContents()).map((s) => s.trim());
+  const open = await folds.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-expanded') === 'true').length);
+  check(labels.every((l) => l === 'Paramètres avancés') && open === 0, `${n}: only “Advanced settings” folds, closed at first (${labels.length})`);
   check((await page.getByTestId('rail-page').getByRole('heading', { level: 2 }).textContent()).trim() === n, `${n}: page title`);
 }
 await rail.getByRole('tab', { name: 'Appareils', exact: true }).click();

@@ -3,7 +3,6 @@ import { GIFEncoder, applyPalette, quantize } from 'gifenc';
 import { t } from '@/i18n';
 import { composeScene, download, formatBytes } from '@/export/exportImage';
 import { prepareBackground } from '@/lib/background';
-import { composePhoto } from '@/photo/exportPhoto';
 import { loadAmbience } from '@/scene/ambiences';
 import { settle } from '@/scene/exporter';
 import { loadMaterialMap } from '@/scene/realMaterials';
@@ -23,8 +22,7 @@ import { videoFps, videoSize } from './size';
 
 /** Loads what the scene needs (materials, light) and lets it draw. */
 async function ready() {
-  const { decor, background, mode } = useProject.getState();
-  if (mode === 'photo') return;
+  const { decor, background } = useProject.getState();
   const jobs: Promise<unknown>[] = [prepareBackground(background)];
   if (decor.kind === 'table' || decor.kind === 'surface' || (decor.kind === 'podium' && decor.podiumFinish === 'material'))
     for (const f of ['color', 'normal', 'rough'] as const) jobs.push(loadMaterialMap(decor.material, f));
@@ -79,7 +77,7 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
   const token = ++cancelled;
   const p = useProject.getState();
   const v = p.export.video;
-  const def = ANIMATIONS.find((a) => a.id === v.animation && a.modes.includes(p.mode)) ?? ANIMATIONS.find((a) => a.modes.includes(p.mode))!;
+  const def = ANIMATIONS.find((a) => a.id === v.animation) ?? ANIMATIONS[0];
   const { width, height } = videoSize();
   const fps = videoFps();
   const frames = Math.max(2, Math.round(v.duration * fps));
@@ -97,7 +95,7 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
     await ready();
     // motion blur: each frame averages instants spread over half a frame interval (a 180° shutter)
     const step = looping ? 1 / frames : 1 / (frames - 1);
-    const subAt = (t: number) => (p.mode === 'scene' && cinema ? (rig.blur?.(t) ?? 6) : 1);
+    const subAt = (t: number) => (cinema ? (rig.blur?.(t) ?? 6) : 1);
     const layer = document.createElement('canvas');
     layer.width = width;
     layer.height = height;
@@ -114,40 +112,25 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
       if (token !== cancelled) throw new Error('cancelled');
       // a loop ends just before its start; a move goes from start to end
       const time = looping ? i / frames : i / (frames - 1);
-      if (p.mode === 'scene') {
-        const layers = rig.layers ? rig.layers(time) : [{ rig, t: time, weight: 1, scale: 1 }];
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-        const sub = subAt(time);
-        for (const [li, l] of layers.entries()) {
-          // average of the instants of this shot
-          // shutter: half a frame interval, in the shot's own time
-          for (const [k, tt] of shutterTimes(l.t, sub, step, l.scale, def.loop).entries()) {
-            if (token !== cancelled) throw new Error('cancelled');
-            const f = await instant(l.rig, tt);
-            lctx.globalAlpha = 1 / (k + 1);
-            lctx.drawImage(f, 0, 0);
-          }
-          // shots cross-fade (montage)
-          ctx.globalAlpha = li === 0 ? 1 : Math.min(1, l.weight / (l.weight + layers[0].weight));
-          ctx.drawImage(layer, 0, 0);
+      const layers = rig.layers ? rig.layers(time) : [{ rig, t: time, weight: 1, scale: 1 }];
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, width, height);
+      const sub = subAt(time);
+      for (const [li, l] of layers.entries()) {
+        // average of the instants of this shot
+        // shutter: half a frame interval, in the shot's own time
+        for (const [k, tt] of shutterTimes(l.t, sub, step, l.scale, def.loop).entries()) {
+          if (token !== cancelled) throw new Error('cancelled');
+          const f = await instant(l.rig, tt);
+          lctx.globalAlpha = 1 / (k + 1);
+          lctx.drawImage(f, 0, 0);
         }
-        ctx.globalAlpha = 1;
-      } else {
-        rig.at(time);
-        const { canvas: photo } = await composePhoto();
-        // the photo fills the frame; the zoom pushes in towards the selected zone
-        const zoom = rig.zoom(time);
-        const zone = useProject.getState().photo.zones.find((z) => z.id === useProject.getState().photo.selectedZoneId) ?? useProject.getState().photo.zones[0];
-        const cx = zone ? zone.corners.reduce((s, c) => s + c[0], 0) / 4 : 0.5;
-        const cy = zone ? zone.corners.reduce((s, c) => s + c[1], 0) / 4 : 0.5;
-        const sw = photo.width / zoom;
-        const sh = photo.height / zoom;
-        const sx = Math.min(photo.width - sw, Math.max(0, cx * photo.width - sw / 2));
-        const sy = Math.min(photo.height - sh, Math.max(0, cy * photo.height - sh / 2));
-        ctx.drawImage(photo, sx, sy, sw, sh, 0, 0, width, height);
+        // shots cross-fade (montage)
+        ctx.globalAlpha = li === 0 ? 1 : Math.min(1, l.weight / (l.weight + layers[0].weight));
+        ctx.drawImage(layer, 0, 0);
       }
+      ctx.globalAlpha = 1;
       await encoder.add(i);
       onProgress?.(i + 1, frames);
     }
@@ -163,7 +146,7 @@ export async function exportVideo() {
   if (ui.exporting) return;
   // a carousel is a set of still slides, not a (17 000 px wide) video
   const p = useProject.getState();
-  if (p.mode === 'scene' && carouselOf(p.export.ratio)) {
+  if (carouselOf(p.export.ratio)) {
     toast.info(t('social.carouselVideo'));
     return;
   }
@@ -198,7 +181,7 @@ export function togglePreview() {
   }
   const p = useProject.getState();
   const v = p.export.video;
-  const def = ANIMATIONS.find((a) => a.id === v.animation && a.modes.includes(p.mode)) ?? ANIMATIONS.find((a) => a.modes.includes(p.mode))!;
+  const def = ANIMATIONS.find((a) => a.id === v.animation) ?? ANIMATIONS[0];
   useUi.getState().setPreviewing(true);
   void inSandbox(
     () =>
@@ -211,14 +194,12 @@ export function togglePreview() {
           // a move plays, holds a moment, and starts again
           const time = loops(def, v) ? s % 1 : Math.min(1, (s % 1.15) / 1);
           rig.at(time);
-          useUi.getState().setPreviewZoom(rig.zoom(time));
           raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
         stopPreview = () => {
           cancelAnimationFrame(raf);
           stopPreview = null;
-          useUi.getState().setPreviewZoom(1);
           resolve();
         };
       }),

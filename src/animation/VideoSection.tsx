@@ -1,4 +1,4 @@
-import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Smartphone, Square, TrendingUp, Waves, ZoomIn } from 'lucide-react';
+import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Smartphone, Square, TrendingUp, Waves } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
@@ -6,7 +6,7 @@ import { useProject, type AnimationId, type VideoSettings } from '@/store/projec
 import { useUi } from '@/store/ui';
 import { Button, Field, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 import { exportVideo, togglePreview } from './actions';
-import { animationsFor, hasScrollable } from './animations';
+import { ANIMATIONS, hasScrollable } from './animations';
 import { videoFps, videoSize } from './size';
 
 const ICONS: Record<AnimationId, ReactNode> = {
@@ -23,22 +23,20 @@ const ICONS: Record<AnimationId, ReactNode> = {
   orbit: <Move3d size={18} />,
   scroll: <MoveVertical size={18} />,
   float: <Waves size={18} />,
-  zoom: <ZoomIn size={18} />,
 };
 
 /** Export tab, video mode: animation, timing, size, format, preview and export. */
 export function VideoSection() {
   const { t } = useT();
-  const mode = useProject((s) => s.mode);
   const video = useProject((s) => s.export.video);
   const setExport = useProject((s) => s.setExport);
   const exporting = useUi((s) => s.exporting);
   const previewing = useUi((s) => s.previewing);
-  // sizes and the scroll hint follow the images and the photo
+  // sizes and the scroll hint follow the images
   useProject((s) => s.export.ratio);
-  useProject((s) => `${s.photo.assetId}:${s.selectedId}`);
+  useProject((s) => s.selectedId);
   useAssets((s) => s.assets);
-  const list = animationsFor(mode);
+  const list = ANIMATIONS;
   const current = list.find((a) => a.id === video.animation) ?? list[0];
   const set = (patch: Partial<VideoSettings>) => setExport({ video: { ...video, ...patch } });
   const { width, height } = videoSize();
@@ -50,21 +48,19 @@ export function VideoSection() {
   };
   return (
     <>
-      {mode === 'scene' && (
-        <Tooltip label={t('video.reelHint')}>
-          <Button onClick={reel} className="w-full">
-            <Smartphone size={15} />
-            {t('video.reel')}
-          </Button>
-        </Tooltip>
-      )}
+      <Tooltip label={t('video.reelHint')}>
+        <Button onClick={reel} className="w-full">
+          <Smartphone size={15} />
+          {t('video.reel')}
+        </Button>
+      </Tooltip>
       <Field label={t('video.animation')}>
         {(['cinematic', 'classic'] as const).map((g) => {
           const group = list.filter((a) => a.group === g);
           if (!group.length) return null;
           return (
             <div key={g} className="flex flex-col gap-1.5">
-              {mode === 'scene' && <div className="text-[12px] font-medium text-fg-muted">{t(g === 'cinematic' ? 'video.group.cinematic' : 'video.group.classic')}</div>}
+              <div className="text-[12px] font-medium text-fg-muted">{t(g === 'cinematic' ? 'video.group.cinematic' : 'video.group.classic')}</div>
               <div className="grid grid-cols-3 gap-1.5">
                 {group.map((a) => (
                   <button
@@ -87,19 +83,17 @@ export function VideoSection() {
         <p className="text-[11px] leading-snug text-fg-subtle">{t(current.hint)}</p>
         {current.id === 'scroll' && !hasScrollable() && <p className="text-[11px] leading-snug text-accent">{t('video.scrollNone')}</p>}
       </Field>
-      {mode === 'scene' && (
-        <Field label={t('video.quality')}>
-          <Segmented
-            value={video.quality}
-            onChange={(quality) => set({ quality })}
-            options={[
-              { value: 'cinema', label: t('video.quality.cinema') },
-              { value: 'fast', label: t('video.quality.fast') },
-            ]}
-          />
-          <p className="text-[11px] leading-snug text-fg-subtle">{t(video.quality === 'cinema' ? 'video.quality.cinemaHint' : 'video.quality.fastHint')}</p>
-        </Field>
-      )}
+      <Field label={t('video.quality')}>
+        <Segmented
+          value={video.quality}
+          onChange={(quality) => set({ quality })}
+          options={[
+            { value: 'cinema', label: t('video.quality.cinema') },
+            { value: 'fast', label: t('video.quality.fast') },
+          ]}
+        />
+        <p className="text-[11px] leading-snug text-fg-subtle">{t(video.quality === 'cinema' ? 'video.quality.cinemaHint' : 'video.quality.fastHint')}</p>
+      </Field>
       <Field label={t('video.duration')} value={`${video.duration} s`}>
         <Segmented
           size="sm"

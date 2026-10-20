@@ -1,6 +1,6 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { Dialog, Slider as RSlider, Tooltip as RTooltip } from 'radix-ui';
-import { X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -268,12 +268,21 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
 
 /* ------------------------------------------------------------ Advanced */
 
-/** Fine-tuning controls, always visible under a small heading (no more hidden "More options"). */
-export function Advanced({ children, more }: { children: ReactNode; more: string; less?: string }) {
+/** Fine-tuning controls, folded under "Advanced settings" until asked for: the basics stay short. */
+export function Advanced({ children, more }: { children: ReactNode; more: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex flex-col gap-3.5 pt-1">
-      <div className="text-[12px] font-medium text-fg-subtle">{more}</div>
-      {children}
+    <div className="flex flex-col gap-3.5">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="-ml-0.5 flex items-center gap-1 self-start rounded-md text-[12px] font-medium text-fg-muted transition-colors hover:text-fg"
+      >
+        <ChevronRight size={14} className={cx('transition-transform duration-150', open && 'rotate-90')} />
+        {more}
+      </button>
+      {open && <div className="flex flex-col gap-3.5 animate-[fade-in_150ms_ease-out]">{children}</div>}
     </div>
   );
 }

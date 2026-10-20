@@ -12,11 +12,11 @@ check(w.path === '/rapide' && !w.hash, `switching mode gives a clean address (${
 await page.goBack();
 await page.waitForTimeout(300);
 check((await where()).screen === 'studio', 'back button returns to the Studio');
-await page.goto('http://localhost:5173/#/photo');
+await page.goto('http://localhost:5173/#/projet');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(500);
 w = await where();
-check(w.screen === 'photo' && w.path === '/photo' && !w.hash, `old #/photo link redirected to /photo (${JSON.stringify(w)})`);
+check(w.screen === 'project' && w.path === '/projet' && !w.hash, `old #/projet link redirected to /projet (${JSON.stringify(w)})`);
 await page.goto('http://localhost:5173/nimporte');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(500);

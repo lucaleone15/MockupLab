@@ -8,7 +8,6 @@ import { loadMaterialMap } from '@/scene/realMaterials';
 import { pauseAutosave, snapshot } from '@/store/persistence';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { sandbox as sandboxFlag } from '@/store/sandboxFlag';
 import { applyLook, type Look } from './looks';
 
 /*
@@ -57,15 +56,10 @@ async function sandbox<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } finally {
     running--;
-    sandboxFlag.restoring = true;
-    try {
-      // the scene comes back; what the user changed meanwhile (name, brand, export settings) stays
-      const live = useProject.getState();
-      userChanged = live.name !== saved.name || live.brand !== saved.brand || live.export !== saved.export;
-      useProject.setState({ ...saved, name: live.name, brand: live.brand, export: live.export });
-    } finally {
-      sandboxFlag.restoring = false;
-    }
+    // the scene comes back; what the user changed meanwhile (name, brand, export settings) stays
+    const live = useProject.getState();
+    userChanged = live.name !== saved.name || live.brand !== saved.brand || live.export !== saved.export;
+    useProject.setState({ ...saved, name: live.name, brand: live.brand, export: live.export });
     // the framing effect runs on the restored state, then the exact view comes back
     await settle(2);
     if (view) cameraHandle.restore?.(view);

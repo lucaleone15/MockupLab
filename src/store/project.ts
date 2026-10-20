@@ -4,10 +4,9 @@ import type { Fit } from '@/scene/screenMaterial';
 import { getModel } from '@/models/registry';
 import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
-import { arrangeInRow, arrangeItems, besideOthers, constrainItems } from '@/lib/arrange';
+import { arrangeInRow, arrangeItems, besideOthers, constrainItems, layoutItems, type Layout } from '@/lib/arrange';
 import { carouselOf } from '@/export/settings';
 import { useAssets } from './assets';
-import type { Quad } from '@/photo/homography';
 
 /* ------------------------------------------------------------------ types */
 
@@ -209,7 +208,7 @@ export type SocialPreset = 'ig-post' | 'ig-square' | 'story' | 'youtube' | 'link
 export type CarouselPreset = `c${number}-${'4x5' | '1x1'}`;
 export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4' | SocialPreset | CarouselPreset;
 
-export type AnimationId = 'reveal' | 'dive' | 'dutch' | 'flip' | 'drop' | 'crane' | 'vertigo' | 'trailer' | 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float' | 'zoom';
+export type AnimationId = 'reveal' | 'dive' | 'dutch' | 'flip' | 'drop' | 'crane' | 'vertigo' | 'trailer' | 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float';
 
 export interface VideoSettings {
   animation: AnimationId;
@@ -235,64 +234,8 @@ export interface ExportSettings {
   quality: number;
 }
 
-/** A target area of a photo (a screen, a sheet of paper) that receives a design in perspective. */
-export interface PhotoZone {
-  id: string;
-  name: string;
-  /** Screens add the photo's reflections; prints also take its shading. Sets the defaults below. */
-  kind: 'screen' | 'print';
-  /** Normalised photo coordinates (0..1), TL, TR, BR, BL of the design. */
-  corners: Quad;
-  /** Width / height of the real surface (estimated from the perspective, or set by the template). */
-  aspect: number;
-  /** The ratio follows the corners (re-estimated when they move); off once chosen by hand or by a template. */
-  aspectAuto: boolean;
-  surface: SurfaceBinding;
-  /** Corner rounding, fraction of the shorter side. */
-  radius: number;
-  /** 0..1: multiply by the photo's shading (paper folds, shadows). */
-  shading: number;
-  /** 0..1: add the photo's reflections and highlights (screen blend). */
-  reflection: number;
-  /** 0.5..1.5 */
-  brightness: number;
-  /** -1 (softer, to match a blurry photo) .. 1 (crisper). */
-  sharpness: number;
-  /** 0..1 film grain matching the photo. */
-  noise: number;
-  /** Edge softness in pixels. */
-  feather: number;
-  /** 0..1: tint the design with the photo's ambient light. */
-  match: number;
-  /** 0..1: keeps in front what clearly differs from the surface (fingers on a screen). 0 = off. */
-  occlusion: number;
-  /**
-   * What the photo's own surface lends to the design: 'auto' keeps its fine
-   * details and reflections only when it is blank (an unlit screen, plain
-   * paper); 'hide' never (only its smooth light); 'keep' always.
-   */
-  original: 'auto' | 'hide' | 'keep';
-  /** Pixels the design extends past the corners, to cover the surface's own edge. */
-  bleed: number;
-  visible: boolean;
-}
-
-export interface PhotoScene {
-  /** The photo (an asset). */
-  assetId: string | null;
-  /** Bundled or saved template the photo comes from. */
-  templateId: string | null;
-  zones: PhotoZone[];
-  selectedZoneId: string | null;
-}
-
-export type WorkMode = 'scene' | 'photo';
-
 export interface Project {
   version: 6;
-  /** 3D scene or photo mock-up. */
-  mode: WorkMode;
-  photo: PhotoScene;
   brand: Brand;
   name: string;
   items: SceneItem[];
@@ -304,6 +247,8 @@ export interface Project {
   camera: CameraSettings;
   ground: Ground;
   export: ExportSettings;
+  /** How the devices are laid out; every added or removed device lays them out again. */
+  arrangement: Layout;
 }
 
 /* -------------------------------------------------------------- defaults */
@@ -312,29 +257,6 @@ export const DEFAULT_SURFACE: SurfaceBinding = { assetId: null, fit: 'cover', al
 export const DEFAULT_SCREEN: ScreenSettings = { brightness: 1, reflection: 0.5 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
-
-export const EMPTY_PHOTO: PhotoScene = { assetId: null, templateId: null, zones: [], selectedZoneId: null };
-
-/** Blend settings that suit a kind of zone. */
-export function zoneDefaults(kind: PhotoZone['kind']) {
-  return kind === 'screen'
-    ? { radius: 0, shading: 0, reflection: 0.7, brightness: 1, sharpness: 0, noise: 0.15, feather: 0.6, match: 0.1, occlusion: 0, original: 'auto' as const, bleed: 1 }
-    : { radius: 0, shading: 0.85, reflection: 0.2, brightness: 1, sharpness: 0, noise: 0.25, feather: 0.6, match: 0.35, occlusion: 0, original: 'auto' as const, bleed: 1 };
-}
-
-export function makeZone(init: Partial<PhotoZone> & Pick<PhotoZone, 'corners' | 'aspect'>): PhotoZone {
-  const kind = init.kind ?? 'screen';
-  return {
-    id: uid(),
-    name: '',
-    kind,
-    surface: { ...DEFAULT_SURFACE },
-    ...zoneDefaults(kind),
-    aspectAuto: true,
-    visible: true,
-    ...init,
-  };
-}
 
 export function makeItem(model: DeviceModule): SceneItem {
   return {
@@ -351,6 +273,11 @@ export function makeItem(model: DeviceModule): SceneItem {
     visible: true,
     locked: false,
   };
+}
+
+/** The devices laid out the scene's way (a carousel lines them up along its strip, one per slide). */
+function laidOut(items: SceneItem[], s: Pick<Project, 'export' | 'arrangement' | 'decor'>) {
+  return constrainItems(carouselOf(s.export.ratio) ? arrangeInRow(items) : layoutItems(items, s.arrangement), s.decor);
 }
 
 /** The scene is still the lone sample phone of a new project, never edited and without an image. */
@@ -391,8 +318,6 @@ export function initialProject(): Project {
   const item = { ...makeItem(getModel('phone-pro')), sample: true };
   return {
     version: 6,
-    mode: 'scene',
-    photo: structuredClone(EMPTY_PHOTO),
     brand: structuredClone(DEFAULT_BRAND),
     name: 'Untitled',
     items: [item],
@@ -412,6 +337,7 @@ export function initialProject(): Project {
     camera: { ...DEFAULT_CAMERA },
     ground: { ...DEFAULT_GROUND },
     export: { kind: 'image', video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
+    arrangement: 'auto',
   };
 }
 
@@ -431,12 +357,19 @@ interface ProjectActions {
   /** Pose of one item, or of every item (camera presets). */
   setPose: (pose: SceneItem['pose'], itemId?: string) => void;
   selectItem: (id: string | null) => void;
-  /** Adds a device next to the others (or at `position`) and selects it. */
+  /** Adds a device and lays the scene out again (or puts it at `position`, where it was dropped); selects it. */
   addItem: (modelId: string, position?: Vec3) => void;
   duplicateItem: (id: string) => void;
+  /** Removes a device, even the last one (the scene is then empty). */
   removeItem: (id: string) => void;
-  /** Lays out every device in a balanced composition. */
-  arrange: () => void;
+  /** Lays out every device, in `layout` (which becomes the scene's) or the scene's own. */
+  arrange: (layout?: Layout) => void;
+  /**
+   * A ready-made scene: these devices in this layout. Devices of the same kind
+   * already in the scene are kept (model, finish, images); new ones take the
+   * image of the first kept one of their kind.
+   */
+  setComposition: (modelIds: string[], layout: Layout) => void;
   addOverlay: (overlay: Overlay) => void;
   updateOverlay: (id: string, patch: Partial<Overlay>) => void;
   removeOverlay: (id: string) => void;
@@ -446,23 +379,10 @@ interface ProjectActions {
   resetScene: () => void;
   /** Everything back to a fresh project (undoable). */
   resetAll: () => void;
-  /** Photo mode: removes the photo and its zones. */
-  resetPhoto: () => void;
   setExport: (patch: Partial<ExportSettings>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
   replaceModel: (itemId: string, modelId: string) => void;
-  setMode: (mode: WorkMode) => void;
-  /**
-   * Sets the photo and its zones (own photo: no zones; template: its zones).
-   * Designs already placed carry over to the new zones, in order.
-   */
-  setPhoto: (assetId: string, templateId: string | null, zones: PhotoZone[]) => void;
-  addZone: (zone: PhotoZone) => void;
-  updateZone: (id: string, patch: Partial<PhotoZone> | ((z: PhotoZone) => Partial<PhotoZone>)) => void;
-  setZoneSurface: (id: string, patch: Partial<SurfaceBinding>) => void;
-  removeZone: (id: string) => void;
-  selectZone: (id: string | null) => void;
 }
 
 export type ProjectState = Project & ProjectActions;
@@ -489,8 +409,6 @@ function burst<T extends unknown[]>(fn: (...args: T) => void, ms = 450) {
 
 const historyOf = (s: ProjectState): Project => ({
   version: s.version,
-  mode: s.mode,
-  photo: s.photo,
   brand: s.brand,
   name: s.name,
   items: s.items,
@@ -502,6 +420,7 @@ const historyOf = (s: ProjectState): Project => ({
   camera: s.camera,
   ground: s.ground,
   export: s.export,
+  arrangement: s.arrangement,
 });
 
 export const useProject = create<ProjectState>()(
@@ -556,7 +475,9 @@ export const useProject = create<ProjectState>()(
           const slot = getModel(modelId).surfaces[0];
           const sourceSlot = selected && getModel(selected.modelId).surfaces[0];
           if (source && slot && sourceSlot && (slot.aspect < 1) === (sourceSlot.aspect < 1)) item.surfaces[slot.id] = { ...source };
-          return { items: constrainItems([...s.items, item], s.decor), selectedId: item.id };
+          const items = [...s.items, item];
+          // dropped somewhere: it stays there; otherwise the whole scene is laid out again
+          return { items: position ? constrainItems(items, s.decor) : laidOut(items, s), selectedId: item.id };
         }),
       duplicateItem: (id) =>
         set((s) => {
@@ -566,16 +487,50 @@ export const useProject = create<ProjectState>()(
           const copy: SceneItem = structuredClone(src);
           copy.id = uid();
           copy.position = [src.position[0] + w * 0.7 + 4, src.position[1], src.position[2] + 4];
-          return { items: constrainItems([...s.items, copy], s.decor), selectedId: copy.id };
+          return { items: laidOut([...s.items, copy], s), selectedId: copy.id };
         }),
       removeItem: (id) =>
         set((s) => {
-          if (s.items.length <= 1) return {};
-          const items = constrainItems(s.items.filter((it) => it.id !== id), s.decor);
-          return { items, selectedId: s.selectedId === id ? items[items.length - 1].id : s.selectedId };
+          const rest = s.items.filter((it) => it.id !== id);
+          const items = rest.length ? laidOut(rest, s) : [];
+          return { items, selectedId: s.selectedId === id ? (items[items.length - 1]?.id ?? null) : s.selectedId };
         }),
-      // a carousel lines the devices up along its strip, one per slide
-      arrange: () => set((s) => ({ items: constrainItems(carouselOf(s.export.ratio) ? arrangeInRow(s.items) : arrangeItems(s.items), s.decor) })),
+      arrange: (layout) =>
+        set((s) => {
+          const arrangement = layout ?? s.arrangement;
+          return { arrangement, items: laidOut(s.items, { ...s, arrangement }) };
+        }),
+      setComposition: (modelIds, layout) => {
+        breakBurst();
+        set((s) => {
+          const pool = [...s.items];
+          const kept: SceneItem[] = [];
+          const items = modelIds.map((modelId) => {
+            const category = getModel(modelId).category;
+            const i = pool.findIndex((it) => getModel(it.modelId).category === category);
+            if (i >= 0) {
+              const [it] = pool.splice(i, 1);
+              kept.push(it);
+              return { ...it, visible: true, pose: 'standing' as const, scale: 1 };
+            }
+            const sibling = kept.find((it) => getModel(it.modelId).category === category);
+            const item = makeItem(getModel(sibling?.modelId ?? modelId));
+            if (sibling) {
+              item.finishId = sibling.finishId;
+              item.surfaces = structuredClone(sibling.surfaces);
+            }
+            kept.push(item);
+            return item;
+          });
+          // a kept device without an image takes the first image of its kind, so every screen starts filled
+          const filled = items.map((it) => {
+            if (Object.values(it.surfaces).some((b) => b.assetId)) return it;
+            const source = items.find((o) => o.modelId === it.modelId && Object.values(o.surfaces).some((b) => b.assetId));
+            return source ? { ...it, surfaces: structuredClone(source.surfaces) } : it;
+          });
+          return { arrangement: layout, items: laidOut(filled, { ...s, arrangement: layout }), selectedId: filled[0]?.id ?? null };
+        });
+      },
       addOverlay: (overlay) => set((s) => ({ overlays: [...s.overlays, overlay] })),
       updateOverlay: (id, patch) =>
         set((s) => ({ overlays: s.overlays.map((o) => (o.id === id ? ({ ...o, ...patch } as Overlay) : o)) })),
@@ -599,11 +554,7 @@ export const useProject = create<ProjectState>()(
       },
       resetAll: () => {
         breakBurst();
-        set((s) => ({ ...initialProject(), mode: s.mode }));
-      },
-      resetPhoto: () => {
-        breakBurst();
-        set({ photo: structuredClone(EMPTY_PHOTO) });
+        set(initialProject());
       },
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
       setParam: (itemId, id, value) =>
@@ -648,38 +599,6 @@ export const useProject = create<ProjectState>()(
           ),
         }));
       },
-      setMode: (mode) => {
-        breakBurst();
-        set({ mode });
-      },
-      setPhoto: (assetId, templateId, zones) => {
-        breakBurst();
-        set((s) => {
-          const prev = s.photo.zones;
-          const next = zones.map((z, i) => (prev[i]?.surface.assetId ? { ...z, surface: { ...prev[i].surface } } : z));
-          return { photo: { assetId, templateId, zones: next, selectedZoneId: next[0]?.id ?? null } };
-        });
-      },
-      addZone: (zone) => {
-        breakBurst();
-        set((s) => ({ photo: { ...s.photo, zones: [...s.photo.zones, zone], selectedZoneId: zone.id } }));
-      },
-      updateZone: (id, patch) =>
-        set((s) => ({
-          photo: { ...s.photo, zones: s.photo.zones.map((z) => (z.id === id ? { ...z, ...(typeof patch === 'function' ? patch(z) : patch) } : z)) },
-        })),
-      setZoneSurface: (id, patch) =>
-        set((s) => ({
-          photo: { ...s.photo, zones: s.photo.zones.map((z) => (z.id === id ? { ...z, surface: { ...z.surface, ...patch } } : z)) },
-        })),
-      removeZone: (id) => {
-        breakBurst();
-        set((s) => {
-          const zones = s.photo.zones.filter((z) => z.id !== id);
-          return { photo: { ...s.photo, zones, selectedZoneId: s.photo.selectedZoneId === id ? (zones[zones.length - 1]?.id ?? null) : s.photo.selectedZoneId } };
-        });
-      },
-      selectZone: (id) => set((s) => ({ photo: { ...s.photo, selectedZoneId: id } })),
     }),
     {
       limit: 100,

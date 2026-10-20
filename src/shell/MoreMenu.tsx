@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { DropdownMenu } from 'radix-ui';
-import { Check, Ellipsis, Keyboard, Languages, RotateCcw, SunMoon } from 'lucide-react';
+import { Check, Compass, Ellipsis, Keyboard, Languages, RotateCcw, SunMoon } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
 import { ResetDialog } from '@/app/ResetDialog';
+import { navigate } from './route';
 import { useUi, type ThemePref } from '@/store/ui';
 import { Kbd } from '@/ui/primitives';
 
@@ -54,6 +55,17 @@ export function MoreMenu({ tone }: { tone?: 'light' } = {}) {
               ))}
             </DropdownMenu.RadioGroup>
             <DropdownMenu.Separator className="mx-2 my-1 h-px bg-line" />
+            <DropdownMenu.Item
+              className={row}
+              data-testid="start-tour"
+              onSelect={() => {
+                navigate('studio');
+                useUi.getState().setTourStep(0);
+              }}
+            >
+              <Compass size={15} />
+              {t('more.tour')}
+            </DropdownMenu.Item>
             <DropdownMenu.Item className={row} onSelect={() => useUi.getState().setHelpOpen(true)}>
               <Keyboard size={15} />
               <span className="flex-1">{t('more.shortcuts')}</span>

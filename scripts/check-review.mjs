@@ -1,32 +1,19 @@
 // scripts/check-review.mjs — regressions found by the phase 1 review: screen ⇄ mode stay in step,
 // home drops land on the device, a leftover video kind never hijacks Export, rail arrows don't nudge.
 import { openApp, check, done } from './lib/app.mjs';
-const { browser, page, errors } = await openApp({ hash: '#/photo' });
+const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const st = () =>
-  page.evaluate(() => {
-    const p = window.__mockuplab.project.getState();
-    return { screen: window.__mockuplab.ui.getState().screen, mode: p.mode, hash: location.pathname + location.hash, past: window.__mockuplab.project.temporal.getState().pastStates.length };
-  });
-// 1. opening a screen is not an undo step; mode changes elsewhere move the screen
+  page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, hash: location.pathname + location.hash, past: window.__mockuplab.project.temporal.getState().pastStates.length }));
+// 1. opening a screen is not an undo step; an old /photo address shows the home page
 let s = await st();
-check(s.past === 0, `direct load of #/photo leaves no undo step (${s.past})`);
-await page.evaluate(() => (location.hash = '#/studio'));
-await page.waitForTimeout(200);
+check(s.past === 0, `direct load of #/studio leaves no undo step (${s.past})`);
 await page.evaluate(() => (location.hash = '#/photo'));
 await page.waitForTimeout(200);
-await page.evaluate(() => window.__mockuplab.project.temporal.getState().undo());
-await page.waitForTimeout(200);
 s = await st();
-check(s.screen === 'photo' && s.mode === 'photo', `undo after switching screens keeps screen and mode in step (${s.screen}/${s.mode})`);
+check(s.screen === 'home' && s.hash === '/', `the photo mode is gone: #/photo shows the home page (${s.screen}/${s.hash})`);
 await page.evaluate(() => window.__mockuplab.persistence.newProject());
 await page.waitForTimeout(300);
-s = await st();
-check((s.screen === 'studio') === (s.mode === 'scene') && s.hash === (s.mode === 'scene' ? '/studio' : '/photo'), `New project: screen follows mode (${s.screen}/${s.mode}/${s.hash})`);
-await page.evaluate(() => window.__mockuplab.project.getState().setMode('photo'));
-await page.waitForTimeout(300);
-s = await st();
-check(s.screen === 'photo' && s.hash === '/photo', `a project switching to photo mode shows the photo screen (${s.screen}/${s.hash})`);
-// 2. a paste on home with a photo-mode project stays on home (pick a mode first) and leaves the photo project untouched
+// 2. a paste on home stays on home (pick a mode first)
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(200);
 await page.evaluate(async () => {
@@ -43,9 +30,10 @@ await page.waitForTimeout(1000);
 const landed = await page.evaluate(() => {
   const api = window.__mockuplab;
   const q = api.quick.state();
-  return { screen: api.ui.getState().screen, image: q.assetId && api.assetName(q.assetId), zones: api.project.getState().photo.zones.map((z) => z.surface.assetId && api.assetName(z.surface.assetId)) };
+  const scene = api.project.getState().items.flatMap((it) => Object.values(it.surfaces).map((b) => b.assetId && api.assetName(b.assetId)));
+  return { screen: api.ui.getState().screen, image: q.assetId && api.assetName(q.assetId), scene };
 });
-check(landed.screen === 'home' && landed.image !== 'home-paste.png' && !landed.zones.includes('home-paste.png'), `paste on home stays on home, nothing imported, photo zones untouched (${JSON.stringify(landed)})`);
+check(landed.screen === 'home' && landed.image !== 'home-paste.png' && !landed.scene.includes('home-paste.png'), `paste on home stays on home, nothing imported (${JSON.stringify(landed)})`);
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForTimeout(300);
 // 3. a leftover video kind does not hijack the image export

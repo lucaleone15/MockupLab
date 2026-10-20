@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { t } from '@/i18n';
-import { download, encodeCanvas, formatBytes, renderCarouselSlides, slugify } from '@/export/exportImage';
+import { download, formatBytes, renderCarouselSlides, slugify } from '@/export/exportImage';
 import { fileToAsset } from '@/lib/importImage';
 import { ZipWriter } from '@/lib/zip';
-import { composePhoto } from '@/photo/exportPhoto';
 import { settle } from '@/scene/exporter';
 import { loadImage, useAssets, type Asset } from '@/store/assets';
 import { selectSelectedItem, useProject } from '@/store/project';
@@ -16,7 +15,7 @@ import { carouselOf } from '@/export/settings';
 
 /*
  * Batch: several designs through the same style. Each image goes, in turn,
- * on the selected device's screen (or the selected photo zone), with the
+ * on the selected device's screen, with the
  * current look or each selected variant; every render lands in one ZIP.
  */
 
@@ -33,13 +32,9 @@ export const useBatch = create<BatchState>(() => ({ open: false, files: [], styl
 let run = 0;
 const ACCEPTED = /^image\/(png|jpe?g|webp|gif|avif|bmp|svg\+xml)$/;
 
-/** Where the batch images go: the selected device's active (or first) face, or the selected photo zone. */
+/** Where the batch images go: the selected device's active (or first) face. */
 export function batchTarget() {
   const p = useProject.getState();
-  if (p.mode === 'photo') {
-    const zone = p.photo.zones.find((z) => z.id === p.photo.selectedZoneId) ?? p.photo.zones[0];
-    return zone ? { kind: 'zone' as const, id: zone.id, name: zone.name } : null;
-  }
   const item = selectSelectedItem(p);
   if (!item) return null;
   const model = getModel(item.modelId);
@@ -47,7 +42,7 @@ export function batchTarget() {
   if (!slots.length) return null;
   const active = useUi.getState().activeSlot;
   const slot = active && slots.includes(active) ? active : slots[0];
-  return { kind: 'slot' as const, id: item.id, slot, model };
+  return { id: item.id, slot, model };
 }
 
 export const batch = {
@@ -109,22 +104,15 @@ export const batch = {
           for (const { asset, name } of assets) {
             if (token !== run) return;
             const p = useProject.getState();
-            if (target.kind === 'zone') {
-              p.setZoneSurface(target.id, { assetId: asset.id, align: 0 });
-              const { canvas } = await composePhoto();
-              const { blob, ext } = await encodeCanvas(canvas);
-              await zip.add(`${name}.${ext}`, blob);
-            } else {
-              p.setSurface(target.id, target.slot, { assetId: asset.id, align: 0 });
-              await loadImage(asset.url);
-              await settle(4);
-              const base = `${name}${style ? `-${slugify(style.label)}` : ''}`;
-              // a carousel: each design gives its slides
-              if (carouselOf(useProject.getState().export.ratio)) for (const f of await renderCarouselSlides()) await zip.add(`${base}-${f.name}`, f.blob);
-              else {
-                const { blob, ext } = await renderFull();
-                await zip.add(`${base}.${ext}`, blob);
-              }
+            p.setSurface(target.id, target.slot, { assetId: asset.id, align: 0 });
+            await loadImage(asset.url);
+            await settle(4);
+            const base = `${name}${style ? `-${slugify(style.label)}` : ''}`;
+            // a carousel: each design gives its slides
+            if (carouselOf(useProject.getState().export.ratio)) for (const f of await renderCarouselSlides()) await zip.add(`${base}-${f.name}`, f.blob);
+            else {
+              const { blob, ext } = await renderFull();
+              await zip.add(`${base}.${ext}`, blob);
             }
             done++;
             useBatch.setState({ job: { done, total } });

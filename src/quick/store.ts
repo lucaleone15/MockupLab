@@ -91,7 +91,7 @@ async function stagedItem(): Promise<SceneItem> {
 /** Puts a tile's scene in the (sandboxed or real) project. */
 async function stage(tile: QuickTile) {
   const item = await stagedItem();
-  useProject.setState({ mode: 'scene', items: [item], selectedId: item.id, overlays: [] });
+  useProject.setState({ items: [item], selectedId: item.id, overlays: [] });
   if (tile.look) {
     applyLook(tile.look);
     return;

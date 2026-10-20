@@ -36,15 +36,4 @@ for (const style of ['table-black-marble', 'table-oak-white', 'studio-light']) {
   await page.evaluate((s) => window.__mockuplab.pack.setStyle(s), style);
   await save('hero-' + style, () => page.evaluate(() => window.__mockuplab.pack.downloadOne('hero')));
 }
-// a design on a real photo (Photo)
-await page.evaluate(() => (location.hash = '#/photo'));
-await page.waitForTimeout(500);
-await page.evaluate(async () => {
-  const api = window.__mockuplab.photo;
-  await api.applyTemplate(api.templates[0]);
-  await api.loadSamples();
-});
-await page.waitForTimeout(2500);
-await page.keyboard.press('Meta+e');
-await save('photo-desk', () => page.getByTestId('export-sheet').getByRole('button', { name: /Télécharger/ }).click());
 await browser.close();

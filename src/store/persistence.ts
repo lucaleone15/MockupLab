@@ -1,6 +1,7 @@
 import { del, get, keys, set } from 'idb-keyval';
 import { t } from '@/i18n';
 import { getModel } from '@/models/registry';
+import { LAYOUTS, type Layout } from '@/lib/arrange';
 import { defaultParams } from '@/models/types';
 import { useAssets, type Asset } from './assets';
 import {
@@ -9,10 +10,7 @@ import {
   DEFAULT_DECOR,
   DEFAULT_GROUND,
   DEFAULT_SCREEN,
-  DEFAULT_SURFACE,
-  EMPTY_PHOTO,
   initialProject,
-  zoneDefaults,
   useProject,
   type Project,
   type ProjectState,
@@ -55,8 +53,6 @@ interface StoredAsset {
 export function snapshot(s: ProjectState = useProject.getState()): Project {
   return {
     version: 6,
-    mode: s.mode,
-    photo: s.photo,
     brand: s.brand,
     name: s.name,
     items: s.items,
@@ -68,6 +64,7 @@ export function snapshot(s: ProjectState = useProject.getState()): Project {
     camera: s.camera,
     ground: s.ground,
     export: s.export,
+    arrangement: s.arrangement,
   };
 }
 
@@ -78,8 +75,6 @@ export function referencedAssets(p: Project): Set<string> {
   if (p.background.kind === 'image' && p.background.assetId) ids.add(p.background.assetId);
   for (const o of p.overlays) if (o.kind === 'logo' && o.assetId) ids.add(o.assetId);
   for (const id of [p.brand?.logoAssetId, p.brand?.heading.assetId, p.brand?.body.assetId]) if (id) ids.add(id);
-  if (p.photo?.assetId) ids.add(p.photo.assetId);
-  for (const z of p.photo?.zones ?? []) if (z.surface.assetId) ids.add(z.surface.assetId);
   return ids;
 }
 
@@ -88,7 +83,7 @@ export function migrateProject(raw: unknown): Project {
   const base = initialProject();
   if (!raw || typeof raw !== 'object') return base;
   const r = raw as Partial<Project> & Record<string, unknown>;
-  const items = Array.isArray(r.items) && r.items.length
+  const items = Array.isArray(r.items)
     ? r.items.map((it) => {
         const model = getModel(it.modelId);
         return {
@@ -119,32 +114,12 @@ export function migrateProject(raw: unknown): Project {
     : undefined;
   const legacyWall = (decor.kind === 'table' ? oldWall : undefined) ?? (hanging?.params as Record<string, string> | undefined)?.wall;
   const background = r.background && JSON.stringify(r.background) !== JSON.stringify(base.background) ? r.background : legacyWall ? ({ kind: 'solid', color: legacyWall } as const) : (r.background ?? base.background);
-  const rawPhoto = (r.photo ?? {}) as Partial<Project['photo']>;
-  const zones = Array.isArray(rawPhoto.zones)
-    ? rawPhoto.zones
-        .filter((z) => Array.isArray(z?.corners) && z.corners.length === 4)
-        .map((z) => ({
-          ...zoneDefaults(z.kind === 'print' ? 'print' : 'screen'),
-          ...z,
-          name: z.name ?? '',
-          visible: z.visible ?? true,
-          aspect: z.aspect > 0 ? z.aspect : 1,
-          aspectAuto: z.aspectAuto ?? false,
-          surface: { ...DEFAULT_SURFACE, ...(z.surface ?? {}) },
-        }))
-    : [];
-  const photo = {
-    ...EMPTY_PHOTO,
-    ...rawPhoto,
-    zones,
-    selectedZoneId: zones.some((z) => z.id === rawPhoto.selectedZoneId) ? (rawPhoto.selectedZoneId as string) : (zones[0]?.id ?? null),
-  };
   if (!['none', 'sweep', 'podium', 'surface', 'table'].includes(decor.kind)) decor.kind = 'none';
   return {
     ...base,
     name: typeof r.name === 'string' ? r.name : base.name,
     items,
-    selectedId: items.some((it) => it.id === r.selectedId) ? (r.selectedId as string) : items[0].id,
+    selectedId: items.some((it) => it.id === r.selectedId) ? (r.selectedId as string) : (items[0]?.id ?? null),
     overlays: Array.isArray(r.overlays) ? r.overlays : [],
     background,
     decor,
@@ -153,8 +128,7 @@ export function migrateProject(raw: unknown): Project {
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
     export: { ...base.export, ...(r.export ?? {}), video: { ...base.export.video, ...(r.export?.video ?? {}) } },
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
-    mode: r.mode === 'photo' ? 'photo' : 'scene',
-    photo,
+    arrangement: LAYOUTS.includes(r.arrangement as Layout) ? (r.arrangement as Layout) : 'auto',
     version: 6,
   };
 }
@@ -202,7 +176,7 @@ async function migrateLegacy() {
 }
 
 function metaOf(id: string, project: Project, exportCount: number, hasThumb: boolean): ProjectMeta {
-  return { id, name: project.name, mode: project.mode, updatedAt: Date.now(), assets: [...referencedAssets(project)], exportCount, hasThumb };
+  return { id, name: project.name, updatedAt: Date.now(), assets: [...referencedAssets(project)], exportCount, hasThumb };
 }
 
 /** Loads one stored project into the editor and makes it the current one. */

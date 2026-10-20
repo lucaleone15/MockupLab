@@ -9,7 +9,6 @@ import { pickImages } from '@/lib/importImage';
 import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type SceneItem } from '@/store/project';
 import { ModelSwitcher } from './ModelSwitcher';
-import { photoOutputSize } from '@/photo/exportPhoto';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
@@ -362,9 +361,7 @@ export function ExportForm() {
   const setExport = useProject((s) => s.setExport);
   const transparent = useProject((s) => s.background.kind === 'transparent');
   const dof = useProject((s) => s.camera.dof);
-  const photoMode = useProject((s) => s.mode === 'photo');
-  useProject((s) => s.photo.assetId);
-  const { width, height } = photoMode ? photoOutputSize() : outputSize(settings);
+  const { width, height } = outputSize(settings);
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -377,15 +374,9 @@ export function ExportForm() {
           <Slider label={t('props.quality')} min={0.6} max={1} value={settings.quality} onChange={(quality) => setExport({ quality })} />
         </Field>
       )}
-      {photoMode ? (
-        <p className="text-[11.5px] leading-snug text-fg-subtle">{t('photo.export.native')}</p>
-      ) : (
-      <>
       <Field label={t('props.size')}>
         <Segmented value={settings.resolution} onChange={(resolution) => setExport({ resolution })} options={RESOLUTIONS.map((r) => ({ value: r.id, label: r.label }))} />
       </Field>
-      </>
-      )}
       <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-[12px] shadow-[0_0_0_1px_var(--line)_inset]">
         <span className="text-fg-muted">{t('props.output')}</span>
         <span className="tabular-nums">

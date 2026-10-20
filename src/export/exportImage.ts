@@ -3,7 +3,6 @@ import { getModel } from '@/models/registry';
 import { dither, paintBackground, prepareBackground } from '@/lib/background';
 import { paintOverlays, prepareOverlays } from '@/lib/overlays';
 import { renderFrame } from '@/scene/exporter';
-import { photoOutputSize, renderPhotoImage } from '@/photo/exportPhoto';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
@@ -99,13 +98,6 @@ export const slugify = (s: string) =>
 /** Renders the current composition and returns the encoded image. */
 export async function renderImage(): Promise<{ blob: Blob; width: number; height: number; filename: string }> {
   const project = useProject.getState();
-  if (project.mode === 'photo') {
-    const r = await renderPhotoImage();
-    if (r.blob.type === (FORMATS.find((f) => f.id === project.export.format) ?? FORMATS[0]).mime) return r;
-    toast.info(t('export.webpFallback'));
-    const blob = await toBlob(r.canvas, 'image/png', 1);
-    return { ...r, blob, filename: r.filename.replace(/\.[a-z]+$/, '.png') };
-  }
   const { width, height } = outputSize(project.export);
   const { canvas, tiles } = await composeScene({
     width,
@@ -160,14 +152,13 @@ export async function exportImage(kind: 'image' | 'video' = useProject.getState(
     return exportVideo();
   }
   const project = useProject.getState();
-  if (project.mode === 'photo' && !project.photo.assetId) return;
-  const { width, height } = project.mode === 'photo' ? photoOutputSize() : outputSize(project.export);
+  const { width, height } = outputSize(project.export);
   ui.setExporting(t('export.rendering', { w: width, h: height }));
   try {
     // Let the progress overlay paint before the (synchronous) GPU work.
     await nextFrame();
     await nextFrame();
-    const carousel = project.mode === 'scene' ? carouselOf(project.export.ratio) : null;
+    const carousel = carouselOf(project.export.ratio);
     if (carousel) {
       // an Instagram carousel: its slides, in posting order, in one ZIP
       const slides = await renderCarouselSlides();

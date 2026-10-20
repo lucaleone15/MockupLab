@@ -3,9 +3,8 @@ import { create } from 'zustand';
 export type Theme = 'dark' | 'light';
 /** What the user picked: follow the system, or force one theme. */
 export type ThemePref = 'auto' | 'light' | 'dark';
-export type Screen = 'home' | 'quick' | 'project' | 'studio' | 'photo';
+export type Screen = 'home' | 'quick' | 'project' | 'studio';
 export type StudioPage = 'devices' | 'settings' | 'ambiance' | 'decor' | 'light' | 'camera' | 'text' | 'brand' | 'video';
-export type PhotoPage = 'photos' | 'zones' | 'design' | 'render' | 'video';
 
 interface UiState {
   /** The theme in use (resolved from the preference and the system). */
@@ -17,8 +16,6 @@ interface UiState {
   setScreen: (s: Screen) => void;
   studioPage: StudioPage;
   setStudioPage: (p: StudioPage) => void;
-  photoPage: PhotoPage;
-  setPhotoPage: (p: PhotoPage) => void;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
   allProjectsOpen: boolean;
@@ -38,9 +35,6 @@ interface UiState {
   /** An animation preview is playing in the viewport. */
   previewing: boolean;
   setPreviewing: (v: boolean) => void;
-  /** Photo mode preview zoom (1 = none). */
-  previewZoom: number;
-  setPreviewZoom: (v: number) => void;
   dragging: boolean;
   setDragging: (v: boolean) => void;
   /** Selected text / logo layer (null: the selected device has focus). */
@@ -51,18 +45,12 @@ interface UiState {
   setActiveSlot: (slot: string | null) => void;
   helpOpen: boolean;
   setHelpOpen: (v: boolean) => void;
+  /** Step of the first-visit guide being shown, null when closed. */
+  tourStep: number | null;
+  setTourStep: (step: number | null) => void;
   /** Last successful autosave (ms), null before the first one. */
   savedAt: number | null;
   setSavedAt: (t: number) => void;
-  /** Photo mode: editing zones, or clicking the four corners of a new one. */
-  photoTool: 'select' | 'place';
-  setPhotoTool: (tool: 'select' | 'place') => void;
-  /** Photo mode: corner of the selected zone moved by the arrow keys (0..3). */
-  activeCorner: number | null;
-  setActiveCorner: (i: number | null) => void;
-  /** Photo mode: the suggestions of the last detection, shown on the photo to pick from. */
-  suggestions: { zoneId: string; candidates: [number, number][][]; index: number } | null;
-  setSuggestions: (s: UiState['suggestions']) => void;
 }
 
 const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
@@ -100,8 +88,6 @@ export const useUi = create<UiState>((set) => ({
   setScreen: (screen) => set({ screen }),
   studioPage: 'devices',
   setStudioPage: (studioPage) => set({ studioPage }),
-  photoPage: 'photos',
-  setPhotoPage: (photoPage) => set({ photoPage }),
   exportOpen: false,
   setExportOpen: (exportOpen) => set({ exportOpen }),
   allProjectsOpen: false,
@@ -116,8 +102,6 @@ export const useUi = create<UiState>((set) => ({
   setCancelExport: (cancelExport) => set({ cancelExport }),
   previewing: false,
   setPreviewing: (previewing) => set({ previewing }),
-  previewZoom: 1,
-  setPreviewZoom: (previewZoom) => set({ previewZoom }),
   dragging: false,
   setDragging: (dragging) => set({ dragging }),
   selectedOverlayId: null,
@@ -126,14 +110,10 @@ export const useUi = create<UiState>((set) => ({
   setActiveSlot: (activeSlot) => set({ activeSlot }),
   helpOpen: false,
   setHelpOpen: (helpOpen) => set({ helpOpen }),
+  tourStep: null,
+  setTourStep: (tourStep) => set({ tourStep }),
   savedAt: null,
   setSavedAt: (savedAt) => set({ savedAt }),
-  photoTool: 'select',
-  setPhotoTool: (photoTool) => set({ photoTool }),
-  activeCorner: null,
-  setActiveCorner: (activeCorner) => set({ activeCorner }),
-  suggestions: null,
-  setSuggestions: (suggestions) => set({ suggestions }),
 }));
 
 // Auto: follow the system theme live.

@@ -17,7 +17,6 @@ export function ResetDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     onOpenChange(false);
     toast.success(t('reset.done', { key: `${MOD}Z` }));
   };
-  const photoMode = useProject((s) => s.mode === 'photo');
   const choice = 'flex w-full items-start gap-3 rounded-xl bg-surface-2 p-3 text-left shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color] hover:bg-surface-3 hover:shadow-[0_0_0_1px_var(--line-strong)_inset]';
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -32,11 +31,11 @@ export function ResetDialog({ open, onOpenChange }: { open: boolean; onOpenChang
           </div>
           <Dialog.Description className="sr-only">{t('reset.title')}</Dialog.Description>
           <div className="flex flex-col gap-2">
-            <button type="button" className={choice} onClick={() => run(() => (photoMode ? useProject.getState().resetPhoto() : useProject.getState().resetScene()))}>
+            <button type="button" className={choice} onClick={() => run(() => useProject.getState().resetScene())}>
               <RotateCcw size={16} className="mt-0.5 shrink-0 text-accent" />
               <span>
-                <span className="block text-[13px] font-semibold">{t(photoMode ? 'reset.photo' : 'reset.scene')}</span>
-                <span className="mt-0.5 block text-[12px] leading-snug text-fg-muted">{t(photoMode ? 'reset.photoHint' : 'reset.sceneHint')}</span>
+                <span className="block text-[13px] font-semibold">{t('reset.scene')}</span>
+                <span className="mt-0.5 block text-[12px] leading-snug text-fg-muted">{t('reset.sceneHint')}</span>
               </span>
             </button>
             <button type="button" className={choice} onClick={() => run(() => useProject.getState().resetAll())}>

@@ -96,7 +96,7 @@ export function heroFiles(files = get().files): PackFile[] {
 function stage(target: 'hero' | string, style = get().style) {
   const files = target === 'hero' ? heroFiles() : get().files.filter((f) => f.id === target);
   const items = files.map((f) => deviceFor(f, target === 'hero'));
-  useProject.setState({ mode: 'scene', items, selectedId: items[0]?.id ?? null, overlays: [] });
+  useProject.setState({ items, selectedId: items[0]?.id ?? null, overlays: [] });
   const preset = SCENE_PRESETS.find((p) => p.id === style)!;
   applyScenePreset(preset);
   const color = sceneColor(target);
@@ -107,7 +107,7 @@ function stage(target: 'hero' | string, style = get().style) {
     // a painted podium takes the palette's second colour
     if (p.decor.kind === 'podium' && p.decor.podiumFinish === 'paint') p.setDecor({ color: palette?.[1] ?? color });
   }
-  if (items.length > 1) useProject.getState().arrange();
+  if (items.length > 1) useProject.getState().arrange('auto');
 }
 
 /** The pack colour of a scene: its own, the palette's next one (varied) or the first one; none without a palette. */

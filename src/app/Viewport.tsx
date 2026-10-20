@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ImagePlus, Sparkles } from 'lucide-react';
+import { ImagePlus, Plus, Smartphone, Sparkles } from 'lucide-react';
 import { useT } from '@/i18n';
 import { carouselOf, ratioValue, socialOf } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
@@ -153,6 +153,30 @@ function EmptyHint() {
   );
 }
 
+/** No device in the scene: say so, and lead to the Devices page. */
+function EmptyScene() {
+  const { t } = useT();
+  return (
+    <div className="absolute inset-0 grid place-items-center p-6 animate-[fade-in_300ms_ease-out]" data-testid="empty-scene">
+      <div className="flex max-w-[300px] flex-col items-center gap-3 rounded-2xl border border-white/10 bg-black/55 px-6 py-5 text-center text-white shadow-2xl backdrop-blur-xl">
+        <Smartphone size={22} className="text-white/60" />
+        <div className="flex flex-col gap-1">
+          <div className="text-[15px] font-semibold">{t('stage.emptyScene')}</div>
+          <div className="text-[12.5px] leading-snug text-white/70">{t('stage.emptySceneHint')}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => useUi.getState().setStudioPage('devices')}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-white px-3.5 text-[13px] font-medium text-black transition-colors hover:bg-white/85"
+        >
+          <Plus size={14} />
+          {t('stage.addDevice')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function DropOverlay() {
   const { t } = useT();
   const dragging = useUi((s) => s.dragging);
@@ -196,6 +220,7 @@ export function ExportOverlay() {
 
 export function Viewport() {
   const ratio = useProject((s) => s.export.ratio);
+  const empty = useProject((s) => s.items.length === 0);
   const hasImage = useProject((s) => {
     const it = selectSelectedItem(s);
     // objects without faces (brand objects) never need an image
@@ -220,7 +245,7 @@ export function Viewport() {
         <OverlayLayer width={width} height={height} frame={frame} />
         <SafeZones />
         <CarouselCuts />
-        {!hasImage && <EmptyHint />}
+        {empty ? <EmptyScene /> : !hasImage && <EmptyHint />}
       </div>
 
       <DropOverlay />

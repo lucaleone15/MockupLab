@@ -4,11 +4,6 @@ const { browser, page } = await openApp({ hash: '#/studio', colorScheme: scheme 
 await page.getByRole('button', { name: 'Essayer un exemple' }).click();
 await page.waitForTimeout(7000);
 await page.evaluate(() => window.__mockuplab.library.duplicate(window.__mockuplab.library.state().currentId));
-await page.evaluate(() => (location.hash = '#/photo'));
-await page.evaluate(async () => { await window.__mockuplab.library.create(); });
-await page.evaluate(() => (location.hash = '#/photo'));
-await page.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[2]));
-await page.waitForTimeout(7000);
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(800);
 await page.screenshot({ path: out, fullPage: true });

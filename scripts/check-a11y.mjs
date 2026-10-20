@@ -39,15 +39,6 @@ await p.getByTestId('top-export').click();
 await p.waitForTimeout(300);
 report.push(await sweep('Exporter'));
 await p.keyboard.press('Escape');
-await p.goto('http://localhost:5173/#/photo');
-await p.waitForTimeout(500);
-await p.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[0]));
-await p.waitForTimeout(800);
-for (const tab of ['Photos', 'Zones', 'Design', 'Rendu', 'Vidéo']) {
-  await p.getByTestId('photo-rail').getByRole('tab', { name: tab, exact: true }).click();
-  await p.waitForTimeout(300);
-  report.push(await sweep(`Photo · ${tab}`));
-}
 await p.goto('http://localhost:5173/#/rapide');
 await p.waitForTimeout(2500);
 report.push(await sweep('Rapide'));

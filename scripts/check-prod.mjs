@@ -1,5 +1,5 @@
 // The production build served under /MockupLab/ (as on GitHub Pages): loads, finds every asset,
-// renders a table set, a photo template and exports, with no failed request.
+// renders a table set and exports, with no failed request.
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 mkdirSync('out/prod', { recursive: true });
@@ -21,12 +21,6 @@ await p.getByTestId('studio-rail').getByRole('tab', { name: 'Ambiance', exact: t
 await p.getByRole('button', { name: /Chêne · mur blanc/ }).click();
 await p.waitForTimeout(3500);
 await p.screenshot({ path: 'out/prod/table.png' });
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Photo' }).click();
-await p.getByTestId('photo-rail').getByRole('tab', { name: 'Photos', exact: true }).click();
-await p.getByTestId('photo-library').getByRole('button', { name: /Tablette et téléphone/ }).click();
-await p.waitForTimeout(2500);
-await p.screenshot({ path: 'out/prod/photo.png' });
-await p.getByTestId('mode-switch').getByRole('radio', { name: 'Studio' }).click();
 await p.getByTestId('top-export').click();
 await p.getByTestId('export-sheet').getByRole('radio', { name: '1080p', exact: true }).click();
 const t1 = Date.now();

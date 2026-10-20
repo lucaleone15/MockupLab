@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useT } from '@/i18n';
 import { CATEGORY_KEYS, ModelCard, UserModels } from '@/app/LibraryPanel';
-import { SceneItems } from '@/app/panels/CompositionSection';
+import { Compositions, SceneItems } from '@/app/panels/CompositionSection';
 import { DeviceParams } from '@/app/PropertiesPanel';
 import { getModel, modelsByCategory } from '@/models/registry';
 import type { DeviceCategory } from '@/models/types';
@@ -25,6 +25,7 @@ export function DevicesPage() {
           <DeviceParams item={sized} only={['fit', 'format']} />
         </Section>
       )}
+      <Compositions />
       <Section title={t('devices.library')}>
         <div className="flex flex-wrap gap-1.5" data-testid="library-tabs">
           {groups.map(([c]) => (

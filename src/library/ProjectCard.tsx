@@ -1,5 +1,5 @@
 import { DropdownMenu } from 'radix-ui';
-import { Camera, Copy, Ellipsis, PencilLine, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Copy, Ellipsis, PencilLine, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
 import { library } from '@/store/persistence';
 import { cx } from '@/ui/primitives';
@@ -14,15 +14,12 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
   const lang = useLang((s) => s.lang);
   const thumb = useLibrary((s) => s.thumbs[meta.id]);
   const name = meta.name === 'Untitled' || !meta.name ? t('project.untitled') : meta.name;
-  const photo = meta.mode === 'photo';
   return (
     <div data-testid="project-card" className="glass group relative flex flex-col overflow-hidden rounded-[16px]">
       <button type="button" aria-label={`${t('home.open')} ${name}`} onClick={() => void openProject(meta)} className="flex flex-col text-left">
         <span className={cx('grid aspect-[16/10] place-items-center overflow-hidden bg-surface-2 text-fg-subtle')}>
           {thumb ? (
             <img src={thumb} alt="" className="h-full w-full object-cover transition-transform duration-300 ease-[var(--ease-out-quart)] group-hover:scale-[1.03]" draggable={false} />
-          ) : photo ? (
-            <Camera size={26} strokeWidth={1.5} />
           ) : (
             <SlidersHorizontal size={26} strokeWidth={1.5} />
           )}
@@ -30,7 +27,7 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
         <span className="flex flex-col gap-0.5 px-3.5 pb-3 pt-2.5">
           <span className="truncate text-[14px] font-semibold">{name}</span>
           <span className="truncate text-[12.5px] text-fg-muted">
-            {t(photo ? 'screen.photo' : 'screen.studio')}, {relativeTime(meta.updatedAt, lang)}
+            {t('screen.studio')}, {relativeTime(meta.updatedAt, lang)}
             {meta.exportCount > 0 && `, ${t('library.exports', { n: meta.exportCount })}`}
           </span>
         </span>

@@ -165,26 +165,28 @@ export function BackgroundEditor({ part }: { part: 'basic' | 'details' }) {
     else setBackground({ kind: 'transparent' });
   };
 
+  // the basics: ready-made backgrounds, the kind of background and its colour; the rest is fine-tuning
   if (part === 'basic') {
     return (
-      <div className="grid grid-cols-6 gap-1.5">
-        {BG_PRESETS.map((p, i) => (
-          <Thumb key={i} bg={p} label={BG_PRESET_NAMES[i] ? tr(BG_PRESET_NAMES[i]) : `${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-6 gap-1.5">
+          {BG_PRESETS.map((p, i) => (
+            <Thumb key={i} bg={p} label={BG_PRESET_NAMES[i] ? tr(BG_PRESET_NAMES[i]) : `${t('bg.presets')} ${i + 1}`} active={JSON.stringify(p) === JSON.stringify(bg)} onClick={() => setBackground(p)} />
+          ))}
+        </div>
+        <Segmented
+          size="sm"
+          value={bg.kind}
+          onChange={switchKind}
+          options={(['solid', 'gradient', 'pattern', 'image', 'transparent'] as const).map((k) => ({ value: k, label: t(`bg.kind.${k}` as I18nKey) }))}
+        />
+        {bg.kind === 'solid' && <ColorField label={t('props.bg.color')} value={bg.color} onChange={(color) => setBackground({ ...bg, color })} />}
+      </>
     );
   }
 
   return (
     <>
-      <Segmented
-        size="sm"
-        value={bg.kind}
-        onChange={switchKind}
-        options={(['solid', 'gradient', 'pattern', 'image', 'transparent'] as const).map((k) => ({ value: k, label: t(`bg.kind.${k}` as I18nKey) }))}
-      />
-
-      {bg.kind === 'solid' && <ColorField label={t('props.bg.color')} value={bg.color} onChange={(color) => setBackground({ ...bg, color })} />}
 
       {bg.kind === 'gradient' && (
         <>

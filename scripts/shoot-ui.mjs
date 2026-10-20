@@ -23,16 +23,6 @@ for (const scheme of ['light', 'dark']) {
   await page.waitForTimeout(300);
   await shot('more-menu');
   await page.keyboard.press('Escape');
-  await page.evaluate(() => (location.hash = '#/photo'));
-  await page.waitForTimeout(400);
-  await shot('photo-empty');
-  await page.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[0]));
-  await page.waitForTimeout(1500);
-  for (const tab of ['Photos', 'Zones', 'Design', 'Rendu']) {
-    await page.getByTestId('photo-rail').getByRole('tab', { name: tab, exact: true }).click();
-    await page.waitForTimeout(400);
-    await shot(`photo-${tab}`);
-  }
   await page.evaluate(() => (location.hash = '#/rapide'));
   await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 8, null, { timeout: 120000 }).catch(() => {});
   await shot('quick');

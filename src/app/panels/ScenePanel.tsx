@@ -114,7 +114,7 @@ export function DecorSection() {
   const setDecor = useProject((s) => s.setDecor);
   const setLighting = useProject((s) => s.setLighting);
   const setCamera = useProject((s) => s.setCamera);
-  const more = { more: t('ui.more'), less: t('ui.less') };
+  const more = { more: t('ui.more') };
   const chooseAmbience = (id: AmbienceId) => {
     setDecor({ ambience: id });
     setLighting({ exposure: AMBIENCES[id].exposure, environment: AMBIENCES[id].environment });
@@ -212,17 +212,29 @@ export function DecorSection() {
 
 export function BackgroundSection() {
   const { t } = useT();
+  // a plain colour or no background has nothing more to tune
+  const tunable = useProject((s) => s.background.kind !== 'solid' && s.background.kind !== 'transparent');
   return (
     <Section title={t('bg.title')} defaultOpen={false}>
       <BackgroundEditor part="basic" />
-      <Advanced more={t('ui.more')} less={t('ui.less')}>
-        <BackgroundEditor part="details" />
-      </Advanced>
+      {tunable && (
+        <Advanced more={t('ui.more')}>
+          <BackgroundEditor part="details" />
+        </Advanced>
+      )}
     </Section>
   );
 }
 
 /* ------------------------------------------------------------ light */
+
+/** Where the key light comes from, in plain words: the azimuth and height it sets. */
+const LIGHT_FROM = {
+  top: { azimuth: -20, elevation: 78 },
+  side: { azimuth: -78, elevation: 28 },
+  front: { azimuth: -8, elevation: 38 },
+} as const;
+type LightFrom = keyof typeof LIGHT_FROM;
 
 export function LightSection() {
   const { t, tr } = useT();
@@ -230,14 +242,18 @@ export function LightSection() {
   const inPlace = useProject((s) => s.decor.kind === 'table');
   const setLighting = useProject((s) => s.setLighting);
   const applyLightPreset = useProject((s) => s.applyLightPreset);
+  const more = t('ui.more');
+  const from = (Object.keys(LIGHT_FROM) as LightFrom[]).find(
+    (k) => Math.abs(LIGHT_FROM[k].azimuth - light.azimuth) < 4 && Math.abs(LIGHT_FROM[k].elevation - light.elevation) < 4,
+  );
   const intensity = (
     <Field label={t('light.intensity')} value={light.intensity.toFixed(2)}>
       <Slider label={t('light.intensity')} min={0} max={3} value={light.intensity} onChange={(intensity) => setLighting({ intensity })} />
     </Field>
   );
-  const exposure = (
-    <Field label={t('light.exposure')} value={light.exposure.toFixed(2)}>
-      <Slider label={t('light.exposure')} min={0.5} max={1.8} value={light.exposure} onChange={(exposure) => setLighting({ exposure })} />
+  const brightness = (
+    <Field label={t('light.brightness')} value={`${Math.round(light.exposure * 100)} %`}>
+      <Slider label={t('light.brightness')} min={0.5} max={1.8} value={light.exposure} onChange={(exposure) => setLighting({ exposure })} />
     </Field>
   );
   const environment = (
@@ -250,8 +266,8 @@ export function LightSection() {
       {inPlace ? (
         <>
           <p className="text-[11.5px] leading-snug text-fg-subtle">{t('light.placeNote')}</p>
-          {exposure}
-          <Advanced more={t('ui.more')} less={t('ui.less')}>
+          {brightness}
+          <Advanced more={more}>
             {intensity}
             {environment}
           </Advanced>
@@ -268,7 +284,15 @@ export function LightSection() {
               </Tooltip>
             ))}
           </div>
-          <Advanced more={t('ui.more')} less={t('ui.less')}>
+          <Field label={t('light.from')}>
+            <Segmented
+              value={from ?? ('' as LightFrom)}
+              onChange={(k: LightFrom) => setLighting(LIGHT_FROM[k])}
+              options={(Object.keys(LIGHT_FROM) as LightFrom[]).map((k) => ({ value: k, label: t(`light.from.${k}` as I18nKey) }))}
+            />
+          </Field>
+          {brightness}
+          <Advanced more={more}>
             <div className="grid grid-cols-[1fr_auto] items-end gap-2">
               {intensity}
               <label className="relative size-8 cursor-pointer overflow-hidden rounded-lg shadow-[0_0_0_1px_var(--line-strong)_inset]" style={{ background: light.color }} title={t('light.color')}>
@@ -285,7 +309,6 @@ export function LightSection() {
               <Slider label={t('light.softness')} value={light.softness} onChange={(softness) => setLighting({ softness })} />
             </Field>
             {environment}
-            {exposure}
           </Advanced>
         </>
       )}
@@ -336,7 +359,7 @@ export function CameraSection() {
         <span className="text-fg-muted">{t('camera.dof')}</span>
         <Switch checked={cam.dof} onChange={(dof) => setCamera({ dof })} label={t('camera.dof')} />
       </label>
-      <Advanced more={t('ui.more')} less={t('ui.less')}>
+      <Advanced more={t('ui.more')}>
         <Field label={t('camera.shift')} value={`${Math.round((cam.shift ?? 0) * 100)} %`}>
           <Slider label={t('camera.shift')} min={-0.35} max={0.35} step={0.005} value={cam.shift ?? 0} onChange={(shift) => setCamera({ shift })} />
         </Field>
@@ -382,7 +405,7 @@ export function GroundSection() {
         <span className="text-fg-muted">{t('ground.reflection')}</span>
         <Switch checked={ground.reflection} onChange={(reflection) => setGround({ reflection })} label={t('ground.reflection')} />
       </label>
-      <Advanced more={t('ui.more')} less={t('ui.less')}>
+      <Advanced more={t('ui.more')}>
         {ground.shadow !== 'none' && (
           <Field label={t('ground.opacity')} value={`${Math.round(ground.shadowOpacity * 100)} %`}>
             <Slider label={t('ground.opacity')} value={ground.shadowOpacity} onChange={(shadowOpacity) => setGround({ shadowOpacity })} />

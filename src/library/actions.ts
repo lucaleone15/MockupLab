@@ -7,7 +7,7 @@ import { useLibrary, type ProjectMeta } from './store';
 export async function openProject(meta: ProjectMeta) {
   if (useLibrary.getState().currentId !== meta.id) await library.open(meta.id);
   useUi.getState().setAllProjectsOpen(false);
-  navigate(meta.mode === 'photo' ? 'photo' : 'studio');
+  navigate('studio');
 }
 
 /** "3 h ago" in the interface language. */

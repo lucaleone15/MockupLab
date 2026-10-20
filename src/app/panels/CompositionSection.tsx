@@ -1,13 +1,16 @@
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { AppWindow, Copy, Eye, EyeOff, LayoutGrid, Laptop, Lock, LockOpen, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
 import * as THREE from 'three';
-import { useT } from '@/i18n';
+import { useT, type I18nKey } from '@/i18n';
+import { LAYOUTS, footprint, layoutItems, type Layout } from '@/lib/arrange';
+import { COMPOSITIONS, type Composition } from '@/lib/compositions';
+import { carouselOf } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import type { DeviceCategory } from '@/models/types';
 import { cameraState } from '@/scene/camera';
-import { useProject } from '@/store/project';
+import { makeItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { Button, Field, Section, Slider, Tooltip, cx } from '@/ui/primitives';
+import { Button, Field, Section, Segmented, Slider, Tooltip, cx } from '@/ui/primitives';
 
 const ICONS: Partial<Record<DeviceCategory, ReactNode>> = {
   phone: <Smartphone size={14} />,
@@ -70,10 +73,17 @@ export function SceneItems() {
   const duplicateItem = useProject((s) => s.duplicateItem);
   const removeItem = useProject((s) => s.removeItem);
   const arrange = useProject((s) => s.arrange);
+  const arrangement = useProject((s) => s.arrangement);
+  const carousel = useProject((s) => !!carouselOf(s.export.ratio));
   const resetView = useUi((s) => s.resetView);
+  const lay = (layout?: Layout) => {
+    arrange(layout);
+    resetView();
+  };
 
   return (
     <Section title={t('devices.inScene')} aside={<span className="text-[12px] tabular-nums text-fg-subtle">{items.length}</span>}>
+      {!items.length && <p className="text-[12.5px] leading-snug text-fg-muted">{t('devices.empty')}</p>}
       <ul className="-mx-1 flex flex-col gap-0.5">
         {items.map((it, i) => {
           const model = getModel(it.modelId);
@@ -103,28 +113,31 @@ export function SceneItems() {
                   <RowButton label={t('comp.duplicate')} onClick={() => duplicateItem(it.id)}>
                     <Copy size={13} />
                   </RowButton>
-                  {items.length > 1 && (
-                    <RowButton label={t('comp.delete')} onClick={() => removeItem(it.id)}>
-                      <Trash2 size={13} />
-                    </RowButton>
-                  )}
+                  <RowButton label={t('comp.delete')} onClick={() => removeItem(it.id)}>
+                    <Trash2 size={13} />
+                  </RowButton>
                 </span>
               </div>
             </li>
           );
         })}
       </ul>
-      <Button
-        size="sm"
-        disabled={items.length < 2}
-        onClick={() => {
-          arrange();
-          resetView();
-        }}
-      >
-        <LayoutGrid size={13} />
-        {t('comp.arrange')}
-      </Button>
+      {items.length > 1 &&
+        (carousel ? (
+          <Button size="sm" onClick={() => lay()}>
+            <LayoutGrid size={13} />
+            {t('comp.arrange')}
+          </Button>
+        ) : (
+          <Field label={t('comp.layout')}>
+            <Segmented
+              size="sm"
+              value={arrangement}
+              onChange={(layout: Layout) => lay(layout)}
+              options={LAYOUTS.map((l) => ({ value: l, label: t(`comp.layout.${l}` as I18nKey) }))}
+            />
+          </Field>
+        ))}
     </Section>
   );
 }
@@ -161,6 +174,73 @@ export function Placement() {
             </div>
           )}
           <p className="text-[11px] leading-snug text-fg-subtle">{t('comp.dragHint')}</p>
+    </Section>
+  );
+}
+
+/* ------------------------------------------------------------ ready-made scenes */
+
+/** A small drawing of a composition: its devices seen from the front and a little above, back ones first. */
+function CompositionThumb({ composition }: { composition: Composition }) {
+  const shapes = useMemo(() => {
+    const items = layoutItems(composition.models.map((id) => makeItem(getModel(id))), composition.layout);
+    const boxes = items
+      .map((it) => {
+        const f = footprint(it);
+        const w = Math.max(f.w * Math.abs(Math.cos(it.rotation[1])), f.w * 0.35);
+        return { x: it.position[0] - it.position[2] * 0.2, base: -it.position[2] * 0.3, w, h: f.h, z: it.position[2] };
+      })
+      .sort((a, b) => a.z - b.z);
+    const minX = Math.min(...boxes.map((b) => b.x - b.w / 2));
+    const maxX = Math.max(...boxes.map((b) => b.x + b.w / 2));
+    const top = Math.max(...boxes.map((b) => b.base + b.h));
+    const bottom = Math.min(...boxes.map((b) => b.base));
+    return { boxes, view: `${minX - 4} ${-top - 4} ${maxX - minX + 8} ${top - bottom + 8}` };
+  }, [composition]);
+  return (
+    <svg viewBox={shapes.view} className="h-[54px] w-full" preserveAspectRatio="xMidYMid meet" aria-hidden>
+      {shapes.boxes.map((b, i) => (
+        <rect
+          key={i}
+          x={b.x - b.w / 2}
+          y={-(b.base + b.h)}
+          width={b.w}
+          height={b.h}
+          rx={Math.min(b.w, b.h) * 0.12}
+          className="fill-surface-4 stroke-fg-muted"
+          strokeWidth={0.8}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </svg>
+  );
+}
+
+/** Scenes with several devices already laid out: pick one, then change the images. */
+export function Compositions() {
+  const { t, tr } = useT();
+  const setComposition = useProject((s) => s.setComposition);
+  const resetView = useUi((s) => s.resetView);
+  return (
+    <Section title={t('devices.compositions')}>
+      <div className="grid grid-cols-2 gap-2" data-testid="compositions">
+        {COMPOSITIONS.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            data-testid={`composition-${c.id}`}
+            onClick={() => {
+              setComposition(c.models, c.layout);
+              resetView();
+            }}
+            className="flex flex-col items-center gap-1.5 rounded-[12px] bg-surface-2 px-2 pb-2 pt-2.5 text-[12px] leading-tight text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color,color,transform] duration-150 hover:bg-surface-3 hover:text-fg active:scale-[0.97]"
+          >
+            <CompositionThumb composition={c} />
+            <span className="text-center">{tr(c.name)}</span>
+          </button>
+        ))}
+      </div>
+      <p className="text-[12px] leading-snug text-fg-muted">{t('devices.compositionsHint')}</p>
     </Section>
   );
 }

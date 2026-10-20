@@ -12,9 +12,9 @@ import { cx } from '@/ui/primitives';
 const shot = (name: string) => `${import.meta.env.BASE_URL}showcase/${name}.webp`;
 
 /** Real mock-ups rendered by MockupLab from the sample designs (scripts/make-showcase.mjs). */
-const HERO = ['hero-table-black-marble', 'laptop-marble', 'phone-aurora', 'hero-table-oak-white', 'photo-desk'];
-const STRIP = ['phone-oak', 'hero-studio-light', 'laptop-concrete', 'phone-terrazzo', 'photo-desk', 'phone-aurora', 'hero-table-oak-white', 'laptop-marble'];
-const MODE_SHOTS: Record<Screen, string> = { home: '', quick: 'phone-oak', project: 'hero-studio-light', studio: 'laptop-concrete', photo: 'photo-desk' };
+const HERO = ['hero-table-black-marble', 'laptop-marble', 'phone-aurora', 'hero-table-oak-white'];
+const STRIP = ['phone-oak', 'hero-studio-light', 'laptop-concrete', 'phone-terrazzo', 'phone-aurora', 'hero-table-oak-white', 'laptop-marble'];
+const MODE_SHOTS: Record<Screen, string> = { home: '', quick: 'phone-oak', project: 'hero-studio-light', studio: 'laptop-concrete' };
 
 /** Full-bleed slideshow of real mock-ups (still under reduced motion). */
 function HeroSlides() {

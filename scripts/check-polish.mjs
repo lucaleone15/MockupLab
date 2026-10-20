@@ -63,7 +63,7 @@ check((await page.getByText('Couleur du mur').count()) === 0 && (await page.getB
 await page.getByTestId('decor-kinds').getByRole('button', { name: 'Aucune' }).click();
 check(mono.length === 0, `no monospace text in the interface (${[...new Set(mono)].slice(0, 6).join(', ')})`);
 // every mode says what it is for while it is empty
-for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/projet', 'project'], ['/photo', 'photo']]) {
+for (const [path, screen] of [['/studio', 'studio'], ['/rapide', 'quick'], ['/projet', 'project']]) {
   await page.evaluate((p) => { history.pushState(null, '', p); dispatchEvent(new PopStateEvent('popstate')); }, path);
   await page.waitForTimeout(500);
   check(await page.getByTestId('mode-role').first().isVisible().catch(() => false), `${screen}: empty state says what the mode is for`);
@@ -82,12 +82,6 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(400);
 check(!(await page.getByTestId('mode-role').first().isVisible().catch(() => false)), 'Studio: no role line over a scene that already has a design');
-// photo mode: once a photo is in, the hint offers to browse for the design
-await page.evaluate(() => { history.pushState(null, '', '/photo'); dispatchEvent(new PopStateEvent('popstate')); });
-await page.waitForTimeout(300);
-await page.evaluate(async () => window.__mockuplab.photo.applyTemplate(window.__mockuplab.photo.templates[0]));
-await page.waitForTimeout(2500);
-check(await page.getByRole('button', { name: 'parcourir', exact: true }).isVisible().catch(() => false), 'photo: the design hint has a “browse” button');
 // the sample brand says it is a sample, and can be cleared in one click
 await page.evaluate(() => { history.pushState(null, '', '/projet'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(500);

@@ -69,6 +69,63 @@ export function arrangeItems(input: SceneItem[]): SceneItem[] {
   return items.map((it) => out.get(it.id)!);
 }
 
+/** How several devices are laid out: balanced around the largest, side by side, in a fan, in a staircase. */
+export type Layout = 'auto' | 'row' | 'fan' | 'cascade';
+export const LAYOUTS: Layout[] = ['auto', 'row', 'fan', 'cascade'];
+
+/**
+ * Lays the visible devices out in one of the compositions; hidden ones stay
+ * where they are. The line of devices faces the default 3/4 camera (the
+ * largest device's), so it reads evenly in the picture, and each device keeps
+ * most of its own 3/4 angle. Spacing follows the devices' average width.
+ * "Balanced" puts the largest device at the back (see `arrangeItems`), or
+ * draws a gentle arc when the devices are all about the same size.
+ */
+export function layoutItems(items: SceneItem[], layout: Layout): SceneItem[] {
+  const visible = items.filter((it) => it.visible);
+  if (visible.length < 2) return arrangeItems(items);
+  const sized = visible.map((it) => ({ it, f: footprint(it), yaw: getModel(it.modelId).yaw ?? -0.3 }));
+  const areas = sized.map((s) => s.f.w * s.f.h);
+  const alike = Math.max(...areas) / Math.min(...areas) < 1.8;
+  if (layout === 'auto' && !alike) return arrangeItems(items);
+  const n = sized.length;
+  const avgW = sized.reduce((sum, s) => sum + s.f.w, 0) / n;
+  const maxD = Math.max(...sized.map((s) => s.f.d));
+  const gap = Math.max(2, avgW * 0.22);
+  // the default camera's side: lay the devices across its line of sight
+  const lead = sized.reduce((a, b) => (b.f.w * b.f.h > a.f.w * a.f.h ? b : a));
+  const off = getModel(lead.it.modelId).view.offset;
+  const theta = Math.atan2(off[0], off[2]);
+  const out = new Map<string, SceneItem>();
+  /** `along` the line (to the right in the picture), `back` away from the camera. */
+  const place = (it: SceneItem, along: number, back: number, yaw: number) =>
+    out.set(it.id, { ...it, position: [along * Math.cos(theta) - back * Math.sin(theta), 0, -along * Math.sin(theta) - back * Math.cos(theta)], rotation: [0, yaw, 0] });
+  const turn = (yaw: number) => theta + (yaw - theta) * 0.75;
+  if (layout === 'row') {
+    // side by side, evenly spaced, centred
+    const total = sized.reduce((sum, s) => sum + s.f.w, 0) + gap * (n - 1);
+    let x = -total / 2;
+    for (const { it, f, yaw } of sized) {
+      place(it, x + f.w / 2, 0, turn(yaw));
+      x += f.w + gap;
+    }
+  } else if (layout === 'fan' || layout === 'auto') {
+    // the middle one in front, the others stepping back on an arc and turning in (a gentler arc when balanced)
+    const radius = avgW * (layout === 'fan' ? 2.6 : 5);
+    const step = (avgW + gap) / radius;
+    sized.forEach(({ it, yaw }, i) => {
+      const a = (i - (n - 1) / 2) * step;
+      place(it, radius * Math.sin(a), radius * (1 - Math.cos(a)), turn(yaw) - a);
+    });
+  } else {
+    // a staircase going back to the right, each one a little behind the previous one
+    const dx = avgW * 0.62;
+    const dz = maxD + avgW * 0.55;
+    sized.forEach(({ it, yaw }, i) => place(it, (i - (n - 1) / 2) * dx, (i - (n - 1) / 2) * dz, turn(yaw)));
+  }
+  return items.map((it) => out.get(it.id) ?? it);
+}
+
 /** A row along a wide strip (an Instagram carousel): evenly spaced, in their current left-to-right order. */
 export function arrangeInRow(items: SceneItem[]): SceneItem[] {
   const visible = items.filter((it) => it.visible).sort((a, b) => a.position[0] - b.position[0]);
