@@ -13,11 +13,11 @@ const tile = (size, { margin, radius, shadow }) => `
     <!-- the phone -->
     <div style="position:absolute;left:50%;top:50%;width:34%;height:62%;transform:translate(-50%,-50%) rotate(-8deg);
       border-radius:${size * 0.075}px;border:${size * 0.03}px solid #f5f5f7;box-sizing:border-box;
-      background:linear-gradient(160deg,rgba(255,92,53,.95) 0%,rgba(255,92,53,.55) 35%,rgba(123,92,255,.55) 70%,rgba(30,139,255,.75) 100%)">
+      background:linear-gradient(160deg,rgba(61,123,255,.95) 0%,rgba(61,123,255,.6) 35%,rgba(123,92,255,.6) 70%,rgba(30,139,255,.8) 100%)">
       <div style="position:absolute;left:50%;top:7%;width:30%;height:5%;transform:translateX(-50%);border-radius:99px;background:#f5f5f7"></div>
     </div>
     <!-- the brand dot -->
-    <div style="position:absolute;right:18%;top:15%;width:13%;height:13%;border-radius:50%;background:#ff5c35;box-shadow:0 0 ${size * 0.04}px rgba(255,92,53,.6)"></div>
+    <div style="position:absolute;right:18%;top:15%;width:13%;height:13%;border-radius:50%;background:#3d7bff;box-shadow:0 0 ${size * 0.04}px rgba(61,123,255,.6)"></div>
   </div>
 </body>`;
 
