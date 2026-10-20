@@ -1,4 +1,6 @@
+import { Suspense, lazy } from 'react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
+import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
@@ -7,6 +9,9 @@ import { ProjectCard } from '@/library/ProjectCard';
 import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
+
+const HeroStage = lazy(() => import('./HeroStage'));
+const webgl = hasWebGL2();
 
 const shot = (name: string) => `${import.meta.env.BASE_URL}showcase/${name}.webp`;
 
@@ -65,6 +70,16 @@ export function Home() {
               <ChevronDown size={15} />
             </a>
           </div>
+        </div>
+        {/* the real devices, turning in a dark studio (loaded after the title; a still without WebGL 2) */}
+        <div className="relative mx-auto -mt-6 h-[min(64vh,640px)] min-h-[380px] max-w-[1400px] [mask-image:linear-gradient(180deg,black_80%,transparent)]">
+          {webgl ? (
+            <Suspense fallback={null}>
+              <HeroStage className="absolute inset-0" />
+            </Suspense>
+          ) : (
+            <img src={shot('hero-still')} alt="" className="absolute inset-0 h-full w-full object-contain" draggable={false} />
+          )}
         </div>
         <div className="mx-auto max-w-[1180px] px-6">
           <img
