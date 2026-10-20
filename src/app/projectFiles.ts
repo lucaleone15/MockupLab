@@ -1,3 +1,4 @@
+import { askFiles } from '@/ui/dialogs';
 import { t } from '@/i18n';
 import { download } from '@/export/exportImage';
 import { exportProjectFile, importProjectFile } from '@/store/persistence';
@@ -9,10 +10,7 @@ export async function saveProjectFile() {
   toast.success(t('project.saved'));
 }
 
-export function openProjectFile() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json,application/json';
-  input.onchange = () => input.files?.[0] && importProjectFile(input.files[0]);
-  input.click();
+export async function openProjectFile() {
+  const [file] = await askFiles({ title: t('file.projectTitle'), hint: t('file.projectHint'), accept: '.json,application/json', multiple: false });
+  if (file) importProjectFile(file);
 }

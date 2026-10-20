@@ -30,6 +30,7 @@ import {
 import { useT, type I18nKey } from '@/i18n';
 import { useUserModules } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
+import { askConfirm } from '@/ui/dialogs';
 import { switchModel } from '@/lib/switchModel';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -205,7 +206,9 @@ export function UserModels({ onAdded, replaceId }: { onAdded?: () => void; repla
               onAdded={onAdded}
               replaceId={replaceId}
               onDelete={() => {
-                if (window.confirm(t('glb.deleteConfirm', { name: m.name.fr }))) void load().then((x) => x.deleteUserModel(m.id));
+                void askConfirm({ title: t('glb.delete'), body: t('glb.deleteConfirm', { name: m.name.fr }), confirm: t('comp.delete'), danger: true }).then((ok) => {
+                  if (ok) void load().then((x) => x.deleteUserModel(m.id));
+                });
               }}
             />
           ))}

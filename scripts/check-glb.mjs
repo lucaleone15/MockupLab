@@ -1,5 +1,6 @@
 // .glb import: a test model (screen named "Screen") is imported through the library,
 // gets the sample image, renders, survives a reload and a project file round trip, and can be deleted.
+import { viaFileDialog } from './lib/app.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 mkdirSync('out/glb', { recursive: true });
@@ -31,7 +32,7 @@ writeFileSync('out/glb/kiosk.glb', Buffer.from(glb, 'base64'));
 await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
 await p.getByTestId('add-device').click();
 await p.getByTestId('catalogue-family-custom').click();
-const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByTestId('import-glb').click()]);
+const chooser = await viaFileDialog(p, () => p.getByTestId('import-glb').click());
 await chooser.setFiles('out/glb/kiosk.glb');
 await p.waitForTimeout(1500);
 const item = () => p.evaluate(() => {
@@ -84,12 +85,12 @@ await p2.evaluate(async (text) => {
 await p2.waitForTimeout(1500);
 console.log('other browser after opening the file:', await p2.evaluate(() => window.__mockuplab.project.getState().items[0].modelId));
 // delete the model: the device falls back to the phone
-p.on('dialog', (d) => d.accept());
 await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
 await p.getByTestId('add-device').click();
 await p.getByTestId('catalogue-family-custom').click();
 await p.getByTestId('catalogue').getByText('kiosk').first().hover();
 await p.getByRole('button', { name: 'Supprimer ce modèle' }).first().click();
+await p.getByTestId('confirm-dialog').getByRole('button', { name: 'Supprimer', exact: true }).click();
 await p.waitForTimeout(800);
 console.log('after delete:', (await item()).modelId);
 console.log('errors:', errors.join('\n') || 'none');

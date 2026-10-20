@@ -1,3 +1,4 @@
+import { askFiles } from '@/ui/dialogs';
 import { t } from '@/i18n';
 import { useAssets } from '@/store/assets';
 import { toast } from '@/store/toasts';
@@ -43,14 +44,9 @@ export async function importFontFile(file: File): Promise<BrandFont | null> {
   return { family, assetId: id };
 }
 
-export function pickFontFile(): Promise<File | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.ttf,.otf,.woff,.woff2';
-    input.onchange = () => resolve(input.files?.[0] ?? null);
-    input.click();
-  });
+export async function pickFontFile(): Promise<File | null> {
+  const [file] = await askFiles({ title: t('file.fontTitle'), hint: t('file.fontHint'), accept: '.ttf,.otf,.woff,.woff2', multiple: false });
+  return file ?? null;
 }
 
 /** Display name of a brand font (imported ones carry a short unique suffix). */

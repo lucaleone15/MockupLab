@@ -2,11 +2,11 @@
 // + board), ZIP, and "open in Studio".
 import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
-import { openApp, check, done } from './lib/app.mjs';
+import { openApp, check, done, viaFileDialog } from './lib/app.mjs';
 mkdirSync('out/project', { recursive: true });
 const { browser, page, errors } = await openApp({ hash: '#/projet' });
 await page.waitForSelector('[data-testid=project-screen]');
-const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('project-add').click()]);
+const chooser = await viaFileDialog(page, () => page.getByTestId('project-add').click());
 await chooser.setFiles(['public/samples/sample-web.png', 'public/samples/sample-app.png', 'public/samples/sample-poster.png']);
 await page.waitForTimeout(800);
 const rows = page.getByTestId('project-file');

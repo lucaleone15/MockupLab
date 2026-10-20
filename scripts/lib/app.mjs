@@ -27,6 +27,15 @@ export async function openApp({ hash = '', lang = 'fr', colorScheme = 'dark', fr
   return { browser, context, page, errors };
 }
 
+/** Clicks `trigger`, then “Browse…” in the app's file dialog; returns the system file chooser. */
+export async function viaFileDialog(page, trigger, opts = { timeout: 8000 }) {
+  await trigger();
+  const dialog = page.getByTestId('file-dialog');
+  await dialog.waitFor(opts);
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser', opts), dialog.getByRole('button', { name: /Parcourir|Browse/ }).click()]);
+  return chooser;
+}
+
 export function check(cond, label) {
   if (cond) console.log('✓', label);
   else {

@@ -10,6 +10,7 @@ import { useGlobalInput } from './shortcuts';
 import { useRouteSync } from '@/shell/route';
 import { HelpDialog } from './HelpDialog';
 import { Tour } from '@/shell/Tour';
+import { AppDialogs } from '@/ui/dialogs';
 import { Toaster } from './Toaster';
 import { TopBar } from '@/shell/TopBar';
 import { ExportSheet } from '@/shell/ExportSheet';
@@ -83,6 +84,7 @@ export function App() {
       <Toaster />
       <HelpDialog />
       <Tour />
+      <AppDialogs />
       <VariantsDialog />
       <PreviewOverlay />
       <SmallScreenNotice />

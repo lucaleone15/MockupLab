@@ -1,4 +1,5 @@
 // scripts/usage/lib.mjs — a user journey, played only through what is visible on screen.
+import { viaFileDialog } from '../lib/app.mjs';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { openApp } from '../lib/app.mjs';
 
@@ -53,7 +54,7 @@ export async function journey(name, goal, run, opts = {}) {
       throw new Error(`aucun contrôle visible nommé « ${name} »`);
     },
     async upload(trigger, file) {
-      const [chooser] = await Promise.all([page.waitForEvent('filechooser', { timeout: 5000 }), trigger.click()]);
+      const chooser = await viaFileDialog(page, () => trigger.click(), { timeout: 5000 });
       await chooser.setFiles(file);
     },
   };

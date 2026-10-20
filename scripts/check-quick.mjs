@@ -1,5 +1,5 @@
 // scripts/check-quick.mjs — Quick mode: support detection, live gallery, download, customize, more ideas.
-import { openApp, check, done } from './lib/app.mjs';
+import { openApp, check, done, viaFileDialog } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 // 1. detection table (spec § 5)
 const table = [
@@ -55,7 +55,7 @@ await page.evaluate(() => (location.hash = '#/rapide'));
 await page.waitForSelector('[data-testid=quick-screen]');
 await page.getByTestId('quick-filter').getByRole('button', { name: 'Tous' }).click();
 // 3. our own design: a website screenshot → laptop
-const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('quick-pick').click()]);
+const chooser = await viaFileDialog(page, () => page.getByTestId('quick-pick').click());
 await chooser.setFiles('public/samples/sample-web.png');
 await page.waitForTimeout(500);
 check((await page.getByTestId('quick-support').getByRole('button', { pressed: true }).textContent()).trim() === 'Ordinateur', 'website screenshot detected as Ordinateur');

@@ -1,5 +1,6 @@
 import { IMAGE_OR_PDF, expandPdfs } from './pdf';
 import { t } from '@/i18n';
+import { askFiles } from '@/ui/dialogs';
 import { getMaxTextureSize, useAssets, type Asset } from '@/store/assets';
 import { detectSupport, modelForSupport } from '@/quick/detect';
 import { selectSelectedItem, useProject } from '@/store/project';
@@ -93,16 +94,10 @@ export async function importAsset(file: File): Promise<Asset | null> {
   }
 }
 
-/** Opens the file picker for a single image. */
-export function pickImageFile(): Promise<File | null> {
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => resolve(input.files?.[0] ?? null);
-    input.oncancel = () => resolve(null);
-    input.click();
-  });
+/** Asks for one image in the app's file dialog (drop, paste or browse). */
+export async function pickImageFile(): Promise<File | null> {
+  const [file] = await askFiles({ title: t('file.imageTitle'), hint: t('file.imageHint'), accept: 'image/*', multiple: false });
+  return file ?? null;
 }
 
 export async function importFromUrl(url: string, name: string) {
@@ -111,11 +106,8 @@ export async function importFromUrl(url: string, name: string) {
   await importImages([new File([blob], name, { type: blob.type || 'image/png' })]);
 }
 
-export function pickImages(onFiles: (files: FileList) => void = (f) => void importImages(f)) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = IMAGE_OR_PDF;
-  input.multiple = true;
-  input.onchange = () => input.files && onFiles(input.files);
-  input.click();
+/** Asks for designs (images or PDF pages) in the app's file dialog. */
+export async function pickImages(onFiles: (files: File[]) => void = (f) => void importImages(f)) {
+  const files = await askFiles({ title: t('file.designTitle'), hint: t('file.designHint'), accept: IMAGE_OR_PDF, multiple: true });
+  if (files.length) onFiles(files);
 }

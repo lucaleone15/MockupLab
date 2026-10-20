@@ -1,11 +1,12 @@
 // Freelance: a client's site, app, poster and card → a matching pack with the brand colours and a board.
+import { viaFileDialog } from '../lib/app.mjs';
 import { journey } from './lib.mjs';
 await journey('freelance-pack', 'Site + appli + affiche + carte d’un client → pack ZIP assorti, couleurs de marque, planche', async (u) => {
   const p = u.page;
   const T = { timeout: 8000 };
   await u.step('Ouvrir Projet', () => u.choose(/^Projet/, { exact: false }));
   await u.step('Ajouter les visuels du client', async () => {
-    const [chooser] = await Promise.all([p.waitForEvent('filechooser', T), p.getByRole('button', { name: /Ajoute les images|Ajouter des images/ }).first().click(T)]);
+    const chooser = await viaFileDialog(p, () => p.getByRole('button', { name: /Ajoute les images|Ajouter des images/ }).first().click(T), T);
     await chooser.setFiles(['public/samples/sample-web.png', 'public/samples/sample-app.png', 'public/samples/sample-poster.png', 'public/samples/sample-card-front.png']);
     await p.getByText('sample-card-front.png').first().waitFor(T);
   });

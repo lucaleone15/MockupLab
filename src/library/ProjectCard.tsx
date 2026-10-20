@@ -1,3 +1,4 @@
+import { askConfirm, askText } from '@/ui/dialogs';
 import { DropdownMenu } from 'radix-ui';
 import { Copy, Ellipsis, PencilLine, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
@@ -46,9 +47,9 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
           <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[200px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
             <DropdownMenu.Item
               className={row}
-              onSelect={() => {
-                const next = window.prompt(t('library.renamePrompt'), name);
-                if (next !== null && next.trim()) void library.rename(meta.id, next.trim());
+              onSelect={async () => {
+                const next = await askText({ title: t('library.renamePrompt'), label: t('library.renamePrompt'), value: name });
+                if (next) void library.rename(meta.id, next);
               }}
             >
               <PencilLine size={15} />
@@ -61,8 +62,8 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
             <DropdownMenu.Separator className="mx-2 my-1 h-px bg-line" />
             <DropdownMenu.Item
               className={cx(row, 'text-danger')}
-              onSelect={() => {
-                if (window.confirm(t('library.deleteConfirm', { name }))) void library.remove(meta.id);
+              onSelect={async () => {
+                if (await askConfirm({ title: t('library.deleteTitle'), body: t('library.deleteConfirm', { name }), confirm: t('comp.delete'), danger: true })) void library.remove(meta.id);
               }}
             >
               <Trash2 size={15} />

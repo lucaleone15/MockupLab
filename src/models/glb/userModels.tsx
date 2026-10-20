@@ -1,3 +1,4 @@
+import { askFiles } from '@/ui/dialogs';
 import { useEffect, useMemo, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import { createStore, del, get, keys, set } from 'idb-keyval';
@@ -220,12 +221,9 @@ export async function importModelFile(file: File, opts: { add?: boolean } = {}) 
   }
 }
 
-export function pickModelFile() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.glb,model/gltf-binary';
-  input.onchange = () => input.files?.[0] && void importModelFile(input.files[0]);
-  input.click();
+export async function pickModelFile() {
+  const [file] = await askFiles({ title: t('file.modelTitle'), hint: t('glb.hint'), accept: '.glb,.gltf,model/gltf-binary', multiple: false });
+  if (file) void importModelFile(file);
 }
 
 /** Forgets an imported model; devices using it become the default phone. */

@@ -1,7 +1,7 @@
-import { openApp } from './lib/app.mjs';
+import { openApp, viaFileDialog } from './lib/app.mjs';
 const [scheme, out] = process.argv.slice(2);
 const { browser, page } = await openApp({ hash: '#/projet', colorScheme: scheme });
-const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByTestId('project-add').click()]);
+const chooser = await viaFileDialog(page, () => page.getByTestId('project-add').click());
 await chooser.setFiles(['public/samples/sample-web.png', 'public/samples/sample-app.png', 'public/samples/sample-poster.png']);
 await page.waitForFunction(() => document.querySelectorAll('[data-testid=pack-item] img').length === 5, null, { timeout: 200000 });
 await page.screenshot({ path: out });
