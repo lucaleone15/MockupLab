@@ -40,7 +40,7 @@ let mono = await monoOnScreen();
 // studio pages
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForSelector('[data-testid=studio-rail]');
-for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Marque', 'Vidéo']) {
+for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Marque']) {
   await page.getByTestId('studio-rail').getByRole('tab', { name: tab, exact: true }).click();
   await page.waitForTimeout(200);
   mono = mono.concat(await monoOnScreen());

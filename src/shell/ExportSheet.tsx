@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Download, Trash2 } from 'lucide-react';
+import { Clapperboard, Download, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { deleteExport, getExport, listExports, type ExportMeta } from '@/library/exports';
 import { useLibrary } from '@/library/store';
 import { useT } from '@/i18n';
 import { exportImage } from '@/export/exportImage';
 import { ExportForm } from '@/app/PropertiesPanel';
 import { useUi } from '@/store/ui';
-import { Button, Sheet } from '@/ui/primitives';
+import { Button, Sheet, cx } from '@/ui/primitives';
+import { VideoSection } from '@/animation/VideoSection';
 
 /** Saves a kept export again, without recording it a second time. */
 function saveBlob(blob: Blob, name: string) {
@@ -60,12 +61,14 @@ function RecentExports() {
   );
 }
 
-/** The one place to export an image: format, size, quality, then download. */
+/** The one place to export: an image (format, size, quality) or a video (animation, timing, format). */
 export function ExportSheet() {
   const { t } = useT();
   const open = useUi((s) => s.exportOpen);
   const exporting = useUi((s) => s.exporting);
   const setOpen = useUi((s) => s.setExportOpen);
+  const tab = useUi((s) => s.exportTab);
+  const setTab = useUi((s) => s.setExportTab);
   return (
     <Sheet
       open={open}
@@ -73,27 +76,54 @@ export function ExportSheet() {
       title={t('export.title')}
       testId="export-sheet"
       footer={
-        <>
-          <Button variant="ghost" onClick={() => setOpen(false)}>
-            {t('cancel')}
-          </Button>
-          <Button
-            variant="primary"
-            size="lg"
-            disabled={!!exporting}
-            onClick={() => {
-              setOpen(false);
-              void exportImage('image');
-            }}
-          >
-            <Download size={16} strokeWidth={2.2} />
-            {t('export.download')}
-          </Button>
-        </>
+        tab === 'image' ? (
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={!!exporting}
+              onClick={() => {
+                setOpen(false);
+                void exportImage('image');
+              }}
+            >
+              <Download size={16} strokeWidth={2.2} />
+              {t('export.download')}
+            </Button>
+          </>
+        ) : undefined
       }
     >
-      <ExportForm />
-      <RecentExports />
+      <div role="tablist" aria-label={t('export.title')} className="flex rounded-[10px] bg-surface-3 p-[3px]">
+        {(['image', 'video'] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={tab === k}
+            data-testid={`export-tab-${k}`}
+            onClick={() => setTab(k)}
+            className={cx(
+              'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-[8px] text-[13px] font-medium transition-[background-color,color,box-shadow] duration-150',
+              tab === k ? 'bg-white text-fg shadow-[0_1px_3px_rgb(0_0_0/0.12),0_0_0_0.5px_var(--line-strong)] dark:bg-white/18' : 'text-fg-muted hover:text-fg',
+            )}
+          >
+            {k === 'image' ? <ImageIcon size={14} /> : <Clapperboard size={14} />}
+            {t(k === 'image' ? 'export.image' : 'export.video')}
+          </button>
+        ))}
+      </div>
+      {tab === 'image' ? (
+        <>
+          <ExportForm />
+          <RecentExports />
+        </>
+      ) : (
+        <VideoSection />
+      )}
     </Sheet>
   );
 }

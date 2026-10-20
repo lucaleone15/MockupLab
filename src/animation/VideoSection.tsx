@@ -1,37 +1,32 @@
-import { ArrowDownToLine, Aperture, Clapperboard, Crop, Film, Focus, Move3d, MoveVertical, Play, RefreshCw, Rotate3d, ScanEye, Smartphone, Square, TrendingUp, Waves } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState } from 'react';
+import { Clapperboard, Film, Play, Smartphone, Square } from 'lucide-react';
 import { useT } from '@/i18n';
 import { useAssets } from '@/store/assets';
-import { useProject, type AnimationId, type VideoSettings } from '@/store/project';
+import { useProject, type VideoSettings } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Button, Field, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 import { exportVideo, togglePreview } from './actions';
+
+/** The Export window steps aside while the preview plays, and comes back when it stops. */
+function previewFromExport() {
+  if (useUi.getState().previewing) return togglePreview();
+  useUi.getState().setExportOpen(false);
+  useUi.getState().setReopenExport(true);
+  return togglePreview();
+}
 import { ANIMATIONS, hasScrollable } from './animations';
+import { AnimationThumb } from './AnimationThumb';
 import { videoFps, videoSize } from './size';
 
-const ICONS: Record<AnimationId, ReactNode> = {
-  reveal: <Aperture size={18} />,
-  dive: <ScanEye size={18} />,
-  dutch: <Crop size={18} />,
-  flip: <RefreshCw size={18} className="rotate-90" />,
-  drop: <ArrowDownToLine size={18} />,
-  crane: <TrendingUp size={18} />,
-  vertigo: <Focus size={18} />,
-  trailer: <Clapperboard size={18} />,
-  turntable: <Rotate3d size={18} />,
-  swing: <RefreshCw size={18} />,
-  orbit: <Move3d size={18} />,
-  scroll: <MoveVertical size={18} />,
-  float: <Waves size={18} />,
-};
 
-/** Export tab, video mode: animation, timing, size, format, preview and export. */
+/** Video tab of the Export window: animation, timing, size, format, preview and export. */
 export function VideoSection() {
   const { t } = useT();
   const video = useProject((s) => s.export.video);
   const setExport = useProject((s) => s.setExport);
   const exporting = useUi((s) => s.exporting);
   const previewing = useUi((s) => s.previewing);
+  const [hovered, setHovered] = useState<string | null>(null);
   // sizes and the scroll hint follow the images
   useProject((s) => s.export.ratio);
   useProject((s) => s.selectedId);
@@ -66,13 +61,18 @@ export function VideoSection() {
                   <button
                     key={a.id}
                     type="button"
+                    data-testid="anim-tile"
                     onClick={() => set({ animation: a.id })}
+                    onPointerEnter={() => setHovered(a.id)}
+                    onPointerLeave={() => setHovered(null)}
+                    onFocus={() => setHovered(a.id)}
+                    onBlur={() => setHovered(null)}
                     className={cx(
-                      'flex h-[62px] flex-col items-center justify-center gap-1.5 rounded-lg px-1 text-center text-[11px] font-medium leading-tight transition-[background-color,color,box-shadow] duration-150',
-                      current.id === a.id ? 'bg-surface-4 text-fg shadow-[0_0_0_1px_var(--accent)_inset]' : 'bg-surface-2 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
+                      'flex flex-col items-stretch gap-1 rounded-lg p-1 pb-1.5 text-center text-[11px] font-medium leading-tight transition-[background-color,color,box-shadow] duration-150',
+                      current.id === a.id ? 'bg-surface-4 text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]' : 'bg-surface-2 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
                     )}
                   >
-                    <span className={current.id === a.id ? 'text-accent' : ''}>{ICONS[a.id]}</span>
+                    <AnimationThumb id={a.id} playing={hovered === a.id} />
                     {t(a.label)}
                   </button>
                 ))}
@@ -151,7 +151,7 @@ export function VideoSection() {
         </span>
       </div>
       <div className="grid grid-cols-[auto_1fr] gap-2">
-        <Button size="lg" onClick={() => void togglePreview()} disabled={!!exporting} data-testid="video-preview">
+        <Button size="lg" onClick={() => void previewFromExport()} disabled={!!exporting} data-testid="video-preview">
           {previewing ? <Square size={14} /> : <Play size={15} />}
           {previewing ? t('video.stop') : t('video.preview')}
         </Button>

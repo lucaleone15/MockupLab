@@ -37,11 +37,10 @@ check(landed.screen === 'home' && landed.image !== 'home-paste.png' && !landed.s
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForTimeout(300);
 // 3. a leftover video kind does not hijack the image export
-await page.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video' }));
 await page.getByTestId('studio-rail').getByRole('tab', { name: 'Lumière', exact: true }).click();
 await page.keyboard.press('Meta+e');
 await page.waitForTimeout(300);
-check(await page.getByTestId('export-sheet').isVisible(), '⌘E opens the image sheet even with a stored video kind');
+check(await page.getByTestId('export-sheet').isVisible(), '⌘E opens the Export window');
 await page.getByTestId('export-sheet').getByRole('radio', { name: '1080p', exact: true }).click();
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 240000 }), page.getByTestId('export-sheet').getByRole('button', { name: /Télécharger/ }).click()]);
 check(/\.(png|jpg|webp)$/.test(dl.suggestedFilename()), `sheet downloads an image (${dl.suggestedFilename()})`);

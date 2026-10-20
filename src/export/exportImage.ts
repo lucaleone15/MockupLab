@@ -143,8 +143,8 @@ export async function renderCarouselSlides(onProgress?: (done: number, total: nu
   return out;
 }
 
-/** Exports what is asked (default: the project's current kind, i.e. a video on the Video page). */
-export async function exportImage(kind: 'image' | 'video' = useProject.getState().export.kind) {
+/** Exports an image (default) or the video of the export settings. */
+export async function exportImage(kind: 'image' | 'video' = 'image') {
   const ui = useUi.getState();
   if (ui.exporting) return;
   if (kind === 'video') {

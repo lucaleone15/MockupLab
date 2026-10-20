@@ -44,12 +44,14 @@ await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEven
 await page.waitForTimeout(300);
 
 // Reel / TikTok video preset, and a perfect loop for a cinematic shot
-await page.getByTestId('studio-rail').getByRole('tab', { name: 'Vidéo', exact: true }).click();
+await page.getByTestId('top-export').click();
+await page.getByTestId('export-tab-video').click();
 await page.getByRole('button', { name: 'Reel / TikTok' }).click();
 await page.waitForTimeout(200);
 const v = await page.evaluate(() => { const e = window.__mockuplab.project.getState().export; return { ratio: e.ratio, ...e.video }; });
 check(v.ratio === 'story' && v.resolution === '1080' && v.fps === 30 && v.duration === 10 && v.format === 'mp4', `Reel / TikTok preset: ${JSON.stringify(v)}`);
 for (const d of ['6 s', '10 s', '15 s']) check(await page.getByRole('radio', { name: d, exact: true }).isVisible().catch(() => false), `duration ${d} offered`);
+
 await page.getByRole('switch', { name: 'Boucle parfaite' }).click();
 const gap = await page.evaluate(async () => {
   const A = await window.__mockuplab.animations();
@@ -66,6 +68,7 @@ const gap = await page.evaluate(async () => {
   return [a.distanceTo(b), a.distanceTo(mid)];
 });
 check(gap[0] < 0.5 && gap[1] > 5, `perfect loop: the last frame is the first (${gap[0].toFixed(2)}), the middle moves (${gap[1].toFixed(1)})`);
+await page.keyboard.press('Escape');
 // Instagram carousel: a strip of slides with cut guides, devices spread one per slide, a ZIP of slides
 await page.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
 await page.evaluate(() => {
@@ -93,6 +96,7 @@ const xs = await page.evaluate(() => window.__mockuplab.project.getState().items
 check(xs[1] - xs[0] > 12 && xs[2] - xs[1] > 12 && Math.abs(xs[1] - xs[0] - (xs[2] - xs[1])) < 1, `Arrange spreads the devices evenly along the strip (${xs.map(Math.round)})`);
 mkdirSync('out/social', { recursive: true });
 await page.getByRole('button', { name: 'Exporter' }).first().click();
+await page.getByTestId('export-tab-image').click();
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 120000 }), page.getByRole('button', { name: 'Télécharger', exact: true }).click()]);
 await dl.saveAs('out/social/' + dl.suggestedFilename());
 const list = /\.zip$/.test(dl.suggestedFilename()) ? execSync(`unzip -Z1 out/social/${dl.suggestedFilename()}`).toString().trim().split('\n') : [];

@@ -30,7 +30,7 @@ await p.waitForTimeout(500);
 report.push(await sweep('Accueil'));
 await p.goto('http://localhost:5173/#/studio');
 await p.waitForTimeout(800);
-for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque', 'Vidéo']) {
+for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque']) {
   await p.getByTestId('studio-rail').getByRole('tab', { name: tab, exact: true }).click();
   await p.waitForTimeout(300);
   report.push(await sweep(`Studio · ${tab}`));
@@ -38,6 +38,9 @@ for (const tab of ['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'T
 await p.getByTestId('top-export').click();
 await p.waitForTimeout(300);
 report.push(await sweep('Exporter'));
+await p.getByTestId('export-tab-video').click();
+await p.waitForTimeout(300);
+report.push(await sweep('Exporter · Vidéo'));
 await p.keyboard.press('Escape');
 await p.goto('http://localhost:5173/#/rapide');
 await p.waitForTimeout(2500);

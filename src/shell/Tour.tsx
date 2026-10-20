@@ -33,7 +33,6 @@ const STEPS: Step[] = [
   { id: 'light', page: 'light', target: PANEL },
   { id: 'camera', page: 'camera', target: PANEL },
   { id: 'text', page: 'text', target: PANEL },
-  { id: 'video', page: 'video', target: PANEL },
   { id: 'format', target: '[data-testid="floating-bar"]' },
   { id: 'export', target: '[data-testid="top-export"]' },
   { id: 'modes', target: '[data-testid="mode-switch"]' },

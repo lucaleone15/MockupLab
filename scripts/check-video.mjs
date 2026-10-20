@@ -32,7 +32,7 @@ const render = async (name, video) => {
   const t0 = Date.now();
   const r = await p.evaluate(async (video) => {
     const api = window.__mockuplab;
-    api.project.getState().setExport({ kind: 'video', video: { ...api.project.getState().export.video, ...video } });
+    api.project.getState().setExport({ video: { ...api.project.getState().export.video, ...video } });
     const res = await api.renderVideo();
     const buf = new Uint8Array(await res.blob.arrayBuffer());
     let s = '';
@@ -54,8 +54,9 @@ await render('swing', { animation: 'swing', format: 'mp4', resolution: '1080', f
 await render('float', { animation: 'float', format: 'mp4', resolution: '720', fps: 24, duration: 2 });
 // preview: starts, the UI is frozen, Escape stops it and the scene is back
 const before2 = await scene();
-await p.evaluate(() => window.__mockuplab.project.getState().setExport({ kind: 'video', video: { ...window.__mockuplab.project.getState().export.video, animation: 'turntable' } }));
-await p.getByTestId('studio-rail').getByRole('tab', { name: 'Vidéo', exact: true }).click();
+await p.evaluate(() => window.__mockuplab.project.getState().setExport({ video: { ...window.__mockuplab.project.getState().export.video, animation: 'turntable' } }));
+await p.getByTestId('top-export').click();
+await p.getByTestId('export-tab-video').click();
 await p.getByTestId('video-preview').click();
 await p.waitForTimeout(1200);
 await p.screenshot({ path: 'out/video/preview.png' });

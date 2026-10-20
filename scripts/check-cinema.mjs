@@ -31,7 +31,7 @@ for (const id of shots) {
   const t0 = Date.now();
   const r = await p.evaluate(async ({ id, duration, quality }) => {
     const api = window.__mockuplab;
-    api.project.getState().setExport({ kind: 'video', video: { ...api.project.getState().export.video, animation: id, format: 'mp4', resolution: '720', fps: 24, duration, quality } });
+    api.project.getState().setExport({ video: { ...api.project.getState().export.video, animation: id, format: 'mp4', resolution: '720', fps: 24, duration, quality } });
     const res = await api.renderVideo();
     const buf = new Uint8Array(await res.blob.arrayBuffer());
     let s = '';

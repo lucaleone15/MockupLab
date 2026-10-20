@@ -4,7 +4,7 @@ export type Theme = 'dark' | 'light';
 /** What the user picked: follow the system, or force one theme. */
 export type ThemePref = 'auto' | 'light' | 'dark';
 export type Screen = 'home' | 'quick' | 'project' | 'studio';
-export type StudioPage = 'devices' | 'settings' | 'decor' | 'light' | 'camera' | 'text' | 'brand' | 'video';
+export type StudioPage = 'devices' | 'settings' | 'decor' | 'light' | 'camera' | 'text' | 'brand';
 
 interface UiState {
   /** The theme in use (resolved from the preference and the system). */
@@ -18,6 +18,12 @@ interface UiState {
   setStudioPage: (p: StudioPage) => void;
   exportOpen: boolean;
   setExportOpen: (v: boolean) => void;
+  /** Tab of the Export window (the last one used opens again). */
+  exportTab: 'image' | 'video';
+  setExportTab: (tab: 'image' | 'video') => void;
+  /** The Export window stepped aside for a preview and comes back when it ends. */
+  reopenExport: boolean;
+  setReopenExport: (v: boolean) => void;
   allProjectsOpen: boolean;
   setAllProjectsOpen: (v: boolean) => void;
   /** Incremented to ask the camera rig to return to the default view. */
@@ -90,6 +96,10 @@ export const useUi = create<UiState>((set) => ({
   setStudioPage: (studioPage) => set({ studioPage }),
   exportOpen: false,
   setExportOpen: (exportOpen) => set({ exportOpen }),
+  exportTab: 'image',
+  setExportTab: (exportTab) => set({ exportTab }),
+  reopenExport: false,
+  setReopenExport: (reopenExport) => set({ reopenExport }),
   allProjectsOpen: false,
   setAllProjectsOpen: (allProjectsOpen) => set({ allProjectsOpen }),
   viewResetToken: 0,
@@ -101,7 +111,8 @@ export const useUi = create<UiState>((set) => ({
   cancelExport: null,
   setCancelExport: (cancelExport) => set({ cancelExport }),
   previewing: false,
-  setPreviewing: (previewing) => set({ previewing }),
+  // a preview started from the Export window gives it back when it ends
+  setPreviewing: (previewing) => set((s) => (!previewing && s.reopenExport ? { previewing, reopenExport: false, exportOpen: true, exportTab: 'video' } : { previewing })),
   dragging: false,
   setDragging: (dragging) => set({ dragging }),
   selectedOverlayId: null,

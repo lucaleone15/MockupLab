@@ -224,8 +224,6 @@ export interface VideoSettings {
 }
 
 export interface ExportSettings {
-  /** What the Export button produces. */
-  kind: 'image' | 'video';
   video: VideoSettings;
   format: ImageFormat;
   resolution: ResolutionPreset;
@@ -336,7 +334,7 @@ export function initialProject(): Project {
     lighting: { ...LIGHT_PRESETS.studio.manual, preset: 'studio' },
     camera: { ...DEFAULT_CAMERA },
     ground: { ...DEFAULT_GROUND },
-    export: { kind: 'image', video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
+    export: { video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
     arrangement: 'auto',
   };
 }

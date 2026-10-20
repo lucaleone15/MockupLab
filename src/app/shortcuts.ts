@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { exportImage } from '@/export/exportImage';
 import { importImages, pickImages } from '@/lib/importImage';
 import { picking } from '@/scene/interaction';
 import { selectSelectedItem, useProject } from '@/store/project';
@@ -65,10 +64,8 @@ function onKey(e: KeyboardEvent) {
     useProject.temporal.getState().redo();
   } else if (mod && key === 'e') {
     e.preventDefault();
-    // on a Video page ⌘E exports the video; anywhere else it opens the image export sheet
-    const onVideo = ui.screen === 'studio' && ui.studioPage === 'video';
-    if (onVideo) void exportImage('video');
-    else ui.setExportOpen(true);
+    // the Export window, on the tab used last (image or video)
+    ui.setExportOpen(true);
   } else if (mod && (key === 's' || key === 'o' || key === 'd') && !IN_DESKTOP) {
     // the browser's own shortcut
     return;

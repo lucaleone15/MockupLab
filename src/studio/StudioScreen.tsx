@@ -1,4 +1,4 @@
-import { Armchair, Camera, Clapperboard, Palette, SlidersHorizontal, Smartphone, Sun, Type } from 'lucide-react';
+import { Armchair, Camera, Palette, SlidersHorizontal, Smartphone, Sun, Type } from 'lucide-react';
 import { useT } from '@/i18n';
 import { Viewport } from '@/app/Viewport';
 import { Rail, RailPage, type RailItem } from '@/shell/Rail';
@@ -23,7 +23,6 @@ export function StudioScreen() {
     { id: 'camera', label: t('page.camera'), icon: <Camera size={ICON} /> },
     { id: 'text', label: t('page.text'), icon: <Type size={ICON} /> },
     { id: 'brand', label: t('page.brand'), icon: <Palette size={ICON} /> },
-    { id: 'video', label: t('page.video'), icon: <Clapperboard size={ICON} /> },
   ];
   const title = items.find((i) => i.id === page)?.label ?? '';
   return (

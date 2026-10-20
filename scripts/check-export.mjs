@@ -1,16 +1,12 @@
-// scripts/check-export.mjs — the Export sheet downloads an image; leaving Video goes back to images.
+// scripts/check-export.mjs — the Export sheet downloads an image; switching its tabs leaves no undo step.
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
-const kind = () => page.evaluate(() => window.__mockuplab.project.getState().export.kind);
-const rail = page.getByTestId('studio-rail');
-await rail.getByRole('tab', { name: 'Vidéo', exact: true }).click();
+await page.getByTestId('top-export').click();
+await page.getByTestId('export-tab-video').click();
+await page.getByTestId('export-tab-image').click();
+await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-check((await kind()) === 'video', 'Video page → video kind');
-await rail.getByRole('tab', { name: 'Lumière', exact: true }).click();
-await page.waitForTimeout(200);
-check((await kind()) === 'image', 'leaving Video → image kind');
-// leaving the Video page must not leave undo steps behind
-check((await page.evaluate(() => window.__mockuplab.project.temporal.getState().pastStates.length)) === 0, 'visiting Video adds no undo step');
+check((await page.evaluate(() => window.__mockuplab.project.temporal.getState().pastStates.length)) === 0, 'switching Image / Video adds no undo step');
 await page.getByTestId('top-export').click();
 const sheet = page.getByTestId('export-sheet');
 check(await sheet.isVisible(), 'Export opens the sheet');

@@ -110,7 +110,7 @@ while (await page.getByTestId('tour').isVisible().catch(() => false)) {
   await page.getByTestId('tour-next').click();
   if (n > 20) break;
 }
-check(n === 13, `the guide has 13 steps (${n})`);
+check(n === 12, `the guide has 12 steps (${n})`);
 check((await page.evaluate(() => localStorage.getItem('mockuplab:tour'))) === '1', 'a finished guide is remembered');
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'devices', 'the guide ends on the Devices page');
 await done(browser, errors);

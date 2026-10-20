@@ -127,7 +127,8 @@ export function migrateProject(raw: unknown): Project {
     lighting: { ...base.lighting, ...(r.lighting ?? {}) },
     camera: { ...DEFAULT_CAMERA, ...(r.camera ?? {}) },
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
-    export: { ...base.export, ...(r.export ?? {}), video: { ...base.export.video, ...(r.export?.video ?? {}) } },
+    // `kind` (image or video) is the Export window's tab now, not the project's
+    export: (({ kind: _kind, ...e }) => ({ ...base.export, ...e, video: { ...base.export.video, ...(r.export?.video ?? {}) } }))((r.export ?? {}) as Partial<Project['export']> & { kind?: string }),
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     arrangement: LAYOUTS.includes(r.arrangement as Layout) ? (r.arrangement as Layout) : 'auto',
     version: 6,

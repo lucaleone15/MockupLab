@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ImagePlus, Plus, Smartphone, Sparkles } from 'lucide-react';
+import { ImagePlus, Plus, Smartphone, Sparkles, Square } from 'lucide-react';
 import { useT } from '@/i18n';
 import { carouselOf, ratioValue, socialOf } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
@@ -22,15 +22,17 @@ export function PreviewOverlay() {
   if (!previewing) return null;
   return (
     <div className="fixed inset-0 z-40" onPointerDown={(e) => e.preventDefault()}>
-      <div className="absolute inset-x-0 bottom-6 flex justify-center">
+      {/* top right, clear of the bottom bar */}
+      <div className="absolute right-6 top-[72px]">
         <button
           type="button"
           onClick={() => void import('@/animation/actions').then((m) => m.togglePreview())}
-          className="flex items-center gap-2 rounded-full bg-black/75 py-2 pl-3 pr-4 text-[13px] font-medium text-white shadow-2xl backdrop-blur-xl hover:bg-black/85"
+          className="flex h-9 items-center gap-2 rounded-full bg-white px-4 text-[13px] font-semibold text-black shadow-2xl transition-colors hover:bg-white/85"
           data-testid="preview-stop"
         >
-          <span className="size-2.5 rounded-sm bg-accent" />
+          <Square size={12} fill="currentColor" />
           {t('video.stopPreview')}
+          <kbd className="ml-1 rounded bg-black/10 px-1.5 text-[11px] font-medium">Esc</kbd>
         </button>
       </div>
     </div>
