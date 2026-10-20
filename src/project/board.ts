@@ -2,7 +2,7 @@ import type { Brand } from '@/store/project';
 
 /*
  * The presentation board: one large image (3:2) with the hero, up to three
- * mock-ups, the project name in Syne, the logo and the brand palette.
+ * mock-ups, the project name in Archivo Expanded, the logo and the brand palette.
  */
 
 function loadImage(src: string) {
@@ -41,12 +41,13 @@ export async function composeBoard(o: { hero: string; shots: string[]; name: str
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // header: project name (Syne) and logo
+  // header: project name (Archivo Expanded) and logo
   const titleSize = W * 0.034;
-  await document.fonts.load(`700 ${titleSize}px "Syne Variable"`).catch(() => undefined);
+  await document.fonts.load(`extra-expanded 800 ${titleSize}px "Archivo Variable"`).catch(() => undefined);
   ctx.fillStyle = '#1d1d1f';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `700 ${titleSize}px "Syne Variable", system-ui, sans-serif`;
+  ctx.font = `800 ${titleSize}px "Archivo Variable", system-ui, sans-serif`;
+  ctx.fontStretch = 'extra-expanded';
   const title = o.name || o.brand.name || 'MockupLab';
   ctx.fillText(title, m, m + titleSize);
   if (o.brand.tagline) {

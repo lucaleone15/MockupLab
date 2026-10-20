@@ -60,6 +60,20 @@ check(cards.every((c) => Math.abs(c.y - cards[0].y) < 2), 'the three modes share
 const row = await page.getByTestId('mode-row').boundingBox();
 check(Math.abs(cards[2].x + cards[2].width - (row.x + row.width)) < 2 && Math.abs(cards[0].x - row.x) < 2, 'and fill it (no gap)');
 await page.screenshot({ path: 'out/home2/home-dark.png', fullPage: true });
+// titles in Archivo Expanded, texts in Geist (home page and Studio)
+const fontOf = (sel) => page.evaluate((sel) => { const el = document.querySelector(sel); const cs = el && getComputedStyle(el); return cs ? { family: cs.fontFamily, stretch: cs.fontStretch } : null; }, sel);
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(500);
+const h1 = await fontOf('[data-testid=home] h1');
+check(!!h1 && /^"?Archivo/.test(h1.family) && h1.stretch === '125%', `home title in Archivo Expanded (${JSON.stringify(h1)})`);
+const body = await fontOf('[data-testid=home] p');
+check(!!body && /Geist/.test(body.family), `home text in Geist (${body?.family})`);
+await page.goto('http://localhost:5173/studio');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(500);
+const railTitle = await fontOf('[data-testid=rail-page] h2');
+check(!!railTitle && /^"?Archivo/.test(railTitle.family), `Studio page titles in Archivo (${railTitle?.family})`);
 // blue brand: the app's old orange is gone from the home page, the Studio's top bar and the icon
 const orange = (scope) => page.evaluate((scope) => [...document.querySelectorAll(scope)].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').map((el) => el.textContent?.trim().slice(0, 20) || el.tagName), scope);
 await page.goto('http://localhost:5173/');

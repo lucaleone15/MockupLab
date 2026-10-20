@@ -43,7 +43,7 @@ export function Rail<P extends string>({ items, value, onChange, testId }: { ite
   );
 }
 
-/** The open page: a title in Syne and its flat content, scrolling on its own. */
+/** The open page: a title in Archivo Expanded and its flat content, scrolling on its own. */
 export function RailPage({ title, children, testId = 'rail-page' }: { title: string; children: ReactNode; testId?: string }) {
   return (
     <aside className="glass flex w-[312px] shrink-0 flex-col overflow-hidden rounded-[14px]" data-testid={testId} role="tabpanel" aria-label={title}>

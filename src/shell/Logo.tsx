@@ -1,7 +1,7 @@
 import { useT } from '@/i18n';
 import { navigate, urlOf } from './route';
 
-/** "Mockup" + "Lab" in Syne; the brand orange lives only here. Links to the home page. */
+/** "Mockup" + "Lab" in Archivo Expanded; the brand blue lives here. Links to the home page. */
 export function Logo({ asLink = true, tone }: { asLink?: boolean; tone?: 'light' }) {
   const { t } = useT();
   const mark = (
