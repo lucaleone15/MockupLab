@@ -58,7 +58,8 @@ if (want('devices-phones')) {
   await still('devices-phones.webp');
 }
 if (want('devices-print')) {
-  await scene({ models: ['poster', 'flyer', 'business-card'], preset: 'table-oak-white' });
+  // a flat lay of prints, seen from above on white marble
+  await scene({ models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble' });
   await still('devices-print.webp');
 }
 if (want('devices-desk')) {
@@ -66,7 +67,7 @@ if (want('devices-desk')) {
   await still('devices-desk.webp');
 }
 if (want('studio-marble')) {
-  await scene({ models: ['laptop-14', 'phone-pro'], preset: 'table-black-marble' });
+  await scene({ models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'table-black-marble' });
   await still('studio-marble.webp');
 }
 if (want('studio-podium')) {
