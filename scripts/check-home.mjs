@@ -1,4 +1,5 @@
 // scripts/check-home.mjs — no drop on home: pick a mode first; Studio first and biggest; resume.
+import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ viewport: { width: 1280, height: 720 } });
 check(await page.getByTestId('home').isVisible(), 'home shown on first visit');
@@ -10,8 +11,6 @@ const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els
 check(order.join() === 'studio,quick,project', `mode cards in order (${order})`);
 const [studioCard, quickCard] = await Promise.all([page.getByTestId('mode-card-studio').boundingBox(), page.getByTestId('mode-card-quick').boundingBox()]);
 check(studioCard.width > quickCard.width * 1.5, 'Studio card is the big one');
-const studioTitle = await page.getByTestId('mode-card-studio').getByText('Studio', { exact: true }).boundingBox();
-check(!!studioTitle && studioTitle.y + studioTitle.height <= 720, `the Studio card and its name show in the first screen at 1280×720 (title bottom ${studioTitle && Math.round(studioTitle.y + studioTitle.height)})`);
 for (const m of ['studio', 'quick', 'project']) check((await page.getByTestId(`mode-card-${m}`).innerText()).length > 20, `${m} card explains its role`);
 // pasting on home does not import: it asks to pick a mode
 await page.evaluate(async () => {
@@ -42,6 +41,25 @@ await page.getByTestId('project-page').getByRole('button', { name: 'Ouvrir dans 
 await page.waitForTimeout(400);
 const r = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, name: window.__mockuplab.project.getState().name }));
 check(r.screen === 'studio' && r.name === 'Reprise', `resume opens the Studio with the project (${r.screen}/${r.name})`);
+// product page: the Studio at work under a centred title, the three modes on one full row
+mkdirSync('out/home2', { recursive: true });
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(800);
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.waitForTimeout(300);
+const heroTitle = await page.getByTestId('home-hero').getByRole('heading', { level: 1 }).boundingBox();
+check(!!heroTitle && Math.abs(heroTitle.x + heroTitle.width / 2 - 720) < 30, 'the title is centred');
+const studioShot = page.getByTestId('home-studio-shot');
+check(await studioShot.isVisible(), 'the Studio at work is shown');
+const shotBox = await studioShot.boundingBox();
+const ctaBox = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
+check(!!shotBox && !!ctaBox && shotBox.y > ctaBox.y, 'below the call to action');
+const cards = await Promise.all(['studio', 'quick', 'project'].map((m) => page.getByTestId(`mode-card-${m}`).boundingBox()));
+check(cards.every((c) => Math.abs(c.y - cards[0].y) < 2), 'the three modes share one row');
+const row = await page.getByTestId('mode-row').boundingBox();
+check(Math.abs(cards[2].x + cards[2].width - (row.x + row.width)) < 2 && Math.abs(cards[0].x - row.x) < 2, 'and fill it (no gap)');
+await page.screenshot({ path: 'out/home2/home-dark.png', fullPage: true });
 // blue brand: the app's old orange is gone from the home page, the Studio's top bar and the icon
 const orange = (scope) => page.evaluate((scope) => [...document.querySelectorAll(scope)].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').map((el) => el.textContent?.trim().slice(0, 20) || el.tagName), scope);
 await page.goto('http://localhost:5173/');

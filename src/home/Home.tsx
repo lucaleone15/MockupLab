@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
@@ -11,46 +10,9 @@ import { cx } from '@/ui/primitives';
 
 const shot = (name: string) => `${import.meta.env.BASE_URL}showcase/${name}.webp`;
 
-/** Real mock-ups rendered by MockupLab from the sample designs (scripts/make-showcase.mjs). */
-const HERO = ['hero-table-black-marble', 'laptop-marble', 'phone-aurora', 'hero-table-oak-white'];
+/** Real mock-ups rendered by MockupLab from the sample designs, and the Studio at work (scripts/make-showcase.mjs). */
 const STRIP = ['phone-oak', 'hero-studio-light', 'laptop-concrete', 'phone-terrazzo', 'phone-aurora', 'hero-table-oak-white', 'laptop-marble'];
 const MODE_SHOTS: Record<Screen, string> = { home: '', quick: 'phone-oak', project: 'hero-studio-light', studio: 'laptop-concrete' };
-
-/** Full-bleed slideshow of real mock-ups (still under reduced motion). */
-function HeroSlides() {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % HERO.length), 5200);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <>
-      {HERO.map((name, i) => (
-        <img
-          key={name}
-          src={shot(name)}
-          alt=""
-          aria-hidden={i !== index}
-          loading={i === 0 ? 'eager' : 'lazy'}
-          className={cx('absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-[1400ms] ease-[var(--ease-out-quart)]', i === index ? 'scale-100 opacity-100' : 'scale-[1.03] opacity-0')}
-          draggable={false}
-        />
-      ))}
-      <div className="absolute bottom-6 left-[max(24px,calc((100%-1180px)/2+24px))] flex gap-1.5">
-        {HERO.map((name, i) => (
-          <button
-            key={name}
-            type="button"
-            aria-label={`${i + 1} / ${HERO.length}`}
-            onClick={() => setIndex(i)}
-            className={cx('h-1 rounded-full transition-[width,background-color] duration-300', i === index ? 'w-6 bg-white' : 'w-2 bg-white/45 hover:bg-white/70')}
-          />
-        ))}
-      </div>
-    </>
-  );
-}
 
 function Recents() {
   const { t } = useT();
@@ -78,19 +40,18 @@ function Recents() {
 export function Home() {
   const { t } = useT();
   return (
-    <div data-testid="home" className="scroll-thin h-full overflow-y-auto">
-      <section data-testid="home-hero" className="relative isolate h-[min(64vh,700px)] min-h-[440px] overflow-hidden bg-[#0e0f13] text-white">
-        <HeroSlides />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(8_8_10/0.86)_0%,rgb(8_8_10/0.55)_42%,rgb(8_8_10/0)_74%)]" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgb(8_8_10/0.55),transparent)]" />
-        <header className="relative z-10 mx-auto flex h-16 max-w-[1180px] items-center justify-between px-6">
+    <div data-testid="home" data-theme="dark" className="scroll-thin h-full overflow-y-auto bg-[#0e0f13] text-white">
+      <section data-testid="home-hero" className="relative isolate overflow-hidden">
+        {/* a soft blue glow behind the title */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px] bg-[radial-gradient(60%_60%_at_50%_0%,rgb(61_123_255/0.28),transparent_70%)]" />
+        <header className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-6">
           <Logo asLink={false} tone="light" />
           <MoreMenu tone="light" />
         </header>
-        <div className="relative z-10 mx-auto flex h-[calc(100%-64px)] max-w-[1180px] flex-col justify-center px-6 pb-16">
-          <h1 className="font-display max-w-[640px] text-balance text-[clamp(44px,6vw,80px)] font-bold leading-[0.98] tracking-[-0.035em]">{t('home.title')}</h1>
-          <p className="mt-5 max-w-[500px] text-[16.5px] leading-relaxed text-white/78">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
-          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <div className="mx-auto flex max-w-[1180px] flex-col items-center px-6 pb-10 pt-12 text-center">
+          <h1 className="font-display max-w-[760px] text-balance text-[clamp(42px,6vw,76px)] font-bold leading-[0.98] tracking-[-0.035em]">{t('home.title')}</h1>
+          <p className="mt-5 max-w-[540px] text-[16.5px] leading-relaxed text-white/72">{t(window.mockuplabDesktop ? 'home.leadDesktop' : 'home.lead')}</p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
             <button
               type="button"
               onClick={() => navigate('studio')}
@@ -99,19 +60,27 @@ export function Home() {
               {t('home.openStudio')}
               <ArrowRight size={17} />
             </button>
-            <a href="#modes" className="flex items-center gap-1 text-[14px] font-medium text-white/80 transition-colors hover:text-white">
+            <a href="#modes" className="flex items-center gap-1 text-[14px] font-medium text-white/75 transition-colors hover:text-white">
               {t('home.otherModes')}
               <ChevronDown size={15} />
             </a>
           </div>
         </div>
+        <div className="mx-auto max-w-[1180px] px-6">
+          <img
+            data-testid="home-studio-shot"
+            src={`${import.meta.env.BASE_URL}showcase/studio-ui.jpg`}
+            alt={t('home.studioShot')}
+            className="w-full rounded-[18px] shadow-[0_40px_120px_rgb(0_0_0/0.6),0_0_0_1px_rgb(255_255_255/0.08)]"
+            draggable={false}
+          />
+        </div>
       </section>
 
-
-      <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-6 pt-8">
+      <main className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 pb-6 pt-14">
         <section id="modes" className="flex scroll-mt-6 flex-col gap-4">
           <h2 className="font-display text-[26px] font-bold">{t('home.modes')}</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr_1fr]" data-testid="mode-row">
             {MODE_ORDER.map((m) => {
               const main = m === 'studio';
               return (
@@ -121,24 +90,17 @@ export function Home() {
                   data-testid={`mode-card-${m}`}
                   disabled={!AVAILABLE[m]}
                   onClick={() => navigate(m)}
-                  className={cx(
-                    'glass group flex overflow-hidden rounded-[18px] text-left transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]',
-                    main ? 'flex-col md:col-span-3 md:flex-row' : 'flex-col',
-                  )}
+                  className="group flex flex-col overflow-hidden rounded-[18px] bg-white/[0.06] text-left shadow-[0_0_0_1px_rgb(255_255_255/0.08)_inset] transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]"
                 >
-                  <span className={cx('block overflow-hidden bg-surface-2', main ? 'aspect-[16/10] md:aspect-auto md:w-[58%]' : 'aspect-[16/10]')}>
+                  <span className="block aspect-[16/9] overflow-hidden bg-white/5">
                     <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]" draggable={false} />
                   </span>
-                  <span className={cx('flex flex-col gap-1.5', main ? 'justify-center px-7 py-6' : 'px-4 pb-4 pt-3')}>
-                    {main && <span className="w-fit rounded-full bg-accent/12 px-2.5 py-0.5 text-[12px] font-semibold text-accent">{t('home.main')}</span>}
-                    <span className={cx('font-display font-bold', main ? 'text-[30px]' : 'text-[20px]')}>{t(`screen.${m}` as I18nKey)}</span>
-                    <span className={cx('leading-snug text-fg-muted', main ? 'text-[15px]' : 'text-[13px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
-                    {main && (
-                      <span className="mt-3 flex w-fit items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-[14px] font-semibold text-white">
-                        {t('home.openStudio')}
-                        <ArrowRight size={16} />
-                      </span>
-                    )}
+                  <span className="flex flex-1 flex-col gap-1.5 px-5 pb-5 pt-4">
+                    <span className="flex items-center gap-2">
+                      <span className={cx('font-display font-bold', main ? 'text-[26px]' : 'text-[20px]')}>{t(`screen.${m}` as I18nKey)}</span>
+                      {main && <span className="rounded-full bg-[#3d7bff]/20 px-2.5 py-0.5 text-[12px] font-semibold text-[#8fb2ff]">{t('home.main')}</span>}
+                    </span>
+                    <span className={cx('leading-snug text-white/65', main ? 'text-[15px]' : 'text-[13px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
                   </span>
                 </button>
               );
@@ -148,7 +110,7 @@ export function Home() {
         <Recents />
       </main>
       <section className="pb-14 pt-2" aria-label={t('home.made')}>
-        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-fg-muted">{t('home.made')}</h2>
+        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-white/60">{t('home.made')}</h2>
         <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]" data-testid="showcase-strip">
           <div className="flex w-max gap-4 animate-[strip_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
             {[...STRIP, ...STRIP].map((name, i) => (

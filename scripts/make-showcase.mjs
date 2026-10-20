@@ -1,5 +1,5 @@
 // scripts/make-showcase.mjs — the real mock-ups shown on the home page, rendered by MockupLab itself
-// from the bundled sample designs (dev server on :5173). Output: public/showcase/*.webp
+// from the bundled sample designs, and the Studio at work (dev server on :5173). Output: public/showcase/*
 import { mkdirSync } from 'node:fs';
 import { openApp } from './lib/app.mjs';
 mkdirSync('public/showcase', { recursive: true });
@@ -37,3 +37,23 @@ for (const style of ['table-black-marble', 'table-oak-white', 'studio-light']) {
   await save('hero-' + style, () => page.evaluate(() => window.__mockuplab.pack.downloadOne('hero')));
 }
 await browser.close();
+
+// the Studio at work: a laptop and a phone side by side in the photo studio, the Décor page open (home page, under the title)
+{
+  const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
+  await page.evaluate(async () => {
+    const api = window.__mockuplab;
+    const s = api.project.getState();
+    s.setComposition(['laptop-14', 'phone-pro'], 'row');
+    for (const it of api.project.getState().items) await api.loadSamples(it.id);
+    s.setBackground({ kind: 'solid', color: '#e9e4f7' });
+    s.setDecor({ kind: 'sweep' });
+    s.setExport({ ratio: '16:9' });
+    api.ui.getState().setStudioPage('decor');
+    api.ui.getState().resetView();
+  });
+  await page.waitForTimeout(4000);
+  await page.screenshot({ path: 'public/showcase/studio-ui.jpg', type: 'jpeg', quality: 86 });
+  console.log('saved studio-ui');
+  await browser.close();
+}

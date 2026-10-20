@@ -36,7 +36,9 @@
 }
 
 /* Dark, frosted glass: translucent panels over a deep gradient, white accent. */
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+/* a part of the page that is always dark (the home page) */
+[data-theme='dark'] {
   --bg: #0b0b0e;
   --app-bg: linear-gradient(180deg, #14151a, #0b0b0e);
   --surface: rgb(40 40 46 / 0.55);
