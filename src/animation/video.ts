@@ -7,7 +7,6 @@ import { loadAmbience } from '@/scene/ambiences';
 import { settle } from '@/scene/exporter';
 import { loadMaterialMap } from '@/scene/realMaterials';
 import { useProject } from '@/store/project';
-import { carouselOf } from '@/export/settings';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { inSandbox } from '@/variants/render';
@@ -144,12 +143,6 @@ export async function renderVideo(onProgress?: (done: number, total: number) => 
 export async function exportVideo() {
   const ui = useUi.getState();
   if (ui.exporting) return;
-  // a carousel is a set of still slides, not a (17 000 px wide) video
-  const p = useProject.getState();
-  if (carouselOf(p.export.ratio)) {
-    toast.info(t('social.carouselVideo'));
-    return;
-  }
   const label = () => t('video.rendering');
   ui.setExporting(label());
   ui.setCancelExport(() => {

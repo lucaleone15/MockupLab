@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 import { t } from '@/i18n';
-import { download, formatBytes, renderCarouselSlides, slugify } from '@/export/exportImage';
+import { download, formatBytes, slugify } from '@/export/exportImage';
 import { ZipWriter } from '@/lib/zip';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { AXES, applyLook, generateLooks, refineLook, type Axis, type Look } from './looks';
 import { inSandbox, renderFull, renderThumb, showLook, whenIdle, onCancelSandboxes } from './render';
-import { carouselOf } from '@/export/settings';
 
 /*
  * Variants gallery: generated looks, their thumbnails (rendered one after the
@@ -135,12 +134,8 @@ export const variants = {
           if (token !== run) break;
           await showLook(look);
           const base = `mockuplab-${String(i + 1).padStart(2, '0')}-${slugify(look.label) || 'variante'}`;
-          // a carousel: each variant gives its slides
-          if (carouselOf(useProject.getState().export.ratio)) for (const f of await renderCarouselSlides()) out.push({ name: `${base}-${f.name}`, blob: f.blob });
-          else {
-            const r = await renderFull();
-            out.push({ name: `${base}-${r.width}x${r.height}.${r.ext}`, blob: r.blob });
-          }
+          const r = await renderFull();
+          out.push({ name: `${base}-${r.width}x${r.height}.${r.ext}`, blob: r.blob });
           set({ job: { kind: 'export', done: i + 1, total: chosen.length } });
         }
         return out;

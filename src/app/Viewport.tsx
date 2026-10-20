@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ImagePlus, Plus, Smartphone, Sparkles, Square } from 'lucide-react';
 import { useT } from '@/i18n';
-import { carouselOf, ratioValue, socialOf } from '@/export/settings';
+import { ratioValue } from '@/export/settings';
 import { paintBackground, prepareBackground } from '@/lib/background';
 import { useAssets } from '@/store/assets';
 import { pickImages } from '@/lib/importImage';
@@ -79,39 +79,6 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
     };
   }, [background, width, height, theme, assets]);
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" />;
-}
-
-/** Where an Instagram carousel is cut into slides: on screen only. */
-function CarouselCuts() {
-  const ratio = useProject((s) => s.export.ratio);
-  const c = carouselOf(ratio);
-  if (!c) return null;
-  return (
-    <div className="pointer-events-none absolute inset-0 z-10">
-      {Array.from({ length: c.slides - 1 }, (_, i) => (
-        <div key={i} data-testid="carousel-cut" className="absolute inset-y-0 border-l border-dashed border-white/70 mix-blend-difference" style={{ left: `${((i + 1) / c.slides) * 100}%` }} />
-      ))}
-    </div>
-  );
-}
-
-/** Where the social network's interface covers the frame: on screen only, never in the export. */
-function SafeZones() {
-  const ratio = useProject((s) => s.export.ratio);
-  const on = useUi((s) => s.safeZones);
-  const zones = socialOf(ratio)?.safe;
-  if (!on || !zones) return null;
-  return (
-    <div data-testid="safe-zones" className="pointer-events-none absolute inset-0 z-10">
-      {zones.map(([x, y, w, h], i) => (
-        <div
-          key={i}
-          className="absolute border border-dashed border-[#ff2bd6] bg-[#ff2bd6]/15"
-          style={{ left: `${x * 100}%`, top: `${y * 100}%`, width: `${w * 100}%`, height: `${h * 100}%` }}
-        />
-      ))}
-    </div>
-  );
 }
 
 function EmptyHint() {
@@ -245,8 +212,6 @@ export function Viewport() {
         <BackgroundCanvas width={width} height={height} />
         {width > 0 && <Stage />}
         <OverlayLayer width={width} height={height} frame={frame} />
-        <SafeZones />
-        <CarouselCuts />
         {empty ? <EmptyScene /> : !hasImage && <EmptyHint />}
       </div>
 

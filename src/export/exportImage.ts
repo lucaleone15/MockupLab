@@ -6,8 +6,7 @@ import { renderFrame } from '@/scene/exporter';
 import { useProject } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { FORMATS, carouselOf, outputSize, supersampleFor } from './settings';
-import { ZipWriter } from '@/lib/zip';
+import { FORMATS, outputSize, supersampleFor } from './settings';
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
 
@@ -120,29 +119,6 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
   return { blob, width, height, filename: `mockuplab-${slug}-${width}x${height}.${ext}` };
 }
 
-/**
- * An Instagram carousel's slides: the strip is rendered once (anti-aliased for the size of one slide),
- * cut on the canvas, and each slide encoded once at the export format and quality — 01, 02…
- */
-export async function renderCarouselSlides(onProgress?: (done: number, total: number) => void): Promise<{ name: string; blob: Blob; width: number; height: number }[]> {
-  const project = useProject.getState();
-  const c = carouselOf(project.export.ratio);
-  const { width, height } = outputSize(project.export);
-  const slides = c?.slides ?? 1;
-  const w = Math.round(width / slides);
-  const { canvas } = await composeScene({ width, height, opaque: project.export.format === 'jpeg', supersample: supersampleFor(w, height), onProgress });
-  const out: { name: string; blob: Blob; width: number; height: number }[] = [];
-  for (let i = 0; i < slides; i++) {
-    const slide = document.createElement('canvas');
-    slide.width = w;
-    slide.height = height;
-    slide.getContext('2d')!.drawImage(canvas, i * w, 0, w, height, 0, 0, w, height);
-    const { blob, ext } = await encodeCanvas(slide);
-    out.push({ name: `${String(i + 1).padStart(2, '0')}.${ext}`, blob, width: w, height });
-  }
-  return out;
-}
-
 /** Exports an image (default) or the video of the export settings. */
 export async function exportImage(kind: 'image' | 'video' = 'image') {
   const ui = useUi.getState();
@@ -158,20 +134,9 @@ export async function exportImage(kind: 'image' | 'video' = 'image') {
     // Let the progress overlay paint before the (synchronous) GPU work.
     await nextFrame();
     await nextFrame();
-    const carousel = carouselOf(project.export.ratio);
-    if (carousel) {
-      // an Instagram carousel: its slides, in posting order, in one ZIP
-      const slides = await renderCarouselSlides();
-      const zip = new ZipWriter();
-      for (const f of slides) await zip.add(f.name, f.blob);
-      const blob = zip.finish();
-      download(blob, `mockuplab-carousel-${slides.length}x${slides[0].width}x${slides[0].height}.zip`);
-      toast.success(t('social.carouselDone', { n: carousel.slides, size: formatBytes(blob.size) }));
-    } else {
-      const res = await renderImage();
-      download(res.blob, res.filename);
-      toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
-    }
+    const res = await renderImage();
+    download(res.blob, res.filename);
+    toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
   } catch (e) {
     toast.error(t('export.failed', { reason: e instanceof Error ? e.message : String(e) }));
   } finally {

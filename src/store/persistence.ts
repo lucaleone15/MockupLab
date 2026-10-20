@@ -128,7 +128,13 @@ export function migrateProject(raw: unknown): Project {
     camera: { ...DEFAULT_CAMERA, ...(r.camera ?? {}) },
     ground: { ...DEFAULT_GROUND, ...(r.ground ?? {}) },
     // `kind` (image or video) is the Export window's tab now, not the project's
-    export: (({ kind: _kind, ...e }) => ({ ...base.export, ...e, video: { ...base.export.video, ...(r.export?.video ?? {}) } }))((r.export ?? {}) as Partial<Project['export']> & { kind?: string }),
+    export: (({ kind: _kind, ...e }) => ({
+      ...base.export,
+      ...e,
+      // the Instagram carousel is gone: such a project becomes one Insta post
+      ratio: /^c\d+-/.test(String(e.ratio ?? '')) ? 'ig-post' : (e.ratio ?? base.export.ratio),
+      video: { ...base.export.video, ...(r.export?.video ?? {}) },
+    }))((r.export ?? {}) as Partial<Project['export']> & { kind?: string }),
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     arrangement: LAYOUTS.includes(r.arrangement as Layout) ? (r.arrangement as Layout) : 'auto',
     version: 6,

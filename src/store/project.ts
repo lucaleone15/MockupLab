@@ -4,8 +4,7 @@ import type { Fit } from '@/scene/screenMaterial';
 import { getModel } from '@/models/registry';
 import { defaultParams, type DeviceModule, type ParamValue } from '@/models/types';
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
-import { arrangeInRow, arrangeItems, besideOthers, constrainItems, layoutItems, type Layout } from '@/lib/arrange';
-import { carouselOf } from '@/export/settings';
+import { arrangeItems, besideOthers, constrainItems, layoutItems, type Layout } from '@/lib/arrange';
 import { useAssets } from './assets';
 
 /* ------------------------------------------------------------------ types */
@@ -205,8 +204,7 @@ export type ResolutionPreset = '1080' | '2k' | '4k';
 /** Social formats have an exact pixel size. */
 export type SocialPreset = 'ig-post' | 'ig-square' | 'story' | 'youtube' | 'linkedin' | 'pinterest';
 /** An Instagram carousel: N slides of 4:5 or 1:1 side by side. */
-export type CarouselPreset = `c${number}-${'4x5' | '1x1'}`;
-export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4' | SocialPreset | CarouselPreset;
+export type RatioPreset = '16:9' | '4:3' | '1:1' | '4:5' | '9:16' | '3:2' | 'a4' | SocialPreset;
 
 export type AnimationId = 'reveal' | 'dive' | 'dutch' | 'flip' | 'drop' | 'crane' | 'vertigo' | 'trailer' | 'turntable' | 'swing' | 'orbit' | 'scroll' | 'float';
 
@@ -273,9 +271,9 @@ export function makeItem(model: DeviceModule): SceneItem {
   };
 }
 
-/** The devices laid out the scene's way (a carousel lines them up along its strip, one per slide). */
-function laidOut(items: SceneItem[], s: Pick<Project, 'export' | 'arrangement' | 'decor'>) {
-  return constrainItems(carouselOf(s.export.ratio) ? arrangeInRow(items) : layoutItems(items, s.arrangement), s.decor);
+/** The devices laid out the scene's way. */
+function laidOut(items: SceneItem[], s: Pick<Project, 'arrangement' | 'decor'>) {
+  return constrainItems(layoutItems(items, s.arrangement), s.decor);
 }
 
 /** The scene is still the lone sample phone of a new project, never edited and without an image. */

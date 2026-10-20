@@ -1,12 +1,11 @@
 import { useMemo, type ReactNode } from 'react';
 import { DropdownMenu } from 'radix-ui';
-import { Copy, Ellipsis, Eye, EyeOff, LayoutGrid, Lock, LockOpen, Trash2 } from 'lucide-react';
+import { Copy, Ellipsis, Eye, EyeOff, Lock, LockOpen, Trash2 } from 'lucide-react';
 import { Silhouette } from '@/app/LibraryPanel';
 import * as THREE from 'three';
 import { useT, type I18nKey } from '@/i18n';
 import { LAYOUTS, footprint, layoutItems, type Layout } from '@/lib/arrange';
 import { COMPOSITIONS, type Composition } from '@/lib/compositions';
-import { carouselOf } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import { cameraState } from '@/scene/camera';
 import { makeItem, useProject } from '@/store/project';
@@ -70,7 +69,6 @@ export function SceneItems({ onChange }: { onChange?: (itemId: string) => void }
   const removeItem = useProject((s) => s.removeItem);
   const arrange = useProject((s) => s.arrange);
   const arrangement = useProject((s) => s.arrangement);
-  const carousel = useProject((s) => !!carouselOf(s.export.ratio));
   const resetView = useUi((s) => s.resetView);
   const lay = (layout?: Layout) => {
     arrange(layout);
@@ -144,22 +142,11 @@ export function SceneItems({ onChange }: { onChange?: (itemId: string) => void }
           );
         })}
       </ul>
-      {items.length > 1 &&
-        (carousel ? (
-          <Button size="sm" onClick={() => lay()}>
-            <LayoutGrid size={13} />
-            {t('comp.arrange')}
-          </Button>
-        ) : (
-          <Field label={t('comp.layout')}>
-            <Segmented
-              size="sm"
-              value={arrangement}
-              onChange={(layout: Layout) => lay(layout)}
-              options={LAYOUTS.map((l) => ({ value: l, label: t(`comp.layout.${l}` as I18nKey) }))}
-            />
-          </Field>
-        ))}
+      {items.length > 1 && (
+        <Field label={t('comp.layout')}>
+          <Segmented size="sm" value={arrangement} onChange={(layout: Layout) => lay(layout)} options={LAYOUTS.map((l) => ({ value: l, label: t(`comp.layout.${l}` as I18nKey) }))} />
+        </Field>
+      )}
     </Section>
   );
 }

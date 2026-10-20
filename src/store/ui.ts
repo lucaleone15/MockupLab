@@ -28,9 +28,6 @@ interface UiState {
   setAllProjectsOpen: (v: boolean) => void;
   /** Incremented to ask the camera rig to return to the default view. */
   viewResetToken: number;
-  /** Shows where a social network's interface covers the frame (never exported). */
-  safeZones: boolean;
-  setSafeZones: (on: boolean) => void;
   resetView: () => void;
   /** Label of the running export, null when idle. */
   exporting: string | null;
@@ -103,8 +100,6 @@ export const useUi = create<UiState>((set) => ({
   allProjectsOpen: false,
   setAllProjectsOpen: (allProjectsOpen) => set({ allProjectsOpen }),
   viewResetToken: 0,
-  safeZones: false,
-  setSafeZones: (safeZones) => set({ safeZones }),
   resetView: () => set((s) => ({ viewResetToken: s.viewResetToken + 1 })),
   exporting: null,
   setExporting: (exporting) => set({ exporting }),
