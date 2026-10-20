@@ -19,7 +19,6 @@ console.log('first view in', Date.now() - t0, 'ms');
 await p.getByRole('button', { name: 'Essayer un exemple' }).click();
 // a table set (decor ‘Vraie table’)
 await p.evaluate(() => window.__mockuplab.project.getState().setDecor({ kind: 'table' }));
-});
 await p.waitForTimeout(3500);
 await p.screenshot({ path: 'out/prod/table.png' });
 await p.getByTestId('top-export').click();

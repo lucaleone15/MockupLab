@@ -29,7 +29,8 @@ const glb = await p.evaluate(async () => {
 });
 writeFileSync('out/glb/kiosk.glb', Buffer.from(glb, 'base64'));
 await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
-await p.getByTestId('library-tabs').getByRole('button', { name: 'Mes modèles 3D' }).click();
+await p.getByTestId('add-device').click();
+await p.getByTestId('catalogue-family-custom').click();
 const [chooser] = await Promise.all([p.waitForEvent('filechooser'), p.getByTestId('import-glb').click()]);
 await chooser.setFiles('out/glb/kiosk.glb');
 await p.waitForTimeout(1500);
@@ -85,8 +86,9 @@ console.log('other browser after opening the file:', await p2.evaluate(() => win
 // delete the model: the device falls back to the phone
 p.on('dialog', (d) => d.accept());
 await p.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
-await p.getByTestId('library-tabs').getByRole('button', { name: 'Mes modèles 3D' }).click();
-await p.getByTestId('rail-page').getByText('kiosk').first().hover();
+await p.getByTestId('add-device').click();
+await p.getByTestId('catalogue-family-custom').click();
+await p.getByTestId('catalogue').getByText('kiosk').first().hover();
 await p.getByRole('button', { name: 'Supprimer ce modèle' }).first().click();
 await p.waitForTimeout(800);
 console.log('after delete:', (await item()).modelId);

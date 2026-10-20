@@ -18,13 +18,15 @@ for (const n of names) {
 await rail.getByRole('tab', { name: 'Appareils', exact: true }).click();
 const count = () => page.evaluate(() => window.__mockuplab.project.getState().items.length);
 const n0 = await count();
-await page.getByTestId('library-tabs').getByRole('button', { name: 'Ordinateurs portables' }).click();
-await page.getByTestId('rail-page').getByRole('button', { name: 'Laptop 14', exact: true }).click();
+await page.getByTestId('add-device').click();
+await page.getByTestId('catalogue-family-laptop').click();
+await page.getByTestId('catalogue').getByRole('button', { name: 'Laptop 14', exact: true }).click();
 await page.waitForTimeout(300);
 const models = () => page.evaluate(() => window.__mockuplab.project.getState().items.map((i) => i.modelId).join());
 check(n0 === 1 && (await models()) === 'laptop-14', `the first pick replaces the untouched sample phone (${await models()})`);
-await page.getByTestId('library-tabs').getByRole('button', { name: 'Téléphones' }).click();
-await page.getByTestId('rail-page').getByRole('button', { name: 'Phone Neo', exact: true }).click();
+await page.getByTestId('add-device').click();
+await page.getByTestId('catalogue-family-phone').click();
+await page.getByTestId('catalogue').getByRole('button', { name: 'Phone Neo', exact: true }).click();
 await page.waitForTimeout(300);
 check((await count()) === 2, 'the next library click adds a device');
 // a click on a device in the canvas opens Settings

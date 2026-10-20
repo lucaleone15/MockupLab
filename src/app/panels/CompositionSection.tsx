@@ -1,24 +1,20 @@
 import { useMemo, type ReactNode } from 'react';
-import { AppWindow, Copy, Eye, EyeOff, LayoutGrid, Laptop, Lock, LockOpen, Monitor, Smartphone, Tablet, Trash2 } from 'lucide-react';
+import { DropdownMenu } from 'radix-ui';
+import { Copy, Ellipsis, Eye, EyeOff, LayoutGrid, Lock, LockOpen, Trash2 } from 'lucide-react';
+import { Silhouette } from '@/app/LibraryPanel';
 import * as THREE from 'three';
 import { useT, type I18nKey } from '@/i18n';
 import { LAYOUTS, footprint, layoutItems, type Layout } from '@/lib/arrange';
 import { COMPOSITIONS, type Composition } from '@/lib/compositions';
 import { carouselOf } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import type { DeviceCategory } from '@/models/types';
 import { cameraState } from '@/scene/camera';
 import { makeItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Button, Field, Section, Segmented, Slider, Tooltip, cx } from '@/ui/primitives';
 
-const ICONS: Partial<Record<DeviceCategory, ReactNode>> = {
-  phone: <Smartphone size={14} />,
-  tablet: <Tablet size={14} />,
-  laptop: <Laptop size={14} />,
-  desktop: <Monitor size={14} />,
-  browser: <AppWindow size={14} />,
-};
+const MENU_ROW = 'flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-fg';
+
 
 function RowButton({ label, onClick, children, active }: { label: string; onClick: () => void; children: ReactNode; active?: boolean }) {
   return (
@@ -30,7 +26,7 @@ function RowButton({ label, onClick, children, active }: { label: string; onClic
           e.stopPropagation();
           onClick();
         }}
-        className={cx('grid size-6 place-items-center rounded-md transition-colors hover:bg-surface-4 hover:text-fg', active ? 'text-accent' : 'text-fg-subtle')}
+        className={cx('grid size-7 place-items-center rounded-md transition-colors hover:bg-surface-4 hover:text-fg', active ? 'text-accent' : 'text-fg-subtle')}
       >
         {children}
       </button>
@@ -64,8 +60,8 @@ function useComposition() {
   return { items, selected, labels };
 }
 
-/** The devices in the scene: select, hide, lock, duplicate, delete; and arrange them all. */
-export function SceneItems() {
+/** The devices in the scene: select, change, hide, lock, duplicate, delete; and arrange them all. */
+export function SceneItems({ onChange }: { onChange?: (itemId: string) => void }) {
   const { t } = useT();
   const { items, selected, labels } = useComposition();
   const selectItem = useProject((s) => s.selectItem);
@@ -84,7 +80,7 @@ export function SceneItems() {
   return (
     <Section title={t('devices.inScene')} aside={<span className="text-[12px] tabular-nums text-fg-subtle">{items.length}</span>}>
       {!items.length && <p className="text-[12.5px] leading-snug text-fg-muted">{t('devices.empty')}</p>}
-      <ul className="-mx-1 flex flex-col gap-0.5">
+      <ul className="flex flex-col gap-1.5">
         {items.map((it, i) => {
           const model = getModel(it.modelId);
           const active = it.id === selected?.id;
@@ -93,30 +89,56 @@ export function SceneItems() {
               <div
                 role="button"
                 tabIndex={0}
+                data-testid="scene-item"
                 onClick={() => selectItem(it.id)}
                 onKeyDown={(e) => e.key === 'Enter' && selectItem(it.id)}
                 className={cx(
-                  'group flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2 text-[12.5px] transition-colors',
-                  active ? 'bg-surface-3 text-fg shadow-[0_0_0_1px_var(--line-strong)_inset]' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+                  'flex cursor-pointer items-center gap-1.5 rounded-[12px] py-1 pl-1 pr-0.5 text-[13px] transition-[background-color,box-shadow]',
+                  active ? 'bg-surface-3 text-fg shadow-[0_0_0_1.5px_var(--accent)_inset]' : 'bg-surface-2 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
                   !it.visible && 'opacity-50',
                 )}
               >
-                <span className={active ? 'text-accent' : 'text-fg-subtle'}>{ICONS[model.category]}</span>
-                <span className="flex-1 truncate">{labels[i]}</span>
-                <span className={cx('flex items-center', active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
-                  <RowButton label={it.visible ? t('comp.hide') : t('comp.show')} onClick={() => updateItem(it.id, { visible: !it.visible })}>
-                    {it.visible ? <Eye size={13} /> : <EyeOff size={13} />}
-                  </RowButton>
-                  <RowButton label={it.locked ? t('comp.unlock') : t('comp.lock')} active={it.locked} onClick={() => updateItem(it.id, { locked: !it.locked })}>
-                    {it.locked ? <Lock size={13} /> : <LockOpen size={13} />}
-                  </RowButton>
-                  <RowButton label={t('comp.duplicate')} onClick={() => duplicateItem(it.id)}>
-                    <Copy size={13} />
-                  </RowButton>
-                  <RowButton label={t('comp.delete')} onClick={() => removeItem(it.id)}>
-                    <Trash2 size={13} />
-                  </RowButton>
-                </span>
+                <Silhouette model={model} small />
+                <span className="min-w-0 flex-1 truncate font-medium" title={labels[i]}>{labels[i]}</span>
+                {it.locked && <Lock size={13} className="text-fg-subtle" aria-label={t('comp.unlock')} />}
+                {onChange && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChange(it.id);
+                    }}
+                    className="h-7 shrink-0 rounded-full bg-surface-4 px-2.5 text-[12px] font-medium text-fg transition-colors hover:bg-accent hover:text-accent-fg"
+                  >
+                    {t('comp.change')}
+                  </button>
+                )}
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button type="button" aria-label={t('comp.more')} onClick={(e) => e.stopPropagation()} className="grid size-7 place-items-center rounded-md text-fg-subtle hover:bg-surface-4 hover:text-fg">
+                      <Ellipsis size={15} />
+                    </button>
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[180px] rounded-[12px] p-1.5 animate-[fade-in_120ms_ease-out]" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu.Item className={MENU_ROW} onSelect={() => duplicateItem(it.id)}>
+                        <Copy size={14} />
+                        {t('comp.duplicate')}
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item className={MENU_ROW} onSelect={() => updateItem(it.id, { visible: !it.visible })}>
+                        {it.visible ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {it.visible ? t('comp.hide') : t('comp.show')}
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item className={MENU_ROW} onSelect={() => updateItem(it.id, { locked: !it.locked })}>
+                        {it.locked ? <LockOpen size={14} /> : <Lock size={14} />}
+                        {it.locked ? t('comp.unlock') : t('comp.lock')}
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
+                <RowButton label={t('comp.delete')} onClick={() => removeItem(it.id)}>
+                  <Trash2 size={14} />
+                </RowButton>
               </div>
             </li>
           );
@@ -217,30 +239,28 @@ function CompositionThumb({ composition }: { composition: Composition }) {
 }
 
 /** Scenes with several devices already laid out: pick one, then change the images. */
-export function Compositions() {
-  const { t, tr } = useT();
+export function CompositionCards({ onPicked }: { onPicked?: () => void }) {
+  const { tr } = useT();
   const setComposition = useProject((s) => s.setComposition);
   const resetView = useUi((s) => s.resetView);
   return (
-    <Section title={t('devices.compositions')}>
-      <div className="grid grid-cols-2 gap-2" data-testid="compositions">
-        {COMPOSITIONS.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            data-testid={`composition-${c.id}`}
-            onClick={() => {
-              setComposition(c.models, c.layout);
-              resetView();
-            }}
-            className="flex flex-col items-center gap-1.5 rounded-[12px] bg-surface-2 px-2 pb-2 pt-2.5 text-[12px] leading-tight text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color,color,transform] duration-150 hover:bg-surface-3 hover:text-fg active:scale-[0.97]"
-          >
-            <CompositionThumb composition={c} />
-            <span className="text-center">{tr(c.name)}</span>
-          </button>
-        ))}
-      </div>
-      <p className="text-[12px] leading-snug text-fg-muted">{t('devices.compositionsHint')}</p>
-    </Section>
+    <div className="grid grid-cols-3 gap-2.5" data-testid="compositions">
+      {COMPOSITIONS.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          data-testid={`composition-${c.id}`}
+          onClick={() => {
+            setComposition(c.models, c.layout);
+            resetView();
+            onPicked?.();
+          }}
+          className="flex flex-col items-center gap-1.5 rounded-[12px] bg-surface-2 px-2 pb-2 pt-2.5 text-[12px] leading-tight text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color,color,transform] duration-150 hover:bg-surface-3 hover:text-fg active:scale-[0.97]"
+        >
+          <CompositionThumb composition={c} />
+          <span className="text-center">{tr(c.name)}</span>
+        </button>
+      ))}
+    </div>
   );
 }

@@ -79,8 +79,9 @@ check(await page.getByText('≈ 59 × 33 cm').first().isVisible().catch(() => fa
 // the size is chosen right where the poster was picked (Devices page)
 await page.evaluate(() => window.__mockuplab.project.getState().resetAll());
 await page.getByTestId('studio-rail').getByRole('tab', { name: 'Appareils', exact: true }).click();
-await page.getByTestId('library-tabs').getByRole('button', { name: 'Print' }).click();
-await page.getByTestId('rail-page').getByRole('button', { name: 'Affiche', exact: true }).click();
+await page.getByTestId('add-device').click();
+await page.getByTestId('catalogue-family-print').click();
+await page.getByTestId('catalogue').getByRole('button', { name: 'Affiche', exact: true }).click();
 await page.waitForTimeout(300);
 check(await page.getByTestId('rail-page').getByRole('switch', { name: 'Adapter à mon image' }).isVisible().catch(() => false), 'Devices page: “Adapt to my image” right after picking the poster');
 check(await page.getByTestId('rail-page').getByRole('radio', { name: 'A1', exact: true }).isVisible().catch(() => false), 'Devices page: the sizes right after picking the poster');

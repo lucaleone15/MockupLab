@@ -1,53 +1,36 @@
 import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useT } from '@/i18n';
-import { CATEGORY_KEYS, ModelCard, UserModels } from '@/app/LibraryPanel';
-import { Compositions, SceneItems } from '@/app/panels/CompositionSection';
+import { SceneItems } from '@/app/panels/CompositionSection';
 import { DeviceParams } from '@/app/PropertiesPanel';
-import { getModel, modelsByCategory } from '@/models/registry';
-import type { DeviceCategory } from '@/models/types';
+import { getModel } from '@/models/registry';
 import { selectSelectedItem, useProject } from '@/store/project';
-import { Chip, Section } from '@/ui/primitives';
+import { Button, Section } from '@/ui/primitives';
+import { Catalogue } from './Catalogue';
 
-/** What is in the scene, then the library (one category at a time) and the .glb import. */
+/** The devices of the scene, and a button that opens the catalogue to add one. */
 export function DevicesPage() {
   const { t, tr } = useT();
-  const groups = modelsByCategory().filter(([c]) => c !== 'custom');
-  const [cat, setCat] = useState<DeviceCategory>(groups[0]?.[0] ?? 'phone');
-  const models = groups.find(([c]) => c === cat)?.[1] ?? [];
+  // closed, adding a device, or changing the device of that id
+  const [catalogue, setCatalogue] = useState<{ replaceId: string | null } | null>(null);
   const selected = useProject(selectSelectedItem);
   // a print's size is chosen right here, where it was picked
   const sized = selected && getModel(selected.modelId).paperSize ? selected : null;
   return (
     <>
-      <SceneItems />
+      <SceneItems onChange={(id) => setCatalogue({ replaceId: id })} />
       {sized && (
         <Section title={tr(getModel(sized.modelId).name)}>
           <DeviceParams item={sized} only={['fit', 'format']} />
         </Section>
       )}
-      <Compositions />
-      <Section title={t('devices.library')}>
-        <div className="flex flex-wrap gap-1.5" data-testid="library-tabs">
-          {groups.map(([c]) => (
-            <Chip key={c} active={c === cat} onClick={() => setCat(c)}>
-              {CATEGORY_KEYS[c] ? t(CATEGORY_KEYS[c]) : c}
-            </Chip>
-          ))}
-          <Chip active={cat === 'custom'} onClick={() => setCat('custom')}>
-            {t('library.custom')}
-          </Chip>
-        </div>
-        {cat === 'custom' ? (
-          <UserModels />
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {models.map((m) => (
-              <ModelCard key={m.id} model={m} />
-            ))}
-          </div>
-        )}
-        <p className="text-[12px] leading-snug text-fg-muted">{t('devices.hint')}</p>
-      </Section>
+      <div className="px-5 pt-1">
+        <Button variant="primary" size="lg" className="w-full" onClick={() => setCatalogue({ replaceId: null })} data-testid="add-device">
+          <Plus size={16} strokeWidth={2.2} />
+          {t('stage.addDevice')}
+        </Button>
+      </div>
+      <Catalogue open={!!catalogue} onOpenChange={(v) => !v && setCatalogue(null)} replaceId={catalogue?.replaceId} />
     </>
   );
 }

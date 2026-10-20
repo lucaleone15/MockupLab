@@ -30,6 +30,7 @@ import {
 import { useT, type I18nKey } from '@/i18n';
 import { useUserModules } from '@/models/registry';
 import type { DeviceCategory, DeviceModule } from '@/models/types';
+import { switchModel } from '@/lib/switchModel';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Tooltip, cx } from '@/ui/primitives';
@@ -80,12 +81,12 @@ const SHELL = 'fill-surface-4 stroke-fg-subtle';
 const SCREEN = 'fill-surface-2';
 
 /** Line-art silhouette drawn from the model's real proportions. */
-export function Silhouette({ model }: { model: DeviceModule }) {
+export function Silhouette({ model, small }: { model: DeviceModule; small?: boolean }) {
   const Icon = model.category === 'custom' ? Box : OBJECT_ICONS[model.id];
   if (Icon)
     return (
-      <span className="grid h-14 w-14 place-items-center text-fg-subtle">
-        <Icon size={30} strokeWidth={1.25} />
+      <span className={cx('grid place-items-center text-fg-subtle', small ? 'size-7 shrink-0' : 'h-14 w-14')}>
+        <Icon size={small ? 17 : 30} strokeWidth={1.25} />
       </span>
     );
   const [w, h] = model.size;
@@ -135,19 +136,20 @@ export function Silhouette({ model }: { model: DeviceModule }) {
     );
   }
   return (
-    <svg viewBox="0 0 80 80" className="h-14 w-14" aria-hidden>
+    <svg viewBox="0 0 80 80" className={small ? 'size-7 shrink-0' : 'h-14 w-14'} aria-hidden>
       {art}
     </svg>
   );
 }
 
-export function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelete?: () => void }) {
+/** A device of the library: a click adds it to the scene, or replaces the device `replaceId` when given. */
+export function ModelCard({ model: m, onDelete, onAdded, replaceId }: { model: DeviceModule; onDelete?: () => void; onAdded?: () => void; replaceId?: string }) {
   const { t, tr } = useT();
   const addItem = useProject((s) => s.addItem);
   const resetView = useUi((s) => s.resetView);
   return (
                   <div key={m.id} className="group relative">
-                    <Tooltip label={t('library.add')}>
+                    <Tooltip label={t(replaceId ? 'library.replace' : 'library.add')}>
                       <button
                         type="button"
                         draggable
@@ -156,8 +158,12 @@ export function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelet
                           e.dataTransfer.effectAllowed = 'copy';
                         }}
                         onClick={() => {
-                          addItem(m.id);
-                          resetView();
+                          if (replaceId) void switchModel(replaceId, m.id);
+                          else {
+                            addItem(m.id);
+                            resetView();
+                          }
+                          onAdded?.();
                         }}
                         className={cx(
                           'flex w-full flex-col items-center gap-1 rounded-[12px] bg-surface-2 px-1.5 pb-2 pt-1.5 text-[12px] leading-tight text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] transition-[box-shadow,background-color,color,transform] duration-150 hover:bg-surface-3 hover:text-fg active:scale-[0.97]',
@@ -183,7 +189,7 @@ export function ModelCard({ model: m, onDelete }: { model: DeviceModule; onDelet
                 );
 }
 
-export function UserModels() {
+export function UserModels({ onAdded, replaceId }: { onAdded?: () => void; replaceId?: string } = {}) {
   const { t } = useT();
   const modules = useUserModules((s) => s.modules);
   const load = () => import('@/models/glb/userModels');
@@ -196,6 +202,8 @@ export function UserModels() {
             <ModelCard
               key={m.id}
               model={m}
+              onAdded={onAdded}
+              replaceId={replaceId}
               onDelete={() => {
                 if (window.confirm(t('glb.deleteConfirm', { name: m.name.fr }))) void load().then((x) => x.deleteUserModel(m.id));
               }}

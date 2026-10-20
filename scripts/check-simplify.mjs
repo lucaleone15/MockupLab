@@ -38,7 +38,17 @@ check(list.length === 1 && !!list[0].img, `a pasted image in an empty scene adds
 
 // 3. added devices lay themselves out (centred, no overlap)
 await page.evaluate(() => window.__mockuplab.project.getState().removeItem(window.__mockuplab.project.getState().items[0].id));
-for (let i = 0; i < 3; i++) await page.getByTestId('rail-page').getByRole('button', { name: /^Phone Pro$/ }).first().click();
+const addFrom = async (family, name) => {
+  await page.getByTestId('add-device').click();
+  await page.getByTestId(`catalogue-family-${family}`).click();
+  await page.getByTestId('catalogue').getByRole('button', { name, exact: true }).click();
+};
+const pickComposition = async (id) => {
+  await page.getByTestId('add-device').click();
+  await page.getByTestId('catalogue-family-several').click();
+  await page.getByTestId(`composition-${id}`).click();
+};
+for (let i = 0; i < 3; i++) await addFrom('phone', 'Phone Pro');
 await page.waitForTimeout(600);
 list = await items();
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
@@ -62,13 +72,13 @@ for (const [label, name] of [['Éventail', 'fan'], ['Cascade', 'cascade'], ['Éq
 await page.evaluate(() => window.__mockuplab.loadSamples(window.__mockuplab.project.getState().items[0].id));
 await page.waitForTimeout(800);
 for (const id of ['phones-2', 'phones-3', 'phones-3-row', 'phones-4', 'phones-5', 'laptop-phone', 'laptop-tablet-phone', 'all-screens']) {
-  await page.getByTestId(`composition-${id}`).click();
+  await pickComposition(id);
   await page.waitForTimeout(1500);
   await shot(`composition-${id}`);
 }
 list = await items();
 check(list.length === 4 && list.some((i) => i.model.startsWith('phone') && i.img), `“Every screen”: 4 devices, the phone keeps its image (${list.map((i) => i.model)})`);
-await page.getByTestId('composition-phones-5').click();
+await pickComposition('phones-5');
 await page.waitForTimeout(800);
 list = await items();
 check(list.length === 5 && list.every((i) => i.img), `“5 phones”: every phone has an image to start from (${list.filter((i) => i.img).length}/5)`);
@@ -100,7 +110,7 @@ while (await page.getByTestId('tour').isVisible().catch(() => false)) {
   await page.getByTestId('tour-next').click();
   if (n > 20) break;
 }
-check(n === 14, `the guide has 14 steps (${n})`);
+check(n === 13, `the guide has 13 steps (${n})`);
 check((await page.evaluate(() => localStorage.getItem('mockuplab:tour'))) === '1', 'a finished guide is remembered');
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'devices', 'the guide ends on the Devices page');
 await done(browser, errors);
