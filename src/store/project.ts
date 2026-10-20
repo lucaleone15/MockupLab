@@ -6,6 +6,7 @@ import { defaultParams, type DeviceModule, type ParamValue } from '@/models/type
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
 import { arrangeItems, besideOthers, constrainItems, layoutItems, type Layout } from '@/lib/arrange';
 import { useAssets } from './assets';
+import { DEFAULT_SOCIAL, type SocialView } from '@/social/networks';
 
 /* ------------------------------------------------------------------ types */
 
@@ -245,6 +246,8 @@ export interface Project {
   export: ExportSettings;
   /** How the devices are laid out; every added or removed device lays them out again. */
   arrangement: Layout;
+  /** “Voir sur…”: the network interface shown around the scene. */
+  social: SocialView;
 }
 
 /* -------------------------------------------------------------- defaults */
@@ -334,6 +337,7 @@ export function initialProject(): Project {
     ground: { ...DEFAULT_GROUND },
     export: { video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
     arrangement: 'auto',
+    social: { ...DEFAULT_SOCIAL },
   };
 }
 
@@ -376,6 +380,7 @@ interface ProjectActions {
   /** Everything back to a fresh project (undoable). */
   resetAll: () => void;
   setExport: (patch: Partial<ExportSettings>) => void;
+  setSocial: (patch: Partial<SocialView>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
   replaceModel: (itemId: string, modelId: string) => void;
@@ -417,6 +422,7 @@ const historyOf = (s: ProjectState): Project => ({
   ground: s.ground,
   export: s.export,
   arrangement: s.arrangement,
+  social: s.social,
 });
 
 export const useProject = create<ProjectState>()(
@@ -553,6 +559,7 @@ export const useProject = create<ProjectState>()(
         set(initialProject());
       },
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
+      setSocial: (patch) => set((s) => ({ social: { ...s.social, ...patch } })),
       setParam: (itemId, id, value) =>
         set((s) => ({
           items: constrainItems(

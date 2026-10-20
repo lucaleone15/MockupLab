@@ -2,6 +2,7 @@ import { del, get, keys, set } from 'idb-keyval';
 import { t } from '@/i18n';
 import { getModel } from '@/models/registry';
 import { LAYOUTS, type Layout } from '@/lib/arrange';
+import { DEFAULT_SOCIAL, NETWORK_ORDER, type Network } from '@/social/networks';
 import { defaultParams } from '@/models/types';
 import { useAssets, type Asset } from './assets';
 import {
@@ -65,6 +66,7 @@ export function snapshot(s: ProjectState = useProject.getState()): Project {
     ground: s.ground,
     export: s.export,
     arrangement: s.arrangement,
+    social: s.social,
   };
 }
 
@@ -137,6 +139,7 @@ export function migrateProject(raw: unknown): Project {
     }))((r.export ?? {}) as Partial<Project['export']> & { kind?: string }),
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     arrangement: LAYOUTS.includes(r.arrangement as Layout) ? (r.arrangement as Layout) : 'auto',
+    social: { ...DEFAULT_SOCIAL, ...(r.social ?? {}), network: NETWORK_ORDER.includes(r.social?.network as Network) ? (r.social?.network as Network) : null },
     version: 6,
   };
 }

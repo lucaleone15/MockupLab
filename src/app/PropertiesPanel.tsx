@@ -361,6 +361,8 @@ export function ExportForm() {
   const setExport = useProject((s) => s.setExport);
   const transparent = useProject((s) => s.background.kind === 'transparent');
   const dof = useProject((s) => s.camera.dof);
+  const network = useProject((s) => s.social.network);
+  const withInterface = useProject((s) => s.social.withInterface);
   const { width, height } = outputSize(settings);
 
   return (
@@ -384,6 +386,15 @@ export function ExportForm() {
           <span className="text-fg-subtle"> · {FORMATS.find((f) => f.id === settings.format)?.label}</span>
         </span>
       </div>
+      {network && (
+        <label data-testid="export-with-interface" className="flex cursor-pointer items-start justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 shadow-[0_0_0_1px_var(--line)_inset]">
+          <span className="flex flex-col gap-0.5">
+            <span className="text-[12.5px] font-medium text-fg">{t('export.withInterface')}</span>
+            <span className="text-[11.5px] leading-snug text-fg-muted">{t('export.withInterfaceHint')}</span>
+          </span>
+          <Switch checked={withInterface} onChange={(on) => useProject.getState().setSocial({ withInterface: on })} label={t('export.withInterface')} />
+        </label>
+      )}
       {dof && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('export.dofNote')}</p>}
     </div>
   );

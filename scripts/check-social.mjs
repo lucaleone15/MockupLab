@@ -6,11 +6,13 @@ const exportSize = () => page.evaluate(async () => {
   return [r.width, r.height];
 });
 const pick = async (name) => {
-  await page.getByRole('button', { name: /Réseaux/ }).click();
-  await page.getByRole('menuitemradio', { name: new RegExp(name) }).click();
+  await page.getByTestId('floating-bar').getByRole('button', { name: /Voir sur/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: new RegExp(`^${name}`) }).first().click();
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(250);
 };
-const expected = [['Post Insta', 1080, 1350], ['Post carré', 1080, 1080], ['Story · Reel · TikTok', 1080, 1920], ['YouTube', 1920, 1080], ['LinkedIn', 1200, 627], ['Pinterest', 1000, 1500]];
+// formats from “Voir sur…” (networks with their interface, other sizes plain); the export is the image only
+const expected = [['Post Insta', 1080, 1350], ['Post carré', 1080, 1080], ['Story', 1080, 1920], ['YouTube', 1920, 1080], ['LinkedIn', 1200, 627], ['Pinterest', 1000, 1500]];
 await page.evaluate(() => window.__mockuplab.project.getState().setExport({ resolution: '1080', format: 'png' }));
 for (const [name, w, h] of expected) {
   await pick(name);
