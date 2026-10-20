@@ -6,8 +6,9 @@ import { getModel, modelsByCategory } from '@/models/registry';
 import { useProject } from '@/store/project';
 import type { DeviceCategory } from '@/models/types';
 import { Sheet, cx } from '@/ui/primitives';
+import { SocialCards } from './SocialCards';
 
-type Family = DeviceCategory | 'several';
+type Family = DeviceCategory | 'social' | 'several';
 
 /**
  * Every device, one family at a time. A click adds it to the scene, or — when
@@ -28,6 +29,7 @@ export function Catalogue({ open, onOpenChange, replaceId }: { open: boolean; on
   const close = () => onOpenChange(false);
   const families: { id: Family; label: string }[] = [
     ...groups.map(([c]) => ({ id: c as Family, label: CATEGORY_KEYS[c] ? t(CATEGORY_KEYS[c]) : c })),
+    { id: 'social', label: t('catalogue.social') },
     { id: 'custom', label: t('library.custom') },
     // a ready-made scene replaces the whole scene, not one device
     ...(replaced ? [] : [{ id: 'several' as Family, label: t('catalogue.several') }]),
@@ -63,6 +65,8 @@ export function Catalogue({ open, onOpenChange, replaceId }: { open: boolean; on
         <div>
           {family === 'custom' ? (
             <UserModels onAdded={close} replaceId={replaced?.id} />
+          ) : family === 'social' ? (
+            <SocialCards onPicked={close} replaceId={replaced?.id} />
           ) : family === 'several' ? (
             <>
               <p className="mb-3 text-[12.5px] leading-snug text-fg-muted">{t('devices.compositionsHint')}</p>

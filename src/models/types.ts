@@ -31,13 +31,29 @@ export type ParamValue = number | string | boolean;
 export type ImageAspects = Record<string, number>;
 
 /** User-tweakable model parameter, rendered automatically in the properties panel. */
-export type ParamDef =
+export type ParamDef = (
   | { id: string; kind: 'slider'; label: I18nString; min: number; max: number; step: number; default: number; unit?: string }
   | { id: string; kind: 'toggle'; label: I18nString; default: boolean }
   | { id: string; kind: 'choice'; label: I18nString; options: { value: string; label: I18nString }[]; default: string }
   | { id: string; kind: 'text'; label: I18nString; default: string; placeholder?: string }
+  /** An image of the user's (value = asset id, '' = none); `hint` says what shows without one. */
+  | {
+      id: string;
+      kind: 'image';
+      label: I18nString;
+      default: '';
+      hint?: I18nString;
+      /** Without an image of its own, the brand's logo shows. */
+      fallback?: 'brand-logo';
+      /** Ids of the hidden settings that frame it in a disc (see AvatarFrame). */
+      frame?: { fit: string; zoom: string; x: string; y: string };
+    }
   /** Colour swatches (value = hex colour). */
-  | { id: string; kind: 'swatch'; label: I18nString; options: { value: string; label: I18nString }[]; default: string };
+  | { id: string; kind: 'swatch'; label: I18nString; options: { value: string; label: I18nString }[]; default: string }
+) & {
+  /** Shown only when this holds (e.g. the caption only with an app on the screen). */
+  visible?: (params: Record<string, ParamValue>) => boolean;
+};
 
 /** Shared parameter: rotates the device 90° and maps landscape images upright. */
 export const ORIENTATION_PARAM = {

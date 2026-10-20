@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { DeviceCategory, DeviceModule } from './types';
 import { browserWindow } from './browser/Browser';
+import { socialCard } from './social/SocialCard';
 import { desktop24, display27, monitor27 } from './desktop/Desktop';
 import { laptop14, laptopAir } from './laptop/Laptop';
 import { phoneClassic, phoneNeo, phonePro } from './phone/phones';
@@ -32,6 +33,7 @@ export const MODELS: DeviceModule[] = [
   totem,
   streetPoster,
   browserWindow,
+  socialCard,
   businessCard,
   postcard,
   flyer,

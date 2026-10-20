@@ -19,7 +19,6 @@ async function scene({ models, layout = 'auto', preset, background, decor, light
       const api = window.__mockuplab;
       const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
       const s = api.project.getState();
-      s.setSocial({ network: null, withInterface: false });
       s.setComposition(models, layout);
       for (const it of api.project.getState().items) await api.loadSamples(it.id);
       if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
@@ -78,12 +77,16 @@ if (want('studio-travertine')) {
   await scene({ models: ['tablet-pro-11', 'phone-pro'], preset: 'table-travertine-terracotta' });
   await still('studio-travertine.webp');
 }
-if (want('social-story')) {
-  await scene({ models: ['phone-pro'], preset: 'podium-arch', ratio: 'story' });
-  await page.evaluate(() => window.__mockuplab.project.getState().setSocial({ network: 'story', withInterface: true, caption: '' }));
-  await page.evaluate(() => window.__mockuplab.project.getState().setExport({ resolution: '1080' }));
+if (want('social-post')) {
+  // the social phone: the sample design as an Insta post, on a podium
+  await scene({ models: ['phone-pro'], preset: 'podium-arch', ratio: '4:5' });
+  await page.evaluate(() => {
+    const s = window.__mockuplab.project.getState();
+    s.setParam(s.items[0].id, 'app', 'post');
+    s.setParam(s.items[0].id, 'caption', 'Le nouveau site est en ligne');
+  });
   await page.waitForTimeout(1500);
-  await still('social-story.webp');
+  await still('social-post.webp');
 }
 if (want('motion')) {
   // a turntable of the phone, looping, for the “it moves” section (MP4 and WebM) and its still

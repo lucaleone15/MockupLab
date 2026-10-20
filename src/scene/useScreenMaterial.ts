@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { assetTexture, loadImage, prepareTexture, useAssets } from '@/store/assets';
@@ -65,14 +65,24 @@ export function useSurfaceImage(binding: SurfaceBinding | undefined) {
 }
 
 /**
+ * Paints the whole screen from the surface's image (e.g. an app around it);
+ * `key` changes whenever the painting would.
+ */
+export interface ScreenCompose {
+  key: string;
+  draw: (image: CanvasImageSource) => HTMLCanvasElement;
+}
+
+/**
  * Screen material bound to a surface: resolves the asset's texture, fits it to
- * the surface aspect and applies the screen settings.
+ * the surface aspect and applies the screen settings. With `compose`, the
+ * screen is the canvas it paints (at the surface aspect) instead.
  */
 export function useScreenMaterial(
   binding: SurfaceBinding | undefined,
   surfaceAspect: number,
   screen: ScreenSettings,
-  { rotated = false }: { rotated?: boolean } = {},
+  { rotated = false, compose }: { rotated?: boolean; compose?: ScreenCompose } = {},
 ) {
   const invalidate = useThree((s) => s.invalidate);
   const material = useMemo(() => createScreenMaterial(), []);
@@ -82,8 +92,21 @@ export function useScreenMaterial(
 
   const fit = binding?.fit ?? 'cover';
   const align = binding?.align ?? 0;
+  const draw = useRef(compose?.draw);
+  draw.current = compose?.draw;
+  const composeKey = compose?.key;
   useEffect(() => {
     const ready = asset && image;
+    if (composeKey !== undefined && draw.current) {
+      const source = ready ? image : (placeholderTexture().image as HTMLCanvasElement);
+      const tex = prepareTexture(new THREE.CanvasTexture(draw.current(source)));
+      fitTexture(tex, surfaceAspect, surfaceAspect, 'cover');
+      const hadMap = !!material.emissiveMap;
+      material.emissiveMap = tex;
+      if (!hadMap) material.needsUpdate = true;
+      invalidate();
+      return () => tex.dispose();
+    }
     const base = ready ? assetTexture(asset, image) : placeholderTexture();
     const tex = base.clone();
     tex.needsUpdate = true;
@@ -94,7 +117,7 @@ export function useScreenMaterial(
     if (!hadMap) material.needsUpdate = true;
     invalidate();
     return () => tex.dispose();
-  }, [asset, image, fit, align, surfaceAspect, rotated, material, invalidate]);
+  }, [asset, image, fit, align, surfaceAspect, rotated, material, invalidate, composeKey]);
 
   useEffect(() => {
     material.emissiveIntensity = screen.brightness;

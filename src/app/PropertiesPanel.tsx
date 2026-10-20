@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { ImageOff, ImageUp, Layers } from 'lucide-react';
 import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
@@ -5,8 +6,10 @@ import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
 import { defaultParams, type ParamDef, type ParamValue } from '@/models/types';
 import { aspectsOf } from '@/models/imageAspects';
-import { pickImages } from '@/lib/importImage';
-import { useAssets } from '@/store/assets';
+import { importAsset, pickImageFile, pickImages } from '@/lib/importImage';
+import { loadImage, useAssets } from '@/store/assets';
+import { avatar as paintAvatar, type AvatarFrame } from '@/social/paint';
+import { frameOf } from '@/social/phoneScreen';
 import { selectSelectedItem, useProject, type SceneItem } from '@/store/project';
 import { ModelSwitcher } from './ModelSwitcher';
 import { useUi } from '@/store/ui';
@@ -152,18 +155,146 @@ export function DeviceParams({ item, only }: { item: SceneItem; only?: string[] 
   return (
     <>
       {model.params
-        ?.filter((def) => !only || only.includes(def.id))
+        ?.filter((def) => (!only || only.includes(def.id)) && (def.visible?.({ ...defaultParams(model), ...item.params }) ?? true))
         .map((def) => (
-          <ParamControl key={def.id} def={def} value={item.params[def.id]} onChange={(v) => setParam(item.id, def.id, v)} aside={def.id === 'format' ? real : undefined} />
+          <ParamControl
+            key={def.id}
+            def={def}
+            value={item.params[def.id]}
+            onChange={(v) => setParam(item.id, def.id, v)}
+            aside={def.id === 'format' ? real : undefined}
+            params={{ ...defaultParams(model), ...item.params }}
+            onSet={(id, v) => setParam(item.id, id, v)}
+          />
         ))}
     </>
   );
 }
 
+/** An image setting (e.g. the account's photo): a round preview to pick it, and its framing in the disc. */
+function ImageParam({ def, value, params, onSet }: { def: Extract<ParamDef, { kind: 'image' }>; value: string; params: Record<string, ParamValue>; onSet: (id: string, v: ParamValue) => void }) {
+  const { t, tr } = useT();
+  const logoId = useProject((s) => (def.fallback === 'brand-logo' ? s.brand.logoAssetId : null));
+  const own = useAssets((s) => (value ? s.assets[value] : undefined));
+  const shown = useAssets((s) => (value ? s.assets[value] : logoId ? s.assets[logoId] : undefined));
+  const label = tr(def.label);
+  const pick = async () => {
+    const file = await pickImageFile();
+    const a = file && (await importAsset(file));
+    if (!a) return;
+    onSet(def.id, a.id);
+    // a new picture starts centred
+    if (def.frame) for (const [id, v] of [[def.frame.zoom, 1], [def.frame.x, 0], [def.frame.y, 0]] as const) onSet(id, v);
+  };
+  const f = def.frame;
+  const frame = f ? frameOf({ avatarFit: params[f.fit], avatarZoom: params[f.zoom], avatarX: params[f.x], avatarY: params[f.y] }, !own) : null;
+  return (
+    <Field label={label}>
+      <div className="flex items-center gap-3">
+        {shown && frame && f ? (
+          <AvatarPreview url={shown.url} frame={frame} label={label} onMove={(x, y) => (onSet(f.x, x), onSet(f.y, y))} />
+        ) : (
+          <button type="button" aria-label={`${label} · ${t('param.pickImage')}`} onClick={() => void pick()} className="grid size-14 shrink-0 place-items-center rounded-full bg-surface-2 shadow-[0_0_0_1px_var(--line-strong)_inset] transition-transform duration-150 active:scale-[0.97]">
+            <ImageUp size={16} className="text-fg-subtle" />
+          </button>
+        )}
+        <div className="flex min-w-0 flex-col items-start gap-0.5">
+          <button type="button" aria-label={`${label} · ${t(own ? 'param.changeImage' : 'param.pickImage')}`} onClick={() => void pick()} className="text-[12.5px] font-medium text-fg hover:underline">
+            {t(own ? 'param.changeImage' : 'param.pickImage')}
+          </button>
+          {own ? (
+            <button type="button" onClick={() => onSet(def.id, '')} className="text-[11.5px] text-fg-subtle hover:text-fg">
+              {t('param.removeImage')}
+            </button>
+          ) : (
+            def.hint && <span className="text-[11.5px] leading-snug text-fg-subtle">{tr(def.hint)}</span>
+          )}
+          {shown && f && <span className="text-[11px] leading-snug text-fg-subtle">{t('param.dragToFrame')}</span>}
+        </div>
+      </div>
+      {shown && f && frame && (
+        <div className="mt-1 flex flex-col gap-2.5">
+          <Segmented
+            value={frame.fill ? 'fill' : 'whole'}
+            onChange={(v) => onSet(f.fit, v)}
+            options={[
+              { value: 'fill', label: t('param.frameFill') },
+              { value: 'whole', label: t('param.frameWhole') },
+            ]}
+          />
+          <Slider label={t('param.zoom')} min={1} max={3} step={0.01} value={frame.zoom} onChange={(v) => onSet(f.zoom, v)} />
+        </div>
+      )}
+    </Field>
+  );
+}
+
+/** The picture in its disc, painted like the screen; dragging it moves the crop. */
+function AvatarPreview({ url, frame, label, onMove }: { url: string; frame: AvatarFrame; label: string; onMove: (x: number, y: number) => void }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+  const drag = useRef<{ x: number; y: number; fx: number; fy: number } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void loadImage(url).then((i) => alive && setImg(i));
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c || !img) return;
+    const ctx = c.getContext('2d')!;
+    ctx.clearRect(0, 0, c.width, c.height);
+    paintAvatar(ctx, c.width / 2, c.height / 2, c.width / 2, img, undefined, frame);
+  }, [img, frame]);
+  const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+  return (
+    <canvas
+      ref={ref}
+      width={112}
+      height={112}
+      role="img"
+      aria-label={label}
+      data-testid="avatar-preview"
+      className="size-14 shrink-0 cursor-grab touch-none rounded-full shadow-[0_0_0_1px_var(--line-strong)] active:cursor-grabbing"
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { x: e.clientX, y: e.clientY, fx: frame.x, fy: frame.y };
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (!d) return;
+        // dragging right shows more of the left: the crop moves the other way, a disc's width = the full range
+        onMove(clamp(d.fx - (e.clientX - d.x) / 28), clamp(d.fy - (e.clientY - d.y) / 28));
+      }}
+      onPointerUp={() => (drag.current = null)}
+      onPointerCancel={() => (drag.current = null)}
+    />
+  );
+}
+
 /** Controls generated from the model's parameter definitions. `aside` shows next to the label (e.g. the real size). */
-export function ParamControl({ def, value, onChange, aside }: { def: ParamDef; value: ParamValue | undefined; onChange: (v: ParamValue) => void; aside?: string }) {
+export function ParamControl({
+  def,
+  value,
+  onChange,
+  aside,
+  params = {},
+  onSet,
+}: {
+  def: ParamDef;
+  value: ParamValue | undefined;
+  onChange: (v: ParamValue) => void;
+  aside?: string;
+  /** All the item's settings and a setter, for controls that edit several (an image and its framing). */
+  params?: Record<string, ParamValue>;
+  onSet?: (id: string, v: ParamValue) => void;
+}) {
   const { tr } = useT();
   switch (def.kind) {
+    case 'image':
+      return <ImageParam def={def} value={String(value ?? '')} params={params} onSet={onSet ?? ((id, v) => id === def.id && onChange(v))} />;
     case 'slider': {
       const v = typeof value === 'number' ? value : def.default;
       return (
@@ -239,6 +370,7 @@ export function ParamControl({ def, value, onChange, aside }: { def: ParamDef; v
         <Field label={tr(def.label)}>
           <input
             type="text"
+            aria-label={tr(def.label)}
             value={String(value ?? def.default)}
             placeholder={def.placeholder}
             spellCheck={false}
@@ -361,8 +493,6 @@ export function ExportForm() {
   const setExport = useProject((s) => s.setExport);
   const transparent = useProject((s) => s.background.kind === 'transparent');
   const dof = useProject((s) => s.camera.dof);
-  const network = useProject((s) => s.social.network);
-  const withInterface = useProject((s) => s.social.withInterface);
   const { width, height } = outputSize(settings);
 
   return (
@@ -386,15 +516,6 @@ export function ExportForm() {
           <span className="text-fg-subtle"> · {FORMATS.find((f) => f.id === settings.format)?.label}</span>
         </span>
       </div>
-      {network && (
-        <label data-testid="export-with-interface" className="flex cursor-pointer items-start justify-between gap-3 rounded-lg bg-surface-2 px-3 py-2.5 shadow-[0_0_0_1px_var(--line)_inset]">
-          <span className="flex flex-col gap-0.5">
-            <span className="text-[12.5px] font-medium text-fg">{t('export.withInterface')}</span>
-            <span className="text-[11.5px] leading-snug text-fg-muted">{t('export.withInterfaceHint')}</span>
-          </span>
-          <Switch checked={withInterface} onChange={(on) => useProject.getState().setSocial({ withInterface: on })} label={t('export.withInterface')} />
-        </label>
-      )}
       {dof && <p className="text-[11.5px] leading-snug text-fg-subtle">{t('export.dofNote')}</p>}
     </div>
   );

@@ -6,7 +6,6 @@ import { defaultParams, type DeviceModule, type ParamValue } from '@/models/type
 import { LIGHT_PRESETS } from '@/scene/lighting/presets';
 import { arrangeItems, besideOthers, constrainItems, layoutItems, type Layout } from '@/lib/arrange';
 import { useAssets } from './assets';
-import { DEFAULT_SOCIAL, type SocialView } from '@/social/networks';
 
 /* ------------------------------------------------------------------ types */
 
@@ -246,8 +245,6 @@ export interface Project {
   export: ExportSettings;
   /** How the devices are laid out; every added or removed device lays them out again. */
   arrangement: Layout;
-  /** “Voir sur…”: the network interface shown around the scene. */
-  social: SocialView;
 }
 
 /* -------------------------------------------------------------- defaults */
@@ -256,6 +253,18 @@ export const DEFAULT_SURFACE: SurfaceBinding = { assetId: null, fit: 'cover', al
 export const DEFAULT_SCREEN: ScreenSettings = { brightness: 1, reflection: 0.5 };
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
+
+/** The new model's defaults, with the old values of the settings both share (when still valid there). */
+function carryParams(old: Record<string, ParamValue>, model: DeviceModule): Record<string, ParamValue> {
+  const out = defaultParams(model);
+  for (const def of model.params ?? []) {
+    const v = old[def.id];
+    if (v === undefined || typeof v !== typeof def.default) continue;
+    if ((def.kind === 'choice' || def.kind === 'swatch') && !def.options.some((o) => o.value === v)) continue;
+    out[def.id] = v;
+  }
+  return out;
+}
 
 export function makeItem(model: DeviceModule): SceneItem {
   return {
@@ -340,7 +349,6 @@ export function initialProject(): Project {
     ground: { ...DEFAULT_GROUND },
     export: { video: { ...DEFAULT_VIDEO }, format: 'png', resolution: '4k', ratio: '16:9', quality: 0.92 },
     arrangement: 'auto',
-    social: { ...DEFAULT_SOCIAL },
   };
 }
 
@@ -361,7 +369,8 @@ interface ProjectActions {
   setPose: (pose: SceneItem['pose'], itemId?: string) => void;
   selectItem: (id: string | null) => void;
   /** Adds a device and lays the scene out again (or puts it at `position`, where it was dropped); selects it. */
-  addItem: (modelId: string, position?: Vec3) => void;
+  /** Adds a device (with some of its settings, e.g. a phone showing a post). */
+  addItem: (modelId: string, position?: Vec3, params?: Record<string, ParamValue>) => void;
   duplicateItem: (id: string) => void;
   /** Removes a device, even the last one (the scene is then empty). */
   removeItem: (id: string) => void;
@@ -383,7 +392,6 @@ interface ProjectActions {
   /** Everything back to a fresh project (undoable). */
   resetAll: () => void;
   setExport: (patch: Partial<ExportSettings>) => void;
-  setSocial: (patch: Partial<SocialView>) => void;
   setParam: (itemId: string, id: string, value: ParamValue) => void;
   /** Swaps the device of an item, keeping its images and placement. */
   replaceModel: (itemId: string, modelId: string) => void;
@@ -425,7 +433,6 @@ const historyOf = (s: ProjectState): Project => ({
   ground: s.ground,
   export: s.export,
   arrangement: s.arrangement,
-  social: s.social,
 });
 
 export const useProject = create<ProjectState>()(
@@ -465,9 +472,10 @@ export const useProject = create<ProjectState>()(
       setGround: (patch) => set((s) => ({ ground: { ...s.ground, ...patch } })),
       setPose: (pose, itemId) => set((s) => ({ items: s.items.map((it) => (!itemId || it.id === itemId ? { ...it, pose } : it)) })),
       selectItem: (selectedId) => set({ selectedId }),
-      addItem: (modelId, position) =>
+      addItem: (modelId, position, params) =>
         set((s) => {
           const item = makeItem(getModel(modelId));
+          if (params) item.params = { ...item.params, ...params };
           // the first pick replaces the sample phone a new project starts with, if it was left untouched
           if (isUntouchedSample(s.items)) {
             if (position) item.position = position;
@@ -567,7 +575,6 @@ export const useProject = create<ProjectState>()(
         set(initialProject());
       },
       setExport: (patch) => set((s) => ({ export: { ...s.export, ...patch } })),
-      setSocial: (patch) => set((s) => ({ social: { ...s.social, ...patch } })),
       setParam: (itemId, id, value) =>
         set((s) => ({
           items: constrainItems(
@@ -600,7 +607,7 @@ export const useProject = create<ProjectState>()(
                 modelId,
                 sample: false,
                 finishId: model.finishes.some((f) => f.id === it.finishId) ? it.finishId : model.defaultFinish,
-                params: defaultParams(model),
+                params: carryParams(it.params, model),
                 surfaces,
                 position: [it.position[0], 0, it.position[2]] as Vec3,
                 rotation: [0, model.yaw ?? -0.32, 0] as Vec3,

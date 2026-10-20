@@ -5,6 +5,8 @@ import { circleOutline, cornerExtent } from '@/lib/geometry/outline';
 import { flatShape, roundedPlane, roundedSlab, type EdgeRadius } from '@/lib/geometry/sweep';
 import { brushedMetal, cavity, coverGlass, frostedGlass, glossyGlass, islandBlack, mattePlastic } from '@/scene/materials';
 import { useScreenMaterial } from '@/scene/useScreenMaterial';
+import { SOCIAL_PARAMS } from '@/social/phoneScreen';
+import { useSocialScreen } from '@/social/useSocialScreen';
 import { Flash, Hole, Lens, Sensor } from '../shared/parts';
 import { isLandscape, ORIENTATION_PARAM, type DeviceFinish, type DeviceModule, type DeviceProps } from '../types';
 
@@ -168,10 +170,13 @@ function CameraModule({ s, g, finish, backZ }: { s: PhoneSpec; g: PhoneGeometry;
   );
 }
 
-function Phone({ spec: s, finish, surfaces, screen, params }: DeviceProps & { spec: PhoneSpec }) {
+function Phone({ spec: s, finish, surfaces, screen, params, brand }: DeviceProps & { spec: PhoneSpec }) {
   const g = geometryFor(s);
-  const screenMaterial = useScreenMaterial(surfaces.screen, s.display.width / s.display.height, screen, {
-    rotated: isLandscape(params),
+  const aspect = s.display.width / s.display.height;
+  const compose = useSocialScreen(params, brand, aspect);
+  const screenMaterial = useScreenMaterial(surfaces.screen, aspect, screen, {
+    rotated: isLandscape(params) && !compose,
+    compose,
   });
   const frame = brushedMetal(finish.colors.frame, s.frame.roughness, s.frame.anisotropy);
   const antenna = mattePlastic(finish.colors.antenna, 0.55);
@@ -273,7 +278,7 @@ export function definePhone(spec: PhoneSpec): DeviceModule {
     ],
     finishes: spec.finishes,
     defaultFinish: spec.defaultFinish,
-    params: [ORIENTATION_PARAM],
+    params: [ORIENTATION_PARAM, ...SOCIAL_PARAMS],
     view: { target: [0, spec.height / 2, 0], offset: [10, 5.7, 41] },
     Component,
   };

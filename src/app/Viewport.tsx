@@ -14,7 +14,6 @@ import { FloatingBar } from '@/shell/FloatingBar';
 import { MOD } from './shortcuts';
 import { OverlayLayer } from './OverlayLayer';
 import { ModeRole } from '@/shell/ModeRole';
-import { SocialFrame, cardRatio } from '@/social/SocialFrame';
 
 /** While an animation preview plays: the app is frozen (the scene is a temporary copy), with a stop button. */
 export function PreviewOverlay() {
@@ -196,21 +195,15 @@ export function Viewport() {
     // objects without faces (brand objects) never need an image
     return !it || Object.keys(it.surfaces).length === 0 || Object.values(it.surfaces).some((b) => b.assetId);
   });
-  const network = useProject((s) => s.social.network);
-  const r = ratioValue(ratio);
-  // with a network interface the card (interface + scene) fits the stage; the scene keeps its ratio
-  const card = useFrameSize(cardRatio(r, network));
-  const ref = card.ref;
-  const width = card.width;
-  const height = network ? Math.floor(width / r) : card.height;
+  const { ref, width, height } = useFrameSize(ratioValue(ratio));
   const frame = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   useAssets((s) => s.assets);
 
   const scene = (
     <div
-      className={cx('relative overflow-hidden transition-[width,height] duration-300 ease-[var(--ease-out-quart)]', !network && 'rounded-[3px]')}
-      style={{ width, height, boxShadow: network ? undefined : 'var(--frame-shadow)' }}
+      className="relative overflow-hidden rounded-[3px] transition-[width,height] duration-300 ease-[var(--ease-out-quart)]"
+      style={{ width, height, boxShadow: 'var(--frame-shadow)' }}
       data-testid="frame"
       ref={frame}
     >
@@ -224,13 +217,7 @@ export function Viewport() {
   return (
     <div ref={root} className="relative flex min-w-0 flex-1">
     <main ref={ref} className="stage-bg relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">
-      {network ? (
-        <SocialFrame network={network} width={width} height={height}>
-          {scene}
-        </SocialFrame>
-      ) : (
-        scene
-      )}
+      {scene}
 
       <DropOverlay />
       <ExportOverlay />

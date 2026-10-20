@@ -1,28 +1,55 @@
 import { chromeOf, type Network } from './networks';
 
 /*
- * Draws a generic social interface around (post, YouTube) or over (story,
- * TikTok) an image of width `w` and height `h` placed at (0, top). Used for
- * the on-screen preview (over the live scene) and for the export (around the
- * rendered image), so both look the same. Sizes scale with the width.
+ * Draws a generic social interface around (post) or over (story, short video)
+ * an image of width `w` and height `h` placed at (0, top), for the social
+ * phone's screen (phoneScreen.ts). Sizes scale with the width.
  */
+
+/** How the account's picture sits in its disc. */
+export interface AvatarFrame {
+  /** true: the picture fills the disc; false: it shows whole on white (a logo). */
+  fill: boolean;
+  /** 1 = the picture just fits; more zooms in. */
+  zoom: number;
+  /** Where the crop sits, -1…1 on each axis (0 = centred). */
+  x: number;
+  y: number;
+}
+
+export const DEFAULT_FRAME: AvatarFrame = { fill: true, zoom: 1, x: 0, y: 0 };
 
 export interface SocialText {
   account: string;
   caption: string;
-  title: string;
   /** Interface words in the app's language. */
-  words: { likes: string; message: string; following: string; forYou: string; ago: string; comments: string; sound: string; subscribers: string; subscribe: string; views: string };
+  words: { likes: string; message: string; following: string; forYou: string; ago: string; comments: string; sound: string };
   avatar?: CanvasImageSource | null;
+  avatarFrame?: AvatarFrame;
 }
 
 const FONT = '-apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif';
 
-function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, img?: CanvasImageSource | null, ring?: string) {
+/*
+ * One type scale for the three interfaces, in iOS points (a 393 pt wide phone
+ * painted 1080 px wide: 1 pt = 2.75 px), so the account, the caption and the
+ * icons are the same size in a post, a story and a Reel, as in the apps.
+ */
+export const PT = 1080 / 393;
+const NAME = 14.5;
+const BODY = 14.5;
+const META = 13.5;
+const COUNT = 12.5;
+const TAB = 16.5;
+const ICON = 26;
+const STROKE = 1.9;
+
+/** Paints the picture in a disc of radius r at (x, y), framed (a gradient without a picture). */
+export function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, img?: CanvasImageSource | null, ring?: string, frame: AvatarFrame = DEFAULT_FRAME) {
   ctx.save();
   if (ring) {
     ctx.beginPath();
-    ctx.arc(x, y, r * 1.18, 0, Math.PI * 2);
+    ctx.arc(x, y, r * 1.14, 0, Math.PI * 2);
     ctx.fillStyle = ring;
     ctx.fill();
   }
@@ -30,9 +57,23 @@ function avatar(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, 
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.clip();
   if (img) {
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    ctx.drawImage(img, x - r * 0.8, y - r * 0.8, r * 1.6, r * 1.6);
+    const i = img as HTMLImageElement;
+    const iw = i.naturalWidth || i.width;
+    const ih = i.naturalHeight || i.height;
+    const zoom = Math.max(1, frame.zoom);
+    if (frame.fill) {
+      // a square crop of the picture, zoomed and moved, fills the disc
+      const side = Math.min(iw, ih) / zoom;
+      const sx = (iw - side) / 2 + (frame.x * (iw - side)) / 2;
+      const sy = (ih - side) / 2 + (frame.y * (ih - side)) / 2;
+      ctx.drawImage(img, sx, sy, side, side, x - r, y - r, r * 2, r * 2);
+    } else {
+      // the whole picture (a logo) on white, zoomed and moved
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      const s = (r * 1.4 * zoom) / Math.max(iw, ih);
+      ctx.drawImage(img, x - (iw * s) / 2 - frame.x * r * 0.6, y - (ih * s) / 2 - frame.y * r * 0.6, iw * s, ih * s);
+    }
   } else {
     const g = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
     g.addColorStop(0, '#4b7bff');
@@ -112,132 +153,114 @@ function bookmark(ctx: CanvasRenderingContext2D, x: number, y: number, u: number
 export function paintChrome(ctx: CanvasRenderingContext2D, network: Network, w: number, h: number, d: SocialText) {
   const room = chromeOf(network);
   const top = room.top * w;
-  const k = w / 1080;
+  const u = (w / 1080) * PT; // px per point
+  const name = d.account.replace(/^@/, '');
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
+  ctx.lineWidth = STROKE * u;
   if (network === 'ig-post') {
-    const fg = '#111';
+    const fg = '#0c0c0d';
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, w, top);
     ctx.fillRect(0, top + h, w, room.bottom * w);
-    avatar(ctx, 64 * k, top / 2, 40 * k, d.avatar, '#d9d9d9');
-    text(ctx, d.account.replace(/^@/, ''), 128 * k, top / 2, 34 * k, fg, 600);
-    text(ctx, '•••', w - 50 * k, top / 2, 30 * k, fg, 700, 'right');
-    const iy = top + h + 66 * k;
+    avatar(ctx, 28 * u, top / 2, 16 * u, d.avatar, '#dbdbdb', d.avatarFrame);
+    text(ctx, name, 54 * u, top / 2, NAME * u, fg, 600);
+    text(ctx, '•••', w - 14 * u, top / 2, 11 * u, fg, 700, 'right');
+    const iy = top + h + 22 * u;
     ctx.strokeStyle = fg;
-    ctx.lineWidth = 5 * k;
-    heart(ctx, 66 * k, iy, 62 * k);
-    bubble(ctx, 162 * k, iy, 58 * k);
-    plane(ctx, 258 * k, iy, 58 * k);
-    bookmark(ctx, w - 66 * k, iy, 58 * k);
-    text(ctx, d.words.likes, 40 * k, iy + 82 * k, 32 * k, fg, 600);
-    const caption = wrap(ctx, `${d.account.replace(/^@/, '')} ${d.caption}`.trim(), 32 * k, 400, w - 80 * k, 2);
+    heart(ctx, 26 * u, iy, ICON * u);
+    bubble(ctx, 66 * u, iy, ICON * u);
+    plane(ctx, 106 * u, iy, ICON * u);
+    bookmark(ctx, w - 26 * u, iy, ICON * u);
+    const likes = iy + 30 * u;
+    text(ctx, d.words.likes, 14 * u, likes, BODY * u, fg, 600);
+    const lead = 19.5 * u;
+    const caption = wrap(ctx, `${name} ${d.caption}`.trim(), BODY * u, 400, w - 28 * u, 2);
     caption.forEach((line, i) => {
-      const y = iy + 136 * k + i * 44 * k;
+      const y = likes + lead * (i + 1);
       if (i === 0) {
-        const name = d.account.replace(/^@/, '');
-        text(ctx, name, 40 * k, y, 32 * k, fg, 600);
-        ctx.font = `600 ${32 * k}px ${FONT}`;
+        text(ctx, name, 14 * u, y, BODY * u, fg, 600);
+        ctx.font = `600 ${BODY * u}px ${FONT}`;
         const nw = ctx.measureText(name + ' ').width;
-        text(ctx, line.slice(name.length).trim(), 40 * k + nw, y, 32 * k, fg);
-      } else text(ctx, line, 40 * k, y, 32 * k, fg);
+        text(ctx, line.slice(name.length).trim(), 14 * u + nw, y, BODY * u, fg);
+      } else text(ctx, line, 14 * u, y, BODY * u, fg);
     });
-    text(ctx, d.words.comments, 40 * k, iy + 136 * k + caption.length * 44 * k + 4 * k, 30 * k, '#8e8e8e');
+    text(ctx, d.words.comments, 14 * u, likes + lead * (caption.length + 1), META * u, '#737373');
   } else if (network === 'story') {
-    const g = ctx.createLinearGradient(0, 0, 0, 260 * k);
-    g.addColorStop(0, 'rgba(0,0,0,0.45)');
+    const g = ctx.createLinearGradient(0, 0, 0, 90 * u);
+    g.addColorStop(0, 'rgba(0,0,0,0.4)');
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, 260 * k);
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.fillRect(24 * k, 28 * k, w - 48 * k, 6 * k);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(24 * k, 28 * k, (w - 48 * k) * 0.6, 6 * k);
-    avatar(ctx, 76 * k, 104 * k, 38 * k, d.avatar);
-    text(ctx, d.account.replace(/^@/, ''), 132 * k, 104 * k, 32 * k, '#fff', 600);
-    ctx.font = `600 ${32 * k}px ${FONT}`;
-    text(ctx, d.words.ago, 132 * k + ctx.measureText(d.account.replace(/^@/, '') + '  ').width, 104 * k, 32 * k, 'rgba(255,255,255,0.75)');
-    const by = h - 110 * k;
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 3 * k;
+    ctx.fillRect(0, 0, w, 90 * u);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.beginPath();
-    ctx.roundRect(28 * k, by - 50 * k, w - 230 * k, 100 * k, 50 * k);
+    ctx.roundRect(8 * u, 8 * u, w - 16 * u, 2.2 * u, 1.1 * u);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.roundRect(8 * u, 8 * u, (w - 16 * u) * 0.6, 2.2 * u, 1.1 * u);
+    ctx.fill();
+    const ay = 34 * u;
+    avatar(ctx, 26 * u, ay, 16 * u, d.avatar, undefined, d.avatarFrame);
+    text(ctx, name, 50 * u, ay, NAME * u, '#fff', 600);
+    ctx.font = `600 ${NAME * u}px ${FONT}`;
+    text(ctx, d.words.ago, 50 * u + ctx.measureText(name + '  ').width, ay, NAME * u, 'rgba(255,255,255,0.72)');
+    const by = h - 30 * u;
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.lineWidth = 1.1 * u;
+    ctx.beginPath();
+    ctx.roundRect(12 * u, by - 22 * u, w - 108 * u, 44 * u, 22 * u);
     ctx.stroke();
-    text(ctx, d.words.message, 72 * k, by, 32 * k, '#fff');
-    ctx.lineWidth = 5 * k;
+    text(ctx, d.words.message, 28 * u, by, BODY * u, '#fff');
+    ctx.lineWidth = STROKE * u;
     ctx.strokeStyle = '#fff';
-    heart(ctx, w - 150 * k, by, 64 * k);
-    plane(ctx, w - 60 * k, by, 60 * k);
-  } else if (network === 'tiktok') {
-    const g = ctx.createLinearGradient(0, h * 0.62, 0, h);
+    heart(ctx, w - 70 * u, by, ICON * u);
+    plane(ctx, w - 28 * u, by, ICON * u);
+  } else {
+    const g = ctx.createLinearGradient(0, h * 0.6, 0, h);
     g.addColorStop(0, 'rgba(0,0,0,0)');
     g.addColorStop(1, 'rgba(0,0,0,0.55)');
     ctx.fillStyle = g;
-    ctx.fillRect(0, h * 0.62, w, h * 0.38);
-    text(ctx, d.words.following, w / 2 - 24 * k, 110 * k, 36 * k, 'rgba(255,255,255,0.7)', 600, 'right');
-    text(ctx, d.words.forYou, w / 2 + 24 * k, 110 * k, 36 * k, '#fff', 700, 'left');
-    ctx.font = `700 ${36 * k}px ${FONT}`;
+    ctx.fillRect(0, h * 0.6, w, h * 0.4);
+    const ty = 22 * u;
+    text(ctx, d.words.following, w / 2 - 10 * u, ty, TAB * u, 'rgba(255,255,255,0.68)', 600, 'right');
+    text(ctx, d.words.forYou, w / 2 + 10 * u, ty, TAB * u, '#fff', 700, 'left');
+    ctx.font = `700 ${TAB * u}px ${FONT}`;
     const fy = ctx.measureText(d.words.forYou).width;
     ctx.fillStyle = '#fff';
-    ctx.fillRect(w / 2 + 24 * k + fy / 2 - 30 * k, 140 * k, 60 * k, 6 * k);
-    const cx = w - 84 * k;
-    let y = h * 0.52;
-    avatar(ctx, cx, y, 50 * k, d.avatar, '#fff');
+    ctx.beginPath();
+    ctx.roundRect(w / 2 + 10 * u + fy / 2 - 11 * u, ty + 14 * u, 22 * u, 2.6 * u, 1.3 * u);
+    ctx.fill();
+    // the column of actions on the right
+    const cx = w - 28 * u;
+    let y = h * 0.5;
+    avatar(ctx, cx, y, 22 * u, d.avatar, '#fff', d.avatarFrame);
     ctx.fillStyle = '#fe2c55';
     ctx.beginPath();
-    ctx.arc(cx, y + 54 * k, 20 * k, 0, Math.PI * 2);
+    ctx.arc(cx, y + 23 * u, 9 * u, 0, Math.PI * 2);
     ctx.fill();
-    text(ctx, '+', cx, y + 53 * k, 32 * k, '#fff', 700, 'center');
+    text(ctx, '+', cx, y + 22.5 * u, 14 * u, '#fff', 700, 'center');
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 5 * k;
+    ctx.lineWidth = 2.3 * u;
     for (const [draw, n] of [
-      [(yy: number) => heart(ctx, cx, yy, 76 * k, true), '12,4 k'],
-      [(yy: number) => bubble(ctx, cx, yy, 70 * k), '318'],
-      [(yy: number) => plane(ctx, cx, yy, 68 * k), '96'],
+      [(yy: number) => heart(ctx, cx, yy, 34 * u, true), '12,4 k'],
+      [(yy: number) => bubble(ctx, cx, yy, 32 * u), '318'],
+      [(yy: number) => plane(ctx, cx, yy, 31 * u), '96'],
     ] as const) {
-      y += 170 * k;
+      y += 66 * u;
       draw(y);
-      text(ctx, n, cx, y + 64 * k, 26 * k, '#fff', 600, 'center');
+      text(ctx, n, cx, y + 29 * u, COUNT * u, '#fff', 600, 'center');
     }
-    text(ctx, d.account, 40 * k, h - 250 * k, 36 * k, '#fff', 700);
-    wrap(ctx, d.caption, 32 * k, 400, w - 220 * k, 2).forEach((line, i) => text(ctx, line, 40 * k, h - 196 * k + i * 44 * k, 32 * k, '#fff'));
-    text(ctx, `♫  ${d.words.sound}`, 40 * k, h - 92 * k, 30 * k, '#fff');
-  } else {
-    // YouTube-like: the player, then the title and the channel on a dark page
-    const y0 = top + h;
-    ctx.fillStyle = '#0f0f0f';
-    ctx.fillRect(0, y0, w, room.bottom * w);
-    ctx.fillStyle = '#f00';
-    ctx.fillRect(0, y0 - 4 * k, w * 0.32, 4 * k);
-    const lines = wrap(ctx, d.title || d.caption || d.account, 40 * k, 600, w - 64 * k, 1);
-    text(ctx, lines[0] ?? '', 32 * k, y0 + 52 * k, 40 * k, '#f1f1f1', 600);
-    text(ctx, d.words.views, 32 * k, y0 + 100 * k, 28 * k, '#aaa');
-    avatar(ctx, 64 * k, y0 + 168 * k, 34 * k, d.avatar);
-    text(ctx, d.account.replace(/^@/, ''), 116 * k, y0 + 156 * k, 30 * k, '#f1f1f1', 600);
-    text(ctx, d.words.subscribers, 116 * k, y0 + 188 * k, 24 * k, '#aaa');
-    ctx.font = `600 ${28 * k}px ${FONT}`;
-    const sw = ctx.measureText(d.words.subscribe).width + 56 * k;
-    ctx.fillStyle = '#f1f1f1';
-    ctx.beginPath();
-    ctx.roundRect(w - 32 * k - sw, y0 + 140 * k, sw, 56 * k, 28 * k);
-    ctx.fill();
-    text(ctx, d.words.subscribe, w - 32 * k - sw / 2, y0 + 168 * k, 28 * k, '#0f0f0f', 600, 'center');
+    // account, caption and sound, bottom left
+    const lead = 20 * u;
+    const lines = wrap(ctx, d.caption, BODY * u, 400, w - 96 * u, 2);
+    const sound = h - 18 * u;
+    const cap0 = sound - lead * (lines.length + 0.3);
+    text(ctx, d.account, 14 * u, cap0 - lead * 1.1, NAME * u + 1.5 * u, '#fff', 700);
+    lines.forEach((line, i) => text(ctx, line, 14 * u, cap0 + i * lead, BODY * u, '#fff'));
+    text(ctx, `♫  ${d.words.sound}`, 14 * u, sound, META * u, '#fff');
   }
   ctx.restore();
-}
-
-/** The rendered image inside its interface (a new canvas). */
-export function paintSocial(image: HTMLCanvasElement, network: Network, d: SocialText): HTMLCanvasElement {
-  const room = chromeOf(network);
-  const w = image.width;
-  const top = Math.round(room.top * w);
-  const out = document.createElement('canvas');
-  out.width = w;
-  out.height = top + image.height + Math.round(room.bottom * w);
-  const ctx = out.getContext('2d')!;
-  ctx.drawImage(image, 0, top);
-  paintChrome(ctx, network, w, image.height, d);
-  return out;
 }

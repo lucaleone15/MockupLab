@@ -2,7 +2,6 @@ import { del, get, keys, set } from 'idb-keyval';
 import { t } from '@/i18n';
 import { getModel } from '@/models/registry';
 import { LAYOUTS, type Layout } from '@/lib/arrange';
-import { DEFAULT_SOCIAL, NETWORK_ORDER, type Network } from '@/social/networks';
 import { defaultParams } from '@/models/types';
 import { useAssets, type Asset } from './assets';
 import {
@@ -66,14 +65,17 @@ export function snapshot(s: ProjectState = useProject.getState()): Project {
     ground: s.ground,
     export: s.export,
     arrangement: s.arrangement,
-    social: s.social,
   };
 }
 
 /** Asset ids a project needs (screens, background image, logos). */
 export function referencedAssets(p: Project): Set<string> {
   const ids = new Set<string>();
-  for (const it of p.items) for (const b of Object.values(it.surfaces)) if (b.assetId) ids.add(b.assetId);
+  for (const it of p.items) {
+    for (const b of Object.values(it.surfaces)) if (b.assetId) ids.add(b.assetId);
+    // image settings (the account's photo of a social phone)
+    for (const def of getModel(it.modelId).params ?? []) if (def.kind === 'image' && typeof it.params[def.id] === 'string' && it.params[def.id]) ids.add(it.params[def.id] as string);
+  }
   if (p.background.kind === 'image' && p.background.assetId) ids.add(p.background.assetId);
   for (const o of p.overlays) if (o.kind === 'logo' && o.assetId) ids.add(o.assetId);
   for (const id of [p.brand?.logoAssetId, p.brand?.heading.assetId, p.brand?.body.assetId]) if (id) ids.add(id);
@@ -85,6 +87,9 @@ export function migrateProject(raw: unknown): Project {
   const base = initialProject();
   if (!raw || typeof raw !== 'object') return base;
   const r = raw as Partial<Project> & Record<string, unknown>;
+  // “Voir sur…” is gone: its account and caption become the texts of the phones' app
+  const social = (r.social ?? {}) as { account?: string; caption?: string };
+  const socialTexts = Object.fromEntries(Object.entries({ account: social.account, caption: social.caption }).filter(([, v]) => typeof v === 'string' && v));
   const items = Array.isArray(r.items)
     ? r.items.map((it) => {
         const model = getModel(it.modelId);
@@ -95,7 +100,12 @@ export function migrateProject(raw: unknown): Project {
           // walls have no colour of their own any more (v6): they show the background;
           // prints saved before "Adapt to my image" keep their paper's proportions
           params: Object.fromEntries(
-            Object.entries({ ...defaultParams(model), ...('fit' in defaultParams(model) && !('fit' in (it.params ?? {})) ? { fit: false } : {}), ...(it.params ?? {}) }).filter(([k]) => k !== 'wall'),
+            Object.entries({
+              ...defaultParams(model),
+              ...('fit' in defaultParams(model) && !('fit' in (it.params ?? {})) ? { fit: false } : {}),
+              ...(model.category === 'phone' ? socialTexts : {}),
+              ...(it.params ?? {}),
+            }).filter(([k]) => k !== 'wall'),
           ),
           screen: { ...DEFAULT_SCREEN, ...(it.screen ?? {}) },
           visible: it.visible ?? true,
@@ -141,7 +151,6 @@ export function migrateProject(raw: unknown): Project {
     }))((r.export ?? {}) as Partial<Project['export']> & { kind?: string }),
     brand: { ...DEFAULT_BRAND, ...(r.brand ?? {}) },
     arrangement: LAYOUTS.includes(r.arrangement as Layout) ? (r.arrangement as Layout) : 'auto',
-    social: { ...DEFAULT_SOCIAL, ...(r.social ?? {}), network: NETWORK_ORDER.includes(r.social?.network as Network) ? (r.social?.network as Network) : null },
     version: 6,
   };
 }

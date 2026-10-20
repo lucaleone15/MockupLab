@@ -49,7 +49,9 @@ if (hit) {
 }
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'settings', 'canvas click → Settings page');
 const bar = page.getByTestId('floating-bar');
-await bar.getByRole('radio', { name: '1:1' }).click();
+await bar.getByTestId('format-menu').click();
+await page.getByRole('menuitemradio', { name: /^1:1/ }).click();
+await page.keyboard.press('Escape');
 check((await page.evaluate(() => window.__mockuplab.project.getState().export.ratio)) === '1:1', 'floating bar sets the ratio');
 await bar.getByTestId('open-variants').click();
 await page.waitForTimeout(500);

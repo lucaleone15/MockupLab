@@ -4,9 +4,7 @@ import { dither, paintBackground, prepareBackground } from '@/lib/background';
 import { paintOverlays, prepareOverlays } from '@/lib/overlays';
 import { renderFrame } from '@/scene/exporter';
 import { useProject } from '@/store/project';
-import { paintSocial } from '@/social/paint';
 import type { ExportSettingsRecord } from '@/library/exports';
-import { socialTextNow } from '@/social/SocialFrame';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { FORMATS, outputSize, supersampleFor } from './settings';
@@ -111,10 +109,7 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
     },
   });
   if (tiles > 16) toast.info(t('export.tiles', { n: tiles }));
-  // “with the network's interface”: the post, story or video page around the image
-  const { network, withInterface } = project.social;
-  const out = network && withInterface ? paintSocial(canvas, network, await socialTextNow()) : canvas;
-  const { blob, ext } = await encodeCanvas(out);
+  const { blob, ext } = await encodeCanvas(canvas);
   const item = project.items.find((i) => i.id === project.selectedId) ?? project.items[0];
   const slug =
     project.name && project.name !== 'Untitled'
@@ -122,7 +117,7 @@ export async function renderImage(): Promise<{ blob: Blob; width: number; height
       : item
         ? getModel(item.modelId).id
         : 'scene';
-  return { blob, width: out.width, height: out.height, filename: `mockuplab-${slug}${out === canvas ? '' : `-${network}`}-${out.width}x${out.height}.${ext}` };
+  return { blob, width: canvas.width, height: canvas.height, filename: `mockuplab-${slug}-${canvas.width}x${canvas.height}.${ext}` };
 }
 
 /** Exports an image (default) or the video of the export settings. */

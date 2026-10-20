@@ -30,7 +30,9 @@ const BY_MODEL: Record<string, Record<string, string>> = {
   tshirt: { print: 'logo' },
 };
 
-function sampleName(modelId: string, slotId: string, aspect: number) {
+function sampleName(modelId: string, slotId: string, aspect: number, app: unknown) {
+  // a phone showing a post, a story or a Reel: a poster-like visual, not an app screen
+  if (app && app !== 'none') return 'sample-poster.png';
   const named = BY_MODEL[modelId]?.[slotId];
   if (named) return `sample-${named}.png`;
   return aspect < 1 ? 'sample-app.png' : 'sample-web.png';
@@ -67,7 +69,7 @@ export async function loadSamples(itemId: string) {
     const current = item.surfaces[slot.id]?.assetId;
     if (current && !useAssets.getState().assets[current]?.name.startsWith('sample-')) continue;
     const aspect = landscape ? 1 / slot.aspect : slot.aspect;
-    const assetId = await sampleAsset(sampleName(model.id, slot.id, aspect));
+    const assetId = await sampleAsset(sampleName(model.id, slot.id, aspect, item.params.app));
     useProject.getState().setSurface(itemId, slot.id, { assetId });
   }
 }
