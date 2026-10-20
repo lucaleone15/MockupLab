@@ -12,13 +12,13 @@ import {
   Frame,
   IdCard,
   Mail,
+  ScrollText,
   Mails,
   Newspaper,
   Package,
   RectangleVertical,
   Shirt,
   SwatchBook,
-  CaseSensitive,
   ShoppingBag,
   Wine,
   Watch,
@@ -65,7 +65,8 @@ const OBJECT_ICONS: Record<string, LucideIcon> = {
   brochure: BookOpenText,
   magazine: Newspaper,
   book: BookMarked,
-  stationery: Mails,
+  letterhead: ScrollText,
+  envelope: Mails,
   badge: BadgeCheck,
   'roll-up': RectangleVertical,
   box: Package,
@@ -75,7 +76,6 @@ const OBJECT_ICONS: Record<string, LucideIcon> = {
   tote: ShoppingBag,
   tshirt: Shirt,
   'swatch-fan': SwatchBook,
-  specimen: CaseSensitive,
 };
 
 const SHELL = 'fill-surface-4 stroke-fg-subtle';

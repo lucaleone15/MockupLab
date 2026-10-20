@@ -50,9 +50,9 @@ const APP_PARAM: ParamDef = {
   kind: 'choice',
   label: { fr: 'Publication', en: 'Post type' },
   options: [
-    { value: 'post', label: { fr: 'Post Insta', en: 'Insta post' } },
+    { value: 'post', label: { fr: 'Post', en: 'Post' } },
     { value: 'story', label: { fr: 'Story', en: 'Story' } },
-    { value: 'reel', label: { fr: 'TikTok / Reel', en: 'TikTok / Reel' } },
+    { value: 'reel', label: { fr: 'Reel', en: 'Reel' } },
   ],
   default: 'post',
 };

@@ -43,6 +43,45 @@ export const POSTCARD_SIZES: PaperSize[] = [size('a6', 'A6', 14.8, 10.5), size('
 
 export const CARD_SIZES: PaperSize[] = [size('eu', '85 × 55', 8.5, 5.5), size('us', '89 × 51', 8.9, 5.1), size('sq', '55 × 55', 5.5, 5.5)];
 
+/** Letterhead paper. */
+export const LETTER_SIZES: PaperSize[] = [size('a4', 'A4', 21, 29.7), size('letter', 'US Letter', 21.6, 27.9), size('a5', 'A5', 14.8, 21)];
+
+/** Envelopes, flap side away, landscape. */
+export const ENVELOPE_SIZES: PaperSize[] = [
+  size('dl', 'DL', 22, 11),
+  size('c5', 'C5', 22.9, 16.2),
+  size('c6', 'C6', 16.2, 11.4),
+  size('c4', 'C4', 32.4, 22.9),
+  size('us10', 'US n° 10', 24.1, 10.5),
+];
+
+/** Event badges (PVC card, then paper inserts). */
+export const BADGE_SIZES: PaperSize[] = [size('cr80', '54 × 86', 5.4, 8.6), size('a7', 'A7', 7.4, 10.5), size('a6', 'A6', 10.5, 14.8)];
+
+/** Roll-up banners, 2 m high. */
+export const ROLLUP_SIZES: PaperSize[] = [size('85', '85 × 200', 85, 200), size('100', '100 × 200', 100, 200), size('120', '120 × 200', 120, 200), size('150', '150 × 200', 150, 200)];
+
+/** Tri-fold brochures: the open sheet (three panels side by side). */
+export const BROCHURE_SIZES: PaperSize[] = [size('a4', 'A4', 29.7, 21), size('letter', 'US Letter', 27.9, 21.6), size('a3', 'A3', 42, 29.7), size('sq', '30 × 10', 30, 10)];
+
+/** Magazines: one page. */
+export const MAGAZINE_SIZES: PaperSize[] = [
+  size('mag', '21 × 27,5', 21, 27.5),
+  size('a4', 'A4', 21, 29.7),
+  size('letter', 'US Letter', 21.6, 27.9),
+  size('a5', 'A5', 14.8, 21),
+  size('sq', '21 × 21', 21, 21),
+];
+
+/** Books: the front cover. */
+export const BOOK_SIZES: PaperSize[] = [
+  size('pocket', 'Poche', 11, 17.8),
+  size('novel', 'Roman', 14, 21),
+  size('large', '15,5 × 23,5', 15.5, 23.5),
+  size('art', 'Beau livre', 24, 30),
+  size('sq', '21 × 21', 21, 21),
+];
+
 export const FIT_PARAM: ParamDef = { id: 'fit', kind: 'toggle', label: { fr: 'Adapter à mon image', en: 'Adapt to my image' }, default: true };
 
 export function sizeParam(sizes: PaperSize[], fallback: string): ParamDef {
@@ -56,9 +95,10 @@ export function sizeParam(sizes: PaperSize[], fallback: string): ParamDef {
 }
 
 /** Width × height (cm) of the paper: the chosen size, or the image's proportions with the chosen size as the longest side. */
-export function paperDims(sizes: PaperSize[], params: Record<string, ParamValue>, aspects: ImageAspects | undefined, slot: string): [number, number] {
+export function paperDims(sizes: PaperSize[], params: Record<string, ParamValue>, aspects: ImageAspects | undefined, slot: string, divide = 1): [number, number] {
   const s = sizes.find((x) => x.value === params.format) ?? sizes[0];
-  const r = params.fit === true ? aspects?.[slot] : undefined;
+  // `divide`: the image spans several pages side by side (a spread, a tri-fold)
+  const r = params.fit === true && aspects?.[slot] ? aspects[slot] / divide : undefined;
   if (!r || !Number.isFinite(r) || r <= 0) return [s.w, s.h];
   const long = Math.max(s.w, s.h);
   return r >= 1 ? [long, long / r] : [long * r, long];

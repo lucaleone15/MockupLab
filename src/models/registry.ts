@@ -10,9 +10,9 @@ import { watch } from './watch/Watch';
 import { bottle, box, mug, tube } from './merch/Objects';
 import { tote, tshirt } from './merch/Apparel';
 import { badge } from './print/Badge';
-import { specimenCard, swatchFan } from './brand/Brand';
+import { swatchFan } from './brand/Brand';
 import { streetPoster, totem, tv } from './signage/Signage';
-import { businessCard, flyer, postcard, stationery } from './print/Cards';
+import { businessCard, envelope, flyer, letterhead, postcard } from './print/Cards';
 import { poster, rollUp } from './print/Posters';
 import { book, brochure, magazine } from './print/Publications';
 
@@ -41,7 +41,8 @@ export const MODELS: DeviceModule[] = [
   brochure,
   magazine,
   book,
-  stationery,
+  letterhead,
+  envelope,
   badge,
   rollUp,
   box,
@@ -51,7 +52,6 @@ export const MODELS: DeviceModule[] = [
   tote,
   tshirt,
   swatchFan,
-  specimenCard,
 ];
 
 const byId = new Map(MODELS.map((m) => [m.id, m]));

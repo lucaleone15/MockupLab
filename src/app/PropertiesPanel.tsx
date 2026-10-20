@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { ImageOff, ImageUp, Layers } from 'lucide-react';
+import { ImageOff, ImageUp, Layers, Plus, X } from 'lucide-react';
 import { batch } from '@/variants/batch';
 import { useT } from '@/i18n';
 import { FORMATS, RATIOS, RESOLUTIONS, outputSize } from '@/export/settings';
 import { getModel } from '@/models/registry';
-import { defaultParams, type ParamDef, type ParamValue } from '@/models/types';
+import { colorsOf, defaultParams, type NamedColor, type ParamDef, type ParamValue } from '@/models/types';
 import { aspectsOf } from '@/models/imageAspects';
 import { importAsset, pickImageFile, pickImages } from '@/lib/importImage';
 import { loadImage, useAssets } from '@/store/assets';
@@ -13,7 +13,7 @@ import { frameOf } from '@/social/phoneScreen';
 import { selectSelectedItem, useProject, type SceneItem } from '@/store/project';
 import { ModelSwitcher } from './ModelSwitcher';
 import { useUi } from '@/store/ui';
-import { Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
+import { Advanced, Button, Field, Section, Segmented, Slider, Switch, Tooltip, cx } from '@/ui/primitives';
 
 function SlotCard({ itemId, slotId, label, nativeSize, active, onActivate }: { itemId: string; slotId: string; label?: string; nativeSize?: [number, number]; active: boolean; onActivate: () => void }) {
   const { t } = useT();
@@ -147,27 +147,118 @@ export function ImageSection() {
 
 /** The model's own settings; `only` keeps some of them (e.g. the paper size on the Devices page). */
 export function DeviceParams({ item, only }: { item: SceneItem; only?: string[] }) {
+  const { t } = useT();
   const setParam = useProject((s) => s.setParam);
   const assets = useAssets((s) => s.assets);
   const model = getModel(item.modelId);
-  const paper = model.paperSize?.({ ...defaultParams(model), ...item.params }, aspectsOf(item.surfaces, assets));
+  const params = { ...defaultParams(model), ...item.params };
+  const paper = model.paperSize?.(params, aspectsOf(item.surfaces, assets));
   const real = paper ? `≈ ${Math.round(paper[0])} × ${Math.round(paper[1])} cm` : undefined;
+  const shown = (model.params ?? []).filter((def) => (!only || only.includes(def.id)) && (def.visible?.(params) ?? true));
+  const control = (def: ParamDef) => (
+    <ParamControl
+      key={def.id}
+      def={def}
+      value={item.params[def.id]}
+      onChange={(v) => setParam(item.id, def.id, v)}
+      aside={def.id === 'format' ? real : undefined}
+      params={params}
+      onSet={(id, v) => setParam(item.id, id, v)}
+    />
+  );
+  // a few settings first, the finer ones folded away
+  const advanced = only ? [] : shown.filter((d) => d.advanced);
   return (
     <>
-      {model.params
-        ?.filter((def) => (!only || only.includes(def.id)) && (def.visible?.({ ...defaultParams(model), ...item.params }) ?? true))
-        .map((def) => (
-          <ParamControl
-            key={def.id}
-            def={def}
-            value={item.params[def.id]}
-            onChange={(v) => setParam(item.id, def.id, v)}
-            aside={def.id === 'format' ? real : undefined}
-            params={{ ...defaultParams(model), ...item.params }}
-            onSet={(id, v) => setParam(item.id, id, v)}
-          />
-        ))}
+      {shown.filter((d) => only || !d.advanced).map(control)}
+      {advanced.length > 0 && <Advanced more={t('ui.more')}>{advanced.map(control)}</Advanced>}
     </>
+  );
+}
+
+/** A list of named colours (the swatch fan's blades): the brand's palette until one is changed. */
+function ColorsParam({ def, value, onChange }: { def: Extract<ParamDef, { kind: 'colors' }>; value: ParamValue | undefined; onChange: (v: ParamValue) => void }) {
+  const { t, tr } = useT();
+  const brand = useProject((s) => s.brand.colors);
+  const own = colorsOf(value);
+  const list = own ?? brand;
+  const set = (next: NamedColor[]) => onChange(JSON.stringify(next));
+  const field = 'h-8 min-w-0 rounded-lg bg-surface-2 px-2.5 text-[12px] text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none placeholder:text-fg-subtle focus:shadow-[0_0_0_1px_var(--accent)_inset]';
+  return (
+    <Field label={tr(def.label)} value={t('param.colorCount', { n: list.length })}>
+      <div className="flex flex-col gap-1.5" data-testid="colors-param">
+        {list.map((c, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <label className="relative size-8 shrink-0 overflow-hidden rounded-lg shadow-[0_0_0_1px_var(--line-strong)_inset]" style={{ background: c.hex }}>
+              <input
+                type="color"
+                aria-label={t('param.colorN', { n: i + 1 })}
+                value={/^#[0-9a-f]{6}$/i.test(c.hex) ? c.hex : '#000000'}
+                onChange={(e) => set(list.map((x, j) => (j === i ? { ...x, hex: e.target.value } : x)))}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </label>
+            <HexInput label={t('param.colorHex', { n: i + 1 })} value={c.hex} onChange={(hex) => set(list.map((x, j) => (j === i ? { ...x, hex } : x)))} className={field} />
+            <input
+              aria-label={t('param.colorName', { n: i + 1 })}
+              value={c.name}
+              placeholder={c.hex.toUpperCase()}
+              onChange={(e) => set(list.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+              className={cx(field, 'flex-1')}
+            />
+            <Tooltip label={t('param.removeColor')}>
+              <button
+                type="button"
+                aria-label={`${t('param.removeColor')} ${i + 1}`}
+                disabled={list.length <= 1}
+                onClick={() => set(list.filter((_, j) => j !== i))}
+                className="grid size-8 shrink-0 place-items-center rounded-lg text-fg-subtle transition-colors hover:bg-surface-3 hover:text-fg disabled:opacity-40"
+              >
+                <X size={14} />
+              </button>
+            </Tooltip>
+          </div>
+        ))}
+        <div className="flex flex-col items-start gap-0.5">
+          <button
+            type="button"
+            disabled={list.length >= def.max}
+            onClick={() => set([...list, { hex: list.at(-1)?.hex ?? '#888888', name: '' }])}
+            className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-fg transition-colors hover:bg-surface-3 disabled:opacity-40"
+          >
+            <Plus size={14} />
+            {t('param.addColor')}
+          </button>
+          {own && (
+            <button type="button" onClick={() => onChange('')} className="px-2 text-[11.5px] text-fg-subtle hover:text-fg">
+              {t('param.brandColors')}
+            </button>
+          )}
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+/** A hex colour typed by hand: kept while being typed, applied once it is a full #rrggbb. */
+function HexInput({ label, value, onChange, className }: { label: string; value: string; onChange: (hex: string) => void; className: string }) {
+  const [draft, setDraft] = useState(value.toUpperCase());
+  useEffect(() => setDraft(value.toUpperCase()), [value]);
+  return (
+    <input
+      aria-label={label}
+      value={draft}
+      spellCheck={false}
+      maxLength={7}
+      onChange={(e) => {
+        const v = e.target.value.trim();
+        setDraft(v.toUpperCase());
+        const hex = v.startsWith('#') ? v : `#${v}`;
+        if (/^#[0-9a-f]{6}$/i.test(hex)) onChange(hex.toLowerCase());
+      }}
+      onBlur={() => setDraft(value.toUpperCase())}
+      className={cx(className, 'w-[78px] shrink-0 font-mono text-[11.5px] tabular-nums')}
+    />
   );
 }
 
@@ -274,6 +365,16 @@ function AvatarPreview({ url, frame, label, onMove }: { url: string; frame: Avat
   );
 }
 
+/**
+ * Whether these labels fit a segmented control across the settings panel
+ * (≈ 266 px, 12 px text ≈ 6.6 px per character, 16 px of padding each).
+ */
+function fitsSegmented(labels: string[]) {
+  if (labels.length > 5) return false;
+  const longest = Math.max(...labels.map((l) => l.length));
+  return longest * 6.6 + 16 <= 266 / labels.length;
+}
+
 /** Controls generated from the model's parameter definitions. `aside` shows next to the label (e.g. the real size). */
 export function ParamControl({
   def,
@@ -293,6 +394,8 @@ export function ParamControl({
 }) {
   const { tr } = useT();
   switch (def.kind) {
+    case 'colors':
+      return <ColorsParam def={def} value={value} onChange={onChange} />;
     case 'image':
       return <ImageParam def={def} value={String(value ?? '')} params={params} onSet={onSet ?? ((id, v) => id === def.id && onChange(v))} />;
     case 'slider': {
@@ -304,8 +407,8 @@ export function ParamControl({
       );
     }
     case 'choice':
-      // long lists (paper sizes) wrap as chips instead of a cramped segmented control
-      if (def.options.length > 5)
+      // chips that wrap when the labels would not fit side by side (paper sizes, long names)
+      if (!fitsSegmented(def.options.map((o) => tr(o.label))))
         return (
           <Field label={tr(def.label)} value={aside ? <span className="font-sans text-[11.5px]">{aside}</span> : undefined}>
             <div role="radiogroup" aria-label={tr(def.label)} className="flex flex-wrap gap-1.5">

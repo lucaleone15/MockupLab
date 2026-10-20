@@ -5,17 +5,18 @@ import { cavity, polishedMetal } from '@/scene/materials';
 import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
 import { cardGeometry, ribbonGeometry } from './geometry';
 import { PAPER_PARAM, finishOf, paperMaterial, useFabricMaterial, usePrintMaterial } from './shared';
+import { BADGE_SIZES, FIT_PARAM, paperDims, sizeParam } from './formats';
+import { useImageAspects } from '../imageAspects';
 
 const NO_FINISH: DeviceFinish[] = [{ id: 'default', name: { fr: 'Standard', en: 'Default' }, swatch: '#f4f2ec', colors: {} }];
 
-const W = 5.4;
-const H = 8.6;
 const T = 0.08;
 /** The badge sits towards the viewer, the lanyard loop runs away from it. */
 const BADGE_Z = 14;
 
 /** Conference badge (PVC card) on a woven lanyard, laid flat. */
 function Badge({ surfaces, params }: DeviceProps) {
+  const [W, H] = paperDims(BADGE_SIZES, params, useImageAspects(surfaces), 'badge');
   const print = usePrintMaterial(surfaces.badge, W / H, { finish: finishOf(params) });
   const g = useMemo(() => {
     const top = BADGE_Z - H / 2 - 1.4;
@@ -36,7 +37,7 @@ function Badge({ surfaces, params }: DeviceProps) {
       slot: roundedPlane(1.5, 0.32, 0.16, { smooth: 0, segments: 8 }),
       ribbon: ribbonGeometry(loop, 1.5, 260),
     };
-  }, []);
+  }, [W, H]);
   const strap = useFabricMaterial(null, 8, { color: String(params.strap) });
   const metal = polishedMetal('#b9bcc1');
   return (
@@ -66,11 +67,18 @@ export const badge: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [20, 0.6, 38],
-  sizeFor: () => ({ size: [20, 0.6, 38], focus: [0, 0, BADGE_Z] }),
-  surfaces: [{ id: 'badge', label: { fr: 'Badge', en: 'Badge' }, aspect: W / H, nativeSize: [638, 1016] }],
+  // the lanyard loop runs 31 cm behind the clip, above the badge
+  sizeFor: (p, aspects) => {
+    const [w, h] = paperDims(BADGE_SIZES, p, aspects, 'badge');
+    return { size: [Math.max(20, w), 0.6, h + 32.4], focus: [0, 0, BADGE_Z] };
+  },
+  paperSize: (p, aspects) => paperDims(BADGE_SIZES, p, aspects, 'badge'),
+  surfaces: [{ id: 'badge', label: { fr: 'Badge', en: 'Badge' }, aspect: 5.4 / 8.6, nativeSize: [638, 1016] }],
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
+    FIT_PARAM,
+    sizeParam(BADGE_SIZES, 'cr80'),
     {
       id: 'strap',
       kind: 'swatch',

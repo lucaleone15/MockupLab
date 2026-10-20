@@ -26,6 +26,7 @@ export const PAPER_PARAM: ParamDef = {
     { value: 'gloss', label: { fr: 'Brillante', en: 'Gloss' } },
   ],
   default: 'matte',
+  advanced: true,
 };
 
 export const finishOf = (params: Record<string, unknown>): PaperFinish =>

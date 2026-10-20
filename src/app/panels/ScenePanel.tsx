@@ -310,7 +310,8 @@ export function CameraSection() {
   const setPose = useProject((s) => s.setPose);
   return (
     <Section title={t('camera.angles')} aside={cam.preset === 'custom' ? <span className="text-[11.5px] text-fg-subtle">{t('camera.custom')}</span> : undefined}>
-      <div className="grid grid-cols-3 gap-1.5">
+      {/* two per row: « Contre-plongée » does not fit a third of the panel */}
+      <div className="grid grid-cols-2 gap-1.5">
         {(Object.keys(CAMERA_PRESETS) as Exclude<CameraPresetId, 'custom'>[]).map((id) => (
           <Chip
             key={id}

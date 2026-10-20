@@ -136,6 +136,8 @@ export function layoutItems(items: SceneItem[], layout: Layout): SceneItem[] {
 /** Back walls of the 3D sets (table set, studio sweep), local Z. */
 export const TABLE_BACK = -55;
 export const SWEEP_BACK = -70;
+/** Radius of the photo studio's cove: its floor is flat in front of SWEEP_BACK + SWEEP_COVE. */
+export const SWEEP_COVE = 60;
 const STAGE_RADIUS = 600;
 
 export function decorWallZ(decor: Pick<Decor, 'kind'>): number | null {
@@ -158,6 +160,9 @@ export function sceneWall(items: SceneItem[], decor: Pick<Decor, 'kind'>): Scene
   const hanging = items.filter((it) => it.visible !== false && wallOf(it));
   if (!hanging.length) return null;
   const first = hanging[0];
+  // something stands on the floor against the wall (a leaning poster): in the photo studio it would sink
+  // into the cove, so a flat wall rises where the floor is still flat
+  if (decor.kind === 'sweep' && hanging.some((it) => wallOf(it)?.standing)) return { z: SWEEP_BACK + SWEEP_COVE, draw: true };
   const decorZ = decorWallZ(decor);
   if (decorZ !== null) return { z: decorZ, draw: false };
   return { z: first.position[2] + wallOf(first)!.z, draw: true };

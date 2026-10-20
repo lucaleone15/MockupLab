@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { roundedSlab } from '@/lib/geometry/sweep';
-import type { DeviceFinish, DeviceModule, DeviceProps } from '../types';
+import type { DeviceFinish, DeviceModule, DeviceProps, ImageAspects, ParamValue } from '../types';
+import { useImageAspects } from '../imageAspects';
+import { BOOK_SIZES, BROCHURE_SIZES, FIT_PARAM, MAGAZINE_SIZES, paperDims, sizeParam } from './formats';
 import { cardGeometry, pageEdgeTexture } from './geometry';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial } from './shared';
 
@@ -25,10 +27,14 @@ function edgeMaterial(pages: number) {
 
 /* ------------------------------------------------------------ tri-fold */
 
-const PW = 9.9;
-const PH = 21;
+/** One panel of the tri-fold: a third of the open sheet (whose ratio is the inside image's). */
+function panelDims(params: Record<string, ParamValue>, aspects?: ImageAspects) {
+  const [w, h] = paperDims(BROCHURE_SIZES, params, aspects, 'inside');
+  return [w / 3, h] as const;
+}
 
 function Brochure({ surfaces, params }: DeviceProps) {
+  const [PW, PH] = panelDims(params, useImageAspects(surfaces));
   const finish = finishOf(params);
   const inside = usePrintMaterial(surfaces.inside, (PW * 3) / PH, { finish });
   const outside = usePrintMaterial(surfaces.outside, (PW * 3) / PH, { finish });
@@ -46,7 +52,7 @@ function Brochure({ surfaces, params }: DeviceProps) {
           return g;
         })(),
       })),
-    [],
+    [PW, PH],
   );
   const showOutside = params.face === 'outside';
   const lift = Math.sin(a) * PW;
@@ -85,17 +91,21 @@ export const brochure: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [30, 4, 21],
-  sizeFor: (p) => {
+  sizeFor: (p, aspects) => {
+    const [PW, PH] = panelDims(p, aspects);
     const a = deg(Number(p.fold ?? 20));
     return { size: [PW + 2 * PW * Math.cos(a), PW * Math.sin(a), PH], focus: [0, 0, 0] };
   },
+  paperSize: (p, aspects) => paperDims(BROCHURE_SIZES, p, aspects, 'inside'),
   surfaces: [
-    { id: 'inside', label: { fr: 'Intérieur', en: 'Inside' }, aspect: (PW * 3) / PH, nativeSize: [3508, 2480] },
-    { id: 'outside', label: { fr: 'Extérieur', en: 'Outside' }, aspect: (PW * 3) / PH, nativeSize: [3508, 2480] },
+    { id: 'inside', label: { fr: 'Intérieur', en: 'Inside' }, aspect: 29.7 / 21, nativeSize: [3508, 2480] },
+    { id: 'outside', label: { fr: 'Extérieur', en: 'Outside' }, aspect: 29.7 / 21, nativeSize: [3508, 2480] },
   ],
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
+    FIT_PARAM,
+    sizeParam(BROCHURE_SIZES, 'a4'),
     {
       id: 'face',
       kind: 'choice',
@@ -116,12 +126,15 @@ export const brochure: DeviceModule = {
 
 /* ------------------------------------------------------------ magazine */
 
-const MW = 21;
-const MH = 27.5;
 const BLOCK = 0.5;
 
+/** One page: from the open spread's image (half of it) or the closed cover's. */
+function pageDims(params: Record<string, ParamValue>, aspects?: ImageAspects) {
+  return params.state === 'closed' ? paperDims(MAGAZINE_SIZES, params, aspects, 'cover') : paperDims(MAGAZINE_SIZES, params, aspects, 'spread', 2);
+}
+
 /** Page lying open: rises from the gutter and curls slightly at the outer edge. */
-function pageGeometry(side: -1 | 1) {
+function pageGeometry(side: -1 | 1, MW: number, MH: number) {
   const g = new THREE.PlaneGeometry(MW, MH, 60, 1);
   const pos = g.attributes.position as THREE.BufferAttribute;
   const uv = g.attributes.uv as THREE.BufferAttribute;
@@ -147,17 +160,18 @@ function pageGeometry(side: -1 | 1) {
 }
 
 function Magazine({ surfaces, params }: DeviceProps) {
+  const [MW, MH] = pageDims(params, useImageAspects(surfaces));
   const finish = finishOf(params);
   const cover = usePrintMaterial(surfaces.cover, MW / MH, { finish: finish === 'matte' ? 'satin' : finish });
   const spread = usePrintMaterial(surfaces.spread, (MW * 2) / MH, { finish: 'matte' });
   const g = useMemo(
     () => ({
       closed: cardGeometry(MW, MH, BLOCK, 0.08),
-      left: pageGeometry(-1),
-      right: pageGeometry(1),
+      left: pageGeometry(-1, MW, MH),
+      right: pageGeometry(1, MW, MH),
       block: roundedSlab({ width: MW - 3.5, height: MH - 0.1, radius: 0.05, thickness: 0.45, smooth: 0, segments: 2, edgeSegments: 1 }),
     }),
-    [],
+    [MW, MH],
   );
   const edges = useMemo(() => edgeMaterial(60), []);
   if (params.state === 'closed') {
@@ -188,14 +202,20 @@ export const magazine: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [42, 1, 27.5],
-  sizeFor: (p) => ({ size: p.state === 'closed' ? [MW, BLOCK, MH] : [MW * 2, 0.8, MH], focus: [0, 0, 0] }),
+  sizeFor: (p, aspects) => {
+    const [MW, MH] = pageDims(p, aspects);
+    return { size: p.state === 'closed' ? [MW, BLOCK, MH] : [MW * 2, 0.8, MH], focus: [0, 0, 0] };
+  },
+  paperSize: (p, aspects) => pageDims(p, aspects),
   surfaces: [
-    { id: 'spread', label: { fr: 'Double page', en: 'Spread' }, aspect: (MW * 2) / MH, nativeSize: [4961, 3248] },
-    { id: 'cover', label: { fr: 'Couverture', en: 'Cover' }, aspect: MW / MH, nativeSize: [2480, 3248] },
+    { id: 'spread', label: { fr: 'Double page', en: 'Spread' }, aspect: 42 / 27.5, nativeSize: [4961, 3248] },
+    { id: 'cover', label: { fr: 'Couverture', en: 'Cover' }, aspect: 21 / 27.5, nativeSize: [2480, 3248] },
   ],
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
+    FIT_PARAM,
+    sizeParam(MAGAZINE_SIZES, 'mag'),
     {
       id: 'state',
       kind: 'choice',
@@ -215,12 +235,11 @@ export const magazine: DeviceModule = {
 
 /* ------------------------------------------------------------ book */
 
-const BW = 15.5;
-const BH = 23.5;
 const BD = 3.2;
 const BOARD = 0.3;
 
 function Book({ surfaces, params }: DeviceProps) {
+  const [BW, BH] = paperDims(BOOK_SIZES, params, useImageAspects(surfaces), 'cover');
   const finish = finishOf(params);
   const cover = usePrintMaterial(surfaces.cover, BW / BH, { finish });
   const spine = usePrintMaterial(surfaces.spine, BD / BH, { finish });
@@ -229,7 +248,7 @@ function Book({ surfaces, params }: DeviceProps) {
     () => ({
       board: roundedSlab({ width: BW, height: BH, radius: 0.15, thickness: BOARD, front: 0.08, back: 0.08, smooth: 0.3, segments: 4, edgeSegments: 3 }),
     }),
-    [],
+    [BW, BH],
   );
   const edges = useMemo(() => {
     const m = edgeMaterial(300);
@@ -265,14 +284,21 @@ export const book: DeviceModule = {
   category: 'print',
   surfaceKind: 'print',
   anchor: 'bottom',
-  size: [BW + 0.4, BH, BD],
+  size: [15.9, 23.5, BD],
+  sizeFor: (p, aspects) => {
+    const [w, h] = paperDims(BOOK_SIZES, p, aspects, 'cover');
+    return { size: [w + 0.4, h, BD] };
+  },
+  paperSize: (p, aspects) => paperDims(BOOK_SIZES, p, aspects, 'cover'),
   surfaces: [
-    { id: 'cover', label: { fr: 'Couverture', en: 'Cover' }, aspect: BW / BH, nativeSize: [1831, 2776] },
-    { id: 'spine', label: { fr: 'Dos', en: 'Spine' }, aspect: BD / BH, nativeSize: [378, 2776] },
+    { id: 'cover', label: { fr: 'Couverture', en: 'Cover' }, aspect: 15.5 / 23.5, nativeSize: [1831, 2776] },
+    { id: 'spine', label: { fr: 'Dos', en: 'Spine' }, aspect: BD / 23.5, nativeSize: [378, 2776] },
   ],
   finishes: NO_FINISH,
   defaultFinish: 'default',
   params: [
+    FIT_PARAM,
+    sizeParam(BOOK_SIZES, 'large'),
     {
       id: 'cloth',
       kind: 'swatch',
@@ -288,7 +314,7 @@ export const book: DeviceModule = {
     },
     { ...PAPER_PARAM, default: 'satin' } as typeof PAPER_PARAM,
   ],
-  view: { target: [0, BH / 2, 0], offset: [-6, 6, 60] },
+  view: { target: [0, 11.75, 0], offset: [-6, 6, 60] },
   yaw: 0.55,
   Component: Book,
 };

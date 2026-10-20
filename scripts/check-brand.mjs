@@ -1,4 +1,4 @@
-// Brand identity checks: imported font, logo, brand board, generated visuals, swatch fan, specimen.
+// Brand identity checks: imported font, logo, brand board, generated visuals, swatch fan.
 import { chromium } from 'playwright';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 mkdirSync('out/brand', { recursive: true });
@@ -83,14 +83,13 @@ await p.evaluate(async () => {
 await p.waitForTimeout(2500);
 await render('generated');
 
-// 3. Swatch fan + specimen.
+// 3. Swatch fan (the specimen card is gone).
 await p.evaluate(async () => {
   const api = window.__mockuplab;
   const st = () => api.project.getState();
   const keep = st().items[0].id;
   for (const it of st().items.slice(1)) st().removeItem(it.id);
-  st().replaceModel(keep, 'specimen');
-  st().addItem('swatch-fan');
+  st().replaceModel(keep, 'swatch-fan');
   st().arrange();
   st().setDecor({ kind: 'surface', material: 'linen' });
   st().setBackground({ kind: 'solid', color: '#e4e0d8' });

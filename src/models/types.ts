@@ -36,6 +36,8 @@ export type ParamDef = (
   | { id: string; kind: 'toggle'; label: I18nString; default: boolean }
   | { id: string; kind: 'choice'; label: I18nString; options: { value: string; label: I18nString }[]; default: string }
   | { id: string; kind: 'text'; label: I18nString; default: string; placeholder?: string }
+  /** A list of named colours (value = JSON of { hex, name }[], '' = the brand's palette). */
+  | { id: string; kind: 'colors'; label: I18nString; default: ''; max: number }
   /** An image of the user's (value = asset id, '' = none); `hint` says what shows without one. */
   | {
       id: string;
@@ -53,6 +55,8 @@ export type ParamDef = (
 ) & {
   /** Shown only when this holds (e.g. the caption only with an app on the screen). */
   visible?: (params: Record<string, ParamValue>) => boolean;
+  /** Listed under « Paramètres avancés » (the main settings stay few). */
+  advanced?: boolean;
 };
 
 /** Shared parameter: rotates the device 90° and maps landscape images upright. */
@@ -111,7 +115,7 @@ export interface DeviceModule {
    * the object) and its colour, or null. The stage draws one shared wall for
    * the whole scene and snaps every wall object onto it.
    */
-  wallFor?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => { z: number } | null;
+  wallFor?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => { z: number; standing?: boolean } | null;
   /** Printed models: width × height of the paper in cm (shown next to the size). */
   paperSize?: (params: Record<string, ParamValue>, aspects?: ImageAspects) => [number, number];
   /** What the surfaces are: lit screens (default) or printed / lit materials. */
@@ -140,4 +144,20 @@ export function sizeOf(model: DeviceModule, params: Record<string, ParamValue>, 
 
 export function defaultParams(model: DeviceModule): Record<string, ParamValue> {
   return Object.fromEntries((model.params ?? []).map((p) => [p.id, p.default]));
+}
+
+export interface NamedColor {
+  hex: string;
+  name: string;
+}
+
+/** The colours of a 'colors' setting, or null when it follows the brand's palette. */
+export function colorsOf(value: ParamValue | undefined): NamedColor[] | null {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const list = JSON.parse(value);
+    return Array.isArray(list) ? list.filter((c) => c && typeof c.hex === 'string').map((c) => ({ hex: c.hex, name: String(c.name ?? '') })) : null;
+  } catch {
+    return null;
+  }
 }

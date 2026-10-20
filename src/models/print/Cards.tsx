@@ -4,13 +4,13 @@ import type { I18nString } from '@/i18n';
 import type { SurfaceBinding } from '@/store/project';
 import type { DeviceFinish, DeviceModule, DeviceProps, ImageAspects, ParamDef, ParamValue } from '../types';
 import { useImageAspects } from '../imageAspects';
-import { CARD_SIZES, FIT_PARAM, FLYER_SIZES, POSTCARD_SIZES, paperDims, sizeParam, type PaperSize } from './formats';
+import { CARD_SIZES, ENVELOPE_SIZES, FIT_PARAM, FLYER_SIZES, LETTER_SIZES, POSTCARD_SIZES, paperDims, sizeParam, type PaperSize } from './formats';
 import { cardGeometry, pageEdgeTexture, sheetGeometry } from './geometry';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial, type PaperFinish } from './shared';
 
 /*
- * Flat paper goods: business cards, postcards, flyers and stationery. They lie
- * on the floor, front face up; "pair" layouts show the back next to the front.
+ * Flat paper goods: business cards, postcards, flyers, letterheads and envelopes. They lie
+ * on the floor, front face up, one by default; "pair" layouts show the back next to the front.
  */
 
 const NO_FINISH: DeviceFinish[] = [{ id: 'default', name: { fr: 'Standard', en: 'Default' }, swatch: '#f4f2ec', colors: {} }];
@@ -95,7 +95,8 @@ const layoutParam = (stack: boolean): ParamDef => ({
     { value: 'pair', label: { fr: 'Recto/verso', en: 'Both sides' } },
     ...(stack ? [{ value: 'stack', label: { fr: 'Pile', en: 'Stack' } }] : []),
   ],
-  default: 'pair',
+  // one object by default (nothing shows twice); « Recto/verso » shows both sides
+  default: 'single',
 });
 
 const CORNERS_PARAM: ParamDef = {
@@ -107,6 +108,7 @@ const CORNERS_PARAM: ParamDef = {
     { value: 'rounded', label: { fr: 'Arrondis', en: 'Rounded' } },
   ],
   default: 'square',
+  advanced: true,
 };
 
 function usePrintPair(surfaces: Record<string, SurfaceBinding>, aspect: number, finish: PaperFinish) {
@@ -270,37 +272,58 @@ export const flyer: DeviceModule = {
   Component: Flyer,
 };
 
-/* ------------------------------------------------------------ stationery */
+/* ------------------------------------------------------------ letterhead, envelope */
 
-function Stationery({ surfaces, params }: DeviceProps) {
-  const finish = finishOf(params);
-  const letter = usePrintMaterial(surfaces.letter, 21 / 29.7, { finish });
-  const envelope = usePrintMaterial(surfaces.envelope, 22 / 11, { finish });
-  const plain = paperMaterial();
-  return (
-    <group>
-      <Sheet w={21} h={29.7} front={letter} back={plain} position={[-6, 0, -1]} yaw={0.05} curl={0} />
-      <Card w={22} h={11} t={0.08} r={0.05} front={envelope} back={plain} position={[8, 0.05, 9]} yaw={-0.1} />
-    </group>
-  );
+function Letterhead({ surfaces, params }: DeviceProps) {
+  const [w, h] = paperDims(LETTER_SIZES, params, useImageAspects(surfaces), 'front');
+  const front = usePrintMaterial(surfaces.front, w / h, { finish: finishOf(params) });
+  return <Sheet w={w} h={h} front={front} back={paperMaterial()} position={[0, 0, 0]} yaw={0} curl={0.4} />;
 }
 
-export const stationery: DeviceModule = {
-  id: 'stationery',
-  name: { fr: 'Papeterie', en: 'Stationery' },
+export const letterhead: DeviceModule = {
+  id: 'letterhead',
+  name: { fr: 'Papier à en-tête', en: 'Letterhead' },
   category: 'print',
   surfaceKind: 'print',
   anchor: 'bottom',
-  size: [42, 1, 34],
-  sizeFor: () => ({ size: [42, 1, 34], focus: [0, 0, 2] }),
-  surfaces: [
-    { id: 'letter', label: side('Papier à en-tête', 'Letterhead'), aspect: 21 / 29.7, nativeSize: [2480, 3508] },
-    { id: 'envelope', label: side('Enveloppe', 'Envelope'), aspect: 2, nativeSize: [2598, 1299] },
-  ],
+  size: [21, 0.6, 29.7],
+  paperSize: (p, aspects) => paperDims(LETTER_SIZES, p, aspects, 'front'),
+  sizeFor: (p, aspects) => {
+    const [w, h] = paperDims(LETTER_SIZES, p, aspects, 'front');
+    return { size: [w, 0.6, h], focus: [0, 0, 0] };
+  },
+  surfaces: [{ id: 'front', label: side('Papier à en-tête', 'Letterhead'), aspect: 21 / 29.7, nativeSize: [2480, 3508] }],
   finishes: NO_FINISH,
   defaultFinish: 'default',
-  params: [PAPER_PARAM],
+  params: [FIT_PARAM, sizeParam(LETTER_SIZES, 'a4'), PAPER_PARAM],
   view: FLAT_VIEW,
   yaw: 0,
-  Component: Stationery,
+  Component: Letterhead,
+};
+
+function Envelope({ surfaces, params }: DeviceProps) {
+  const [w, h] = paperDims(ENVELOPE_SIZES, params, useImageAspects(surfaces), 'front');
+  const front = usePrintMaterial(surfaces.front, w / h, { finish: finishOf(params) });
+  return <Card w={w} h={h} t={0.12} r={0.06} front={front} back={paperMaterial()} position={[0, 0, 0]} />;
+}
+
+export const envelope: DeviceModule = {
+  id: 'envelope',
+  name: { fr: 'Enveloppe', en: 'Envelope' },
+  category: 'print',
+  surfaceKind: 'print',
+  anchor: 'bottom',
+  size: [22, 0.2, 11],
+  paperSize: (p, aspects) => paperDims(ENVELOPE_SIZES, p, aspects, 'front'),
+  sizeFor: (p, aspects) => {
+    const [w, h] = paperDims(ENVELOPE_SIZES, p, aspects, 'front');
+    return { size: [w, 0.2, h], focus: [0, 0, 0] };
+  },
+  surfaces: [{ id: 'front', label: side('Enveloppe', 'Envelope'), aspect: 2, nativeSize: [2598, 1299] }],
+  finishes: NO_FINISH,
+  defaultFinish: 'default',
+  params: [FIT_PARAM, sizeParam(ENVELOPE_SIZES, 'dl'), PAPER_PARAM],
+  view: FLAT_VIEW,
+  yaw: 0,
+  Component: Envelope,
 };

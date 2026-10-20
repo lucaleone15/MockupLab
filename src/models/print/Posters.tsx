@@ -5,7 +5,7 @@ import { brushedMetal, mattePlastic } from '@/scene/materials';
 import { useRealMaterial } from '@/scene/realMaterials';
 import type { DeviceFinish, DeviceModule, DeviceProps, ImageAspects, ParamValue } from '../types';
 import { useImageAspects } from '../imageAspects';
-import { FIT_PARAM, POSTER_SIZES, paperDims, sizeParam } from './formats';
+import { FIT_PARAM, POSTER_SIZES, ROLLUP_SIZES, paperDims, sizeParam } from './formats';
 import { cardGeometry } from './geometry';
 import { WallShadow } from '../shared/wall';
 import { PAPER_PARAM, finishOf, paperMaterial, usePrintMaterial } from './shared';
@@ -63,7 +63,6 @@ function Poster({ surfaces, params }: DeviceProps) {
   const print = usePrintMaterial(surfaces.poster, d.w / d.h, { finish: finishOf(params) });
   const board = useMemo(() => cardGeometry(d.w, d.h, d.framed ? 0.05 : 0.5, 0.02), [d.w, d.h, d.framed]);
   const onWall = params.mount !== 'lean';
-  const showWall = params.wallOn !== false;
 
   const art = (
     <group>
@@ -91,7 +90,7 @@ function Poster({ surfaces, params }: DeviceProps) {
       <group>
         <group position={[0, HANG_BOTTOM + d.fh / 2, 0]}>
           {art}
-          {showWall && <WallShadow w={d.fw} h={d.fh} z={-d.depth / 2 - 0.03} />}
+          <WallShadow w={d.fw} h={d.fh} z={-d.depth / 2 - 0.03} />
         </group>
       </group>
     );
@@ -120,10 +119,9 @@ export const poster: DeviceModule = {
   },
   paperSize: (p, aspects) => paperDims(POSTER_SIZES, p, aspects, 'poster'),
   wallFor: (p, aspects) => {
-    if (p.wallOn === false) return null;
     const d = posterDims(p, aspects);
     const z = p.mount !== 'lean' ? -d.depth / 2 - 0.05 : -d.depth / 2 - Math.sin(LEAN) * d.fh - 0.2;
-    return { z };
+    return { z, standing: p.mount === 'lean' };
   },
   surfaces: [{ id: 'poster', label: { fr: 'Affiche', en: 'Poster' }, aspect: 1 / A, nativeSize: [4961, 7016] }],
   finishes: NO_FINISH,
@@ -143,7 +141,8 @@ export const poster: DeviceModule = {
       ],
       default: 'black',
     },
-    { id: 'mat', kind: 'toggle', label: { fr: 'Passe-partout', en: 'Mat' }, default: true },
+    // off by default: with the mat the frame read as two frames
+    { id: 'mat', kind: 'toggle', label: { fr: 'Passe-partout', en: 'Mat' }, default: false, advanced: true, visible: (p) => p.frame !== 'none' },
     {
       id: 'mount',
       kind: 'choice',
@@ -154,7 +153,6 @@ export const poster: DeviceModule = {
       ],
       default: 'wall',
     },
-    { id: 'wallOn', kind: 'toggle', label: { fr: 'Mur', en: 'Wall' }, default: true },
     PAPER_PARAM,
   ],
   view: { target: [0, 0, 0], offset: [18, 4, 100] },
@@ -164,17 +162,21 @@ export const poster: DeviceModule = {
 
 /* ------------------------------------------------------------ roll-up */
 
-const RU_W = 85;
-const RU_H = 200;
+/** Banner and cassette (as wide as the banner plus its end caps). */
+function rollUpDims(params: Record<string, ParamValue>, aspects?: ImageAspects) {
+  const [w, h] = paperDims(ROLLUP_SIZES, params, aspects, 'banner');
+  return { w, h, base: w + 5 };
+}
 
 function RollUp({ surfaces, params }: DeviceProps) {
-  const print = usePrintMaterial(surfaces.banner, RU_W / RU_H, { finish: finishOf(params) });
+  const { w, h, base } = rollUpDims(params, useImageAspects(surfaces));
+  const print = usePrintMaterial(surfaces.banner, w / h, { finish: finishOf(params) });
   const g = useMemo(
     () => ({
-      base: roundedSlab({ width: 90, height: 24, radius: 4, thickness: 9, front: { d: 2.4, z: 2.4 }, back: 0.4, smooth: 0.6, segments: 16, edgeSegments: 8 }),
-      banner: cardGeometry(RU_W, RU_H, 0.05, 0.01),
+      base: roundedSlab({ width: base, height: 24, radius: 4, thickness: 9, front: { d: 2.4, z: 2.4 }, back: 0.4, smooth: 0.6, segments: 16, edgeSegments: 8 }),
+      banner: cardGeometry(w, h, 0.05, 0.01),
     }),
-    [],
+    [w, h, base],
   );
   const alu = brushedMetal('#c9cbce', 0.35, 0.3);
   return (
@@ -182,22 +184,22 @@ function RollUp({ surfaces, params }: DeviceProps) {
       <mesh geometry={g.base} material={alu} position={[0, 4.5, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow />
       {/* end caps of the cassette */}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 44.8, 4.5, 0]} material={mattePlastic('#2a2a2c', 0.5)}>
+        <mesh key={s} position={[s * (base / 2 - 0.2), 4.5, 0]} material={mattePlastic('#2a2a2c', 0.5)}>
           <boxGeometry args={[0.6, 8.6, 23]} />
         </mesh>
       ))}
       {/* pole behind the banner */}
-      <mesh position={[0, 9 + RU_H / 2, -2]} material={alu} castShadow>
-        <cylinderGeometry args={[0.8, 0.8, RU_H, 24]} />
+      <mesh position={[0, 9 + h / 2, -2]} material={alu} castShadow>
+        <cylinderGeometry args={[0.8, 0.8, h, 24]} />
       </mesh>
-      <group position={[0, 9 + RU_H / 2, 0]}>
+      <group position={[0, 9 + h / 2, 0]}>
         <mesh geometry={g.banner.edge} material={paperMaterial()} />
         <mesh geometry={g.banner.front} material={print} castShadow receiveShadow />
         <mesh geometry={g.banner.back} material={paperMaterial('#e6e6e6')} castShadow />
       </group>
       {/* top rail */}
-      <mesh position={[0, 9 + RU_H + 1, 0]} material={alu} castShadow>
-        <boxGeometry args={[RU_W + 1, 2.4, 1.6]} />
+      <mesh position={[0, 9 + h + 1, 0]} material={alu} castShadow>
+        <boxGeometry args={[w + 1, 2.4, 1.6]} />
       </mesh>
     </group>
   );
@@ -210,10 +212,15 @@ export const rollUp: DeviceModule = {
   surfaceKind: 'print',
   anchor: 'bottom',
   size: [90, 212, 24],
-  surfaces: [{ id: 'banner', label: { fr: 'Bannière', en: 'Banner' }, aspect: RU_W / RU_H, nativeSize: [2008, 4724] }],
+  sizeFor: (p, aspects) => {
+    const { w, h, base } = rollUpDims(p, aspects);
+    return { size: [Math.max(base, w), h + 12, 24] };
+  },
+  paperSize: (p, aspects) => paperDims(ROLLUP_SIZES, p, aspects, 'banner'),
+  surfaces: [{ id: 'banner', label: { fr: 'Bannière', en: 'Banner' }, aspect: 85 / 200, nativeSize: [2008, 4724] }],
   finishes: NO_FINISH,
   defaultFinish: 'default',
-  params: [{ ...PAPER_PARAM, default: 'satin' } as typeof PAPER_PARAM],
+  params: [FIT_PARAM, sizeParam(ROLLUP_SIZES, '85'), { ...PAPER_PARAM, default: 'satin' } as typeof PAPER_PARAM],
   view: { target: [0, 105, 0], offset: [40, 10, 120] },
   yaw: -0.25,
   Component: RollUp,

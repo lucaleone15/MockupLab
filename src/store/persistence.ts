@@ -14,6 +14,8 @@ import {
   useProject,
   type Project,
   type ProjectState,
+  type SceneItem,
+  type SurfaceBinding,
 } from './project';
 import { toast } from './toasts';
 import { useUi } from './ui';
@@ -83,6 +85,21 @@ export function referencedAssets(p: Project): Set<string> {
 }
 
 /** Fills anything missing (older versions, hand-edited files) with defaults. */
+/** The stationery set (a letterhead and an envelope in one object) is two objects now, each with its image. */
+function splitStationery(it: SceneItem): SceneItem[] {
+  if ((it.modelId as string) !== 'stationery') return [it];
+  const surfaces = (it.surfaces ?? {}) as Record<string, SurfaceBinding | undefined>;
+  const [x, y, z] = it.position ?? [0, 0, 0];
+  const part = (modelId: string, slot: string, dx: number, dz: number): SceneItem => ({
+    ...it,
+    id: `${it.id}-${modelId}`,
+    modelId,
+    surfaces: surfaces[slot] ? { front: surfaces[slot]! } : {},
+    position: [x + dx, y, z + dz],
+  });
+  return [part('letterhead', 'letter', -6, -1), part('envelope', 'envelope', 8, 9)];
+}
+
 export function migrateProject(raw: unknown): Project {
   const base = initialProject();
   if (!raw || typeof raw !== 'object') return base;
@@ -91,7 +108,11 @@ export function migrateProject(raw: unknown): Project {
   const social = (r.social ?? {}) as { account?: string; caption?: string };
   const socialTexts = Object.fromEntries(Object.entries({ account: social.account, caption: social.caption }).filter(([, v]) => typeof v === 'string' && v));
   const items = Array.isArray(r.items)
-    ? r.items.map((it) => {
+    ? r.items
+        // the type specimen card is gone
+        .filter((it) => (it.modelId as string) !== 'specimen')
+        .flatMap(splitStationery)
+        .map((it) => {
         const model = getModel(it.modelId);
         return {
           ...base.items[0],
@@ -105,7 +126,7 @@ export function migrateProject(raw: unknown): Project {
               ...('fit' in defaultParams(model) && !('fit' in (it.params ?? {})) ? { fit: false } : {}),
               ...(model.category === 'phone' ? socialTexts : {}),
               ...(it.params ?? {}),
-            }).filter(([k]) => k !== 'wall'),
+            }).filter(([k]) => k !== 'wall' && k !== 'wallOn'),
           ),
           screen: { ...DEFAULT_SCREEN, ...(it.screen ?? {}) },
           visible: it.visible ?? true,
@@ -121,7 +142,8 @@ export function migrateProject(raw: unknown): Project {
   const hanging = Array.isArray(r.items)
     ? r.items.find((it) => {
         const params = { ...defaultParams(getModel(it.modelId)), ...(it.params ?? {}) };
-        return typeof params.wall === 'string' && !!getModel(it.modelId).wallFor?.(params);
+        // (posters had a « Mur » switch: off, no wall showed)
+        return typeof params.wall === 'string' && params.wallOn !== false && !!getModel(it.modelId).wallFor?.(params);
       })
     : undefined;
   const legacyWall = (decor.kind === 'table' ? oldWall : undefined) ?? (hanging?.params as Record<string, string> | undefined)?.wall;

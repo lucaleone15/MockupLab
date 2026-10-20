@@ -63,7 +63,7 @@ function radialFade() {
 /** Profile (z, y) of a cyclorama: floor, cove, wall; swept along X. */
 function sweepGeometry(width: number) {
   const pts: { z: number; y: number; nz: number; ny: number }[] = [];
-  const R = 60;
+  const R = SWEEP_COVE;
   const back = SWEEP_BACK;
   // floor and wall run far enough that their edges never show, even with long lenses
   pts.push({ z: 6000, y: 0, nz: 0, ny: 1 });
@@ -163,7 +163,7 @@ function Surface({ decor }: { decor: Decor }) {
 }
 
 export { TABLE_BACK } from '@/lib/arrange';
-import { SWEEP_BACK, TABLE_BACK } from '@/lib/arrange';
+import { SWEEP_BACK, SWEEP_COVE, TABLE_BACK } from '@/lib/arrange';
 import { aspectsOf } from '@/models/imageAspects';
 
 /**

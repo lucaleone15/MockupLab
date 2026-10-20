@@ -17,7 +17,7 @@ const SCENARIOS = [
   { name: 'sweep-poster', model: 'poster', decor: { kind: 'sweep', color: '#d9d4cb' } },
   { name: 'poster-lean-table', model: 'poster', params: { mount: 'lean' }, decor: { kind: 'table', material: 'oak', wall: '#ece6dc', ambience: 'day', gobo: 'window' } },
   { name: 'poster-noframe', model: 'poster', params: { frame: 'none', format: 'a3' } },
-  { name: 'poster-nowall', model: 'poster', params: { wallOn: false, frame: 'white' } },
+  { name: 'poster-white', model: 'poster', params: { frame: 'white' } },
   { name: 'poster-podium', model: 'poster', params: { mount: 'lean', format: 'a3' }, decor: { kind: 'podium', color: '#e8d9c8' } },
   { name: 'table-oak', model: 'phone-pro', decor: table('oak', '#ece6dc', 'day', 'window') },
   { name: 'table-walnut', model: 'laptop-14', decor: table('walnut', '#b9c2ae', 'day', 'leaves') },

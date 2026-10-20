@@ -398,16 +398,10 @@ function BrandShowcase({ add }: { add: (o: Overlay) => void }) {
           </Button>
         </div>
         <p className="text-[11px] leading-snug text-fg-subtle">{t('brand.generateHint')}</p>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button size="sm" onClick={() => addBrandObject('swatch-fan')}>
-            <Plus size={13} />
-            {t('brand.addFan')}
-          </Button>
-          <Button size="sm" onClick={() => addBrandObject('specimen')}>
-            <Plus size={13} />
-            {t('brand.addSpecimen')}
-          </Button>
-        </div>
+        <Button size="sm" onClick={() => addBrandObject('swatch-fan')}>
+          <Plus size={13} />
+          {t('brand.addFan')}
+        </Button>
       </Advanced>
     </Section>
   );
