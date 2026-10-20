@@ -4,13 +4,18 @@ await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mu
   const p = u.page;
   const T = { timeout: 8000 };
   await u.step('Ouvrir le Studio', () => u.choose('Ouvrir le Studio'));
+  // the catalogue opens from “Ajouter un appareil”, one family at a time
+  const addPrint = async (name) => {
+    await u.choose('Ajouter un appareil');
+    await p.getByTestId('catalogue').getByRole('button', { name: 'Print', exact: true }).click(T);
+    await p.getByTestId('catalogue').getByRole('button', { name, exact: true }).click(T);
+  };
   await u.step('Ajouter une affiche', async () => {
-    if (!(await p.getByRole('button', { name: 'Print', exact: true }).isVisible())) {
-      u.friction('surprenant', 'le Studio s’ouvre sur « Réglages » (le téléphone par défaut), pas sur la liste des appareils');
+    if (!(await p.getByRole('button', { name: 'Ajouter un appareil' }).isVisible())) {
+      u.friction('surprenant', 'le Studio ne s’ouvre pas sur la liste des appareils');
       await p.getByRole('tab', { name: 'Appareils' }).click(T);
     }
-    await p.getByRole('button', { name: 'Print', exact: true }).click(T);
-    await p.getByRole('button', { name: 'Affiche', exact: true }).click(T);
+    await addPrint('Affiche');
   });
   await u.step('Mettre son visuel sur l’affiche', () => u.upload(p.getByRole('button', { name: 'parcourir' }), 'public/samples/sample-poster.png'));
   await u.step('Choisir le format A1 (adapté à l’image)', async () => {
@@ -25,17 +30,19 @@ await journey('graphiste-print', 'Affiche A1 + flyer + carte de visite sur un mu
   await u.step('Changer la couleur du fond (le mur suit)', async () => {
     if (await p.getByText('Couleur du mur').count()) u.friction('surprenant', 'une couleur de mur séparée du fond existe encore');
     await p.getByRole('tab', { name: 'Décor' }).click(T);
-    if (await p.getByRole('button', { name: /^Ambiances \d+$/ }).count()) u.friction('surprenant', 'les fonds proposés n’ont pas de nom (« Ambiances 1, 2, 3… »)');
-    await u.choose('Papier');
+    // the paper colour of the client, typed as a code
+    const code = p.getByRole('textbox', { name: 'Code couleur' });
+    if (!(await code.isVisible())) u.friction('surprenant', 'pas de champ pour taper la couleur du fond');
+    await code.fill('#F1EFE9');
+    await code.press('Enter');
   });
   await u.step('Ajouter un flyer et une carte de visite', async () => {
     await p.getByRole('tab', { name: 'Appareils' }).click(T);
-    await p.getByRole('button', { name: 'Print', exact: true }).click(T);
-    await u.choose('Flyer');
-    await u.choose('Carte de visite');
+    await addPrint('Flyer');
+    await addPrint('Carte de visite');
     if (await p.getByText('Phone Pro', { exact: true }).first().isVisible()) u.friction('surprenant', 'le téléphone d’exemple reste dans la scène à côté des prints');
   });
-  await u.step('Disposer', () => p.getByRole('button', { name: 'Disposer' }).click(T));
+  await u.step('Disposer', () => u.choose('Équilibrée'));
   await u.step('Exporter en 4K', async () => {
     await p.getByRole('button', { name: 'Exporter' }).first().click(T);
     await u.choose('4K');
