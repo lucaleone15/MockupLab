@@ -9,3 +9,5 @@ node_modules
 desktop/web/
 desktop/node_modules/
 release/
+docs/
+.claude/
