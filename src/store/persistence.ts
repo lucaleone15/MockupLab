@@ -163,7 +163,8 @@ function load(project: Project) {
   useUi.getState().resetView();
 }
 
-async function loadAssets(project: Project) {
+/** Loads a project's images from the database into memory (those not there yet). */
+export async function loadAssets(project: Project) {
   const have = useAssets.getState().assets;
   await Promise.all(
     [...referencedAssets(project)].map(async (id) => {

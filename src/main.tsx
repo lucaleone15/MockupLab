@@ -68,6 +68,10 @@ if (import.meta.env.DEV) {
         thumbs: th,
         importFiles: im.importImages,
         asset: (id: string) => as.useAssets.getState().assets[id],
+        storedAsset: async (id: string) => {
+          const [{ get }, { assetKey }, { db }] = await Promise.all([import('idb-keyval'), import('./library/store'), import('./library/db')]);
+          return !!(await get(assetKey(id), db));
+        },
         variants: va.useVariants,
         renderVideo: () => import('./animation/video').then((m) => m.renderVideo()),
         importFromUrl: im.importFromUrl,

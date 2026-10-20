@@ -5,6 +5,7 @@ import { paintOverlays, prepareOverlays } from '@/lib/overlays';
 import { renderFrame } from '@/scene/exporter';
 import { useProject } from '@/store/project';
 import { paintSocial } from '@/social/paint';
+import type { ExportSettingsRecord } from '@/library/exports';
 import { socialTextNow } from '@/social/SocialFrame';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
@@ -24,9 +25,9 @@ function toBlob(canvas: HTMLCanvasElement, mime: string, quality: number) {
   );
 }
 
-export function download(blob: Blob, filename: string) {
-  // every image, video or ZIP is kept with its project, and refreshes its thumbnail
-  void import('@/library/exports').then((m) => m.recordExport(blob, filename));
+export function download(blob: Blob, filename: string, settings?: ExportSettingsRecord) {
+  // every image, video or ZIP is kept with its project (with its settings and scene), and refreshes its thumbnail
+  void import('@/library/exports').then((m) => m.recordExport(blob, filename, settings));
   void import('@/library/thumbs').then((m) => m.scheduleThumb(1500));
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -140,7 +141,7 @@ export async function exportImage(kind: 'image' | 'video' = 'image') {
     await nextFrame();
     await nextFrame();
     const res = await renderImage();
-    download(res.blob, res.filename);
+    download(res.blob, res.filename, { kind: 'image', format: project.export.format, width: res.width, height: res.height, ratio: project.export.ratio });
     toast.success(t('export.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
   } catch (e) {
     toast.error(t('export.failed', { reason: e instanceof Error ? e.message : String(e) }));

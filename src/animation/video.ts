@@ -150,7 +150,8 @@ export async function exportVideo() {
   });
   try {
     const res = await renderVideo((done, total) => useUi.getState().setExporting(`${label()} ${Math.round((done / total) * 100)} %`));
-    download(res.blob, res.filename);
+    const p = useProject.getState();
+    download(res.blob, res.filename, { kind: 'video', format: p.export.video.format, width: res.width, height: res.height, ratio: p.export.ratio, duration: p.export.video.duration, animation: p.export.video.animation });
     toast.success(t('video.done', { w: res.width, h: res.height, size: formatBytes(res.blob.size) }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

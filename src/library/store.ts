@@ -16,6 +16,8 @@ export interface ProjectMeta {
   assets: string[];
   exportCount: number;
   hasThumb: boolean;
+  /** Image ids the scenes of its exports use (kept while the exports exist). */
+  exportAssets?: string[];
 }
 
 export const INDEX_KEY = 'projects';
@@ -70,14 +72,16 @@ export async function writeIndex(list: ProjectMeta[]) {
 
 export async function upsertMeta(meta: ProjectMeta) {
   const list = await readIndex();
-  await writeIndex([meta, ...list.filter((p) => p.id !== meta.id)]);
+  // the images of the exports' scenes are kept by recordExport, not by the autosave
+  const prev = list.find((p) => p.id === meta.id);
+  await writeIndex([{ ...meta, exportAssets: meta.exportAssets ?? prev?.exportAssets }, ...list.filter((p) => p.id !== meta.id)]);
 }
 
 /** Deletes stored images that no project of the index uses any more. */
 export async function collectUnusedAssets(extraInUse: Iterable<string> = []) {
   const list = await readIndex();
   const used = new Set<string>(extraInUse);
-  for (const p of list) for (const a of p.assets) used.add(a);
+  for (const p of list) for (const a of [...p.assets, ...(p.exportAssets ?? [])]) used.add(a);
   for (const k of (await keys(db)).map(String)) if (k.startsWith('asset:') && !used.has(k.slice(6))) await del(k, db);
 }
 
