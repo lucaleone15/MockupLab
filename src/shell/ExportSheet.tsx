@@ -26,7 +26,8 @@ function RecentExports() {
   const count = useLibrary((s) => s.list.find((p) => p.id === s.currentId)?.exportCount ?? 0);
   const [list, setList] = useState<ExportMeta[]>([]);
   useEffect(() => {
-    if (id) void listExports(id).then(setList);
+    // the files still stored (all the entries are on the project's page)
+    if (id) void listExports(id).then((l) => setList(l.filter((e) => e.hasFile)));
     else setList([]);
   }, [id, count]);
   if (!id || !list.length) return null;

@@ -79,14 +79,14 @@ let E = await exp();
 check(E.n === 1 && E.size > 1000 && E.count === 1, `downloaded image kept with the project (${JSON.stringify(E)})`);
 await page.evaluate(async () => { for (let i = 0; i < 11; i++) await window.__mockuplab.exports.recordExport(new Blob(['x'.repeat(10)], { type: 'image/png' }), `extra-${i}.png`); });
 E = await exp();
-check(E.n === 10 && E.count === 10, `only the last 10 exports are kept (${E.n})`);
+check(E.n === 12 && E.count === 12, `every export is kept (${E.n})`);
 await page.waitForFunction(() => { const s = window.__mockuplab.library.state(); return s.list.find((p) => p.id === s.currentId)?.hasThumb; }, null, { timeout: 15000 }).catch(() => {});
 check(await page.evaluate(() => { const s = window.__mockuplab.library.state(); return !!s.thumbs[s.currentId]; }), 'the project has a thumbnail');
 // 7. recents on the home page: open, rename, duplicate, delete; all projects; recent exports in the sheet
 await page.getByTestId('export-sheet').isVisible().catch(() => {});
 await page.getByTestId('top-export').click();
-await page.waitForFunction(() => document.querySelectorAll('[data-testid=recent-export]').length === 10, null, { timeout: 5000 }).catch(() => {});
-check((await page.getByTestId('export-sheet').getByTestId('recent-export').count()) === 10, 'Export sheet lists the kept exports');
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=recent-export]').length === 12, null, { timeout: 5000 }).catch(() => {});
+check((await page.getByTestId('export-sheet').getByTestId('recent-export').count()) === 12, 'Export sheet lists the kept exports');
 const [again] = await Promise.all([page.waitForEvent('download'), page.getByTestId('export-sheet').getByTestId('recent-export').first().getByRole('button', { name: /Télécharger/ }).click()]);
 check(/extra-10\.png$/.test(again.suggestedFilename()), `a kept export downloads again (${again.suggestedFilename()})`);
 await page.keyboard.press('Escape');
