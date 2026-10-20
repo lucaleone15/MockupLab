@@ -16,7 +16,8 @@ interface NameAsk {
   resolve: () => void;
 }
 
-const useNameAsk = create<{ ask: NameAsk | null; laterFor: number }>(() => ({ ask: null, laterFor: -1 }));
+/** `laterFor`, `exportLaterFor`: the editing session (library `loads`) where the user answered “Later”. */
+const useNameAsk = create<{ ask: NameAsk | null; laterFor: number; exportLaterFor: number }>(() => ({ ask: null, laterFor: -1, exportLaterFor: -1 }));
 
 /** Automated browsers (the check scripts) are not asked, unless a test wants the question. */
 function asking() {
@@ -42,7 +43,8 @@ export function askNameIfNew() {
 
 /** Before the first export of an untitled project: asks for its name (resolves once answered either way). */
 export function ensureNamed(): Promise<void> {
-  if (!asking() || !untitled()) return Promise.resolve();
+  // asked once per editing session: “Later” at an export is not asked again at the next one
+  if (!asking() || !untitled() || useNameAsk.getState().exportLaterFor === useLibrary.getState().loads) return Promise.resolve();
   return new Promise((resolve) => useNameAsk.setState({ ask: { why: 'export', resolve } }));
 }
 
@@ -60,7 +62,8 @@ export function NameDialog() {
     const a = useNameAsk.getState().ask;
     if (!a) return;
     if (value) useProject.setState({ name: value });
-    useNameAsk.setState({ ask: null, laterFor: value ? -1 : useLibrary.getState().loads });
+    const loads = useLibrary.getState().loads;
+    useNameAsk.setState((st) => ({ ask: null, laterFor: value ? -1 : loads, exportLaterFor: !value && a.why === 'export' ? loads : st.exportLaterFor }));
     a.resolve();
   };
   if (!ask) return null;

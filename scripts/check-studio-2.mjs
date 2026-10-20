@@ -145,4 +145,20 @@ for (const b of await pageEl.getByRole('button', { name: 'Paramètres avancés' 
 check(await pageEl.getByPlaceholder('Signature').isVisible(), 'Brand: the tagline under Advanced settings');
 check(await pageEl.getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand: the brand board under Advanced settings');
 
+// review fixes: an old transparent project stays transparent; “Studio photo” works from a scene left with nothing under it
+const old = await page.evaluate(() => {
+  const api = window.__mockuplab;
+  const p = api.persistence.migrateProject({ ...api.persistence.snapshot(), background: { kind: 'transparent' }, decor: { ...api.project.getState().decor, kind: 'none' } });
+  return [p.background.kind, p.decor.kind];
+});
+check(old[0] === 'transparent' && old[1] === 'none', `an old transparent project stays transparent (${old})`);
+await rail.getByRole('tab', { name: 'Décor', exact: true }).click();
+await page.evaluate(() => {
+  const s = window.__mockuplab.project.getState();
+  s.setBackground({ kind: 'solid', color: '#ffffff' });
+  s.setDecor({ kind: 'none' });
+});
+await pageEl.getByTestId('support-sweep').click();
+check((await state()).decor.kind === 'sweep', '“Studio photo” turns a bare scene into the photo studio');
+
 await done(browser, errors);

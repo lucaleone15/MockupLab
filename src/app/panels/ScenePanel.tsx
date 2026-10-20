@@ -80,7 +80,8 @@ export function DecorSection() {
   };
   const support = supportOf(decor.kind);
   const choose = (k: Support) => {
-    if (k === support) return;
+    // a bare scene (nothing under the device) shows as the studio, and becomes it when chosen
+    if (k === support && decor.kind !== 'none') return;
     setDecor({ kind: k });
     if (k !== 'table') return;
     chooseAmbience(decor.ambience);

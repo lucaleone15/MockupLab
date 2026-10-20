@@ -116,8 +116,10 @@ export function migrateProject(raw: unknown): Project {
     : undefined;
   const legacyWall = (decor.kind === 'table' ? oldWall : undefined) ?? (hanging?.params as Record<string, string> | undefined)?.wall;
   const background = r.background && JSON.stringify(r.background) !== JSON.stringify(base.background) ? r.background : legacyWall ? ({ kind: 'solid', color: legacyWall } as const) : (r.background ?? base.background);
-  // “nothing under the device” is gone: such scenes stand in the photo studio
-  if (!['sweep', 'podium', 'surface', 'table'].includes(decor.kind)) decor.kind = 'sweep';
+  // “nothing under the device” is gone from the choices: such scenes stand in the photo studio,
+  // except a transparent background, which shows the device alone
+  const transparent = (r.background as { kind?: string } | undefined)?.kind === 'transparent';
+  if (!['sweep', 'podium', 'surface', 'table'].includes(decor.kind)) decor.kind = transparent && decor.kind === 'none' ? 'none' : 'sweep';
   return {
     ...base,
     name: typeof r.name === 'string' ? r.name : base.name,
