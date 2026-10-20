@@ -4,7 +4,7 @@ import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ viewport: { width: 1280, height: 720 } });
 check(await page.getByTestId('home').isVisible(), 'home shown on first visit');
 check((await page.getByTestId('home-drop').count()) === 0, 'no drop zone on home');
-const cta = page.getByRole('button', { name: 'Ouvrir le Studio', exact: true });
+const cta = page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true });
 const box = await cta.boundingBox();
 check(!!box && box.y + box.height <= 720, 'Open the Studio is in the first screen at 1280×720');
 const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els) => els.map((e) => e.dataset.testid.slice(10)));
@@ -101,6 +101,44 @@ const r1 = await snap();
 await page.waitForTimeout(800);
 check(r1 === (await snap()), 'with reduced motion the hero stays still');
 await page.emulateMedia({ reducedMotion: 'no-preference' });
+// the product story: eight sections in order, each with an Archivo title and a sentence; every visual loads
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(800);
+const ids = ['home-hero', 'home-why', 'home-devices', 'home-studio', 'home-motion', 'home-social', 'home-clients', 'home-end'];
+const tops = await page.evaluate((ids) => ids.map((id) => document.querySelector(`[data-testid=${id}]`)?.getBoundingClientRect().top ?? null), ids);
+check(tops.every((y) => y !== null) && tops.every((y, i) => i === 0 || y > tops[i - 1]), `the eight sections, in order (${tops.map((y) => (y === null ? 'missing' : Math.round(y)))})`);
+const heads = await page.evaluate((ids) => ids.map((id) => { const sec = document.querySelector(`[data-testid=${id}]`); const h = sec?.querySelector('h1, h2'); const p = sec?.querySelector('p'); return { h: h ? getComputedStyle(h).fontFamily : '', p: !!p?.textContent?.trim() }; }), ids);
+check(heads.every((x) => /Archivo/.test(x.h) && x.p), `each section: an Archivo title and a sentence (${heads.filter((x) => !/Archivo/.test(x.h) || !x.p).length} without)`);
+const text = await page.getByTestId('home').innerText();
+check(/gratuit/i.test(text) && /4K/.test(text) && /(ordinateur|appareil)/i.test(text) && /Reels|TikTok/.test(text) && /client/i.test(text), 'the story says free, 4K, private, video, social and clients');
+check(await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).isVisible().catch(() => false) || (await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).count()) === 1, 'the end has “Open the Studio”');
+// every visual of the page loads (scroll through so lazy images come in)
+for (let y = 0; y < 9000; y += 700) {
+  await page.evaluate((y) => document.querySelector('[data-testid=home]').scrollTo(0, y), y);
+  await page.waitForTimeout(250);
+}
+await page.waitForTimeout(800);
+const media = await page.evaluate(() => ({
+  imgs: [...document.querySelectorAll('[data-testid=home] img[src*="/showcase/"]')].map((i) => ({ src: i.getAttribute('src'), w: Math.max(i.naturalWidth, i.naturalHeight) })),
+  videos: [...document.querySelectorAll('[data-testid=home] video')].map((v) => v.readyState),
+}));
+check(media.imgs.length >= 6 && media.imgs.every((i) => i.w >= 1600), `every render loads, at least 1600 px on its long side (${media.imgs.filter((i) => i.w < 1600).map((i) => i.src).join(', ') || media.imgs.length})`);
+check(media.videos.length === 1 && media.videos[0] >= 2, `the looping video plays (${media.videos})`);
+// 1280 × 720: the title and the call to action in the first screen; light system theme: the page stays dark
+await page.setViewportSize({ width: 1280, height: 720 });
+await page.evaluate(() => document.querySelector('[data-testid=home]').scrollTo(0, 0));
+await page.waitForTimeout(300);
+const first = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
+check(!!first && first.y + first.height <= 720, 'title and “Open the Studio” in the first screen at 1280 × 720');
+await page.emulateMedia({ colorScheme: 'light' });
+await page.waitForTimeout(300);
+const heroBg = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid=home]')).backgroundColor);
+const lum = (heroBg.match(/\d+/g) ?? [255, 255, 255]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
+check(lum < 40, `with a light system theme the page stays dark (${heroBg})`);
+await page.emulateMedia({ colorScheme: 'dark' });
+await page.setViewportSize({ width: 1440, height: 900 });
 // blue brand: the app's old orange is gone from the home page, the Studio's top bar and the icon
 const orange = (scope) => page.evaluate((scope) => [...document.querySelectorAll(scope)].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').map((el) => el.textContent?.trim().slice(0, 20) || el.tagName), scope);
 await page.goto('http://localhost:5173/');

@@ -17,7 +17,7 @@ await page.waitForFunction(() => window.__mockuplab);
 check((await theme()) === 'light', 'forced light survives a reload');
 check((await page.evaluate(() => localStorage.getItem('mockuplab:theme'))) === 'light', 'pref stored');
 const font = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--font-display'));
-check(/Syne/.test(font), 'display font is Syne');
+check(/Archivo/.test(font), 'display font is Archivo');
 // hint text (--fg-subtle) stays readable on panels in both themes (≥ 3:1)
 const contrast = () =>
   page.evaluate(() => {

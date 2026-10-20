@@ -27,10 +27,11 @@ const monoOnScreen = () =>
       .map((el) => el.tagName + ':' + el.textContent.trim().slice(0, 20)),
   );
 // home: real mock-ups, “Open the Studio” in the first screen, the icon
-await page.waitForFunction(() => [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => i.complete && i.naturalWidth > 0), null, { timeout: 15000 }).catch(() => {});
-check(await page.evaluate(() => [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /showcase\//.test(i.src) && i.naturalWidth >= 1200)), 'home hero shows a real rendered mock-up');
+// the hero shows the real devices in 3D (or their still without WebGL 2)
+await page.waitForFunction(() => document.querySelector('[data-testid=hero-3d] canvas') || [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /hero-still/.test(i.src) && i.naturalWidth > 0), null, { timeout: 15000 }).catch(() => {});
+check(await page.evaluate(() => !!document.querySelector('[data-testid=hero-3d] canvas') || [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /hero-still/.test(i.src))), 'home hero shows the real devices');
 check((await page.locator('[data-testid=showcase-strip] img').count()) >= 5, 'strip of real mock-ups');
-const cta = await page.getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
+const cta = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
 check(!!cta && cta.y + cta.height <= 900, '“Open the Studio” visible without scrolling');
 check(await page.evaluate(() => /icons\/(favicon|icon)/.test(document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '')), 'favicon is the app icon');
 check(await page.evaluate(() => !!document.querySelector('[data-testid=logo] img[src*="icons/"]')), 'logo mark is the app icon');
