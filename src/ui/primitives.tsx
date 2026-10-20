@@ -138,11 +138,14 @@ export function Segmented<T extends string>({
   options,
   onChange,
   size = 'md',
+  fit,
 }: {
   value: T;
   options: { value: T; label: ReactNode; title?: string }[];
   onChange: (v: T) => void;
   size?: 'sm' | 'md';
+  /** Each option as wide as its label (long labels next to short ones). */
+  fit?: boolean;
 }) {
   return (
     <div
@@ -160,7 +163,8 @@ export function Segmented<T extends string>({
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(
-              'relative flex-1 rounded-[8px] px-2 font-medium transition-[background-color,color,box-shadow] duration-150',
+              'relative rounded-[8px] font-medium transition-[background-color,color,box-shadow] duration-150',
+              fit ? 'flex-auto px-1.5' : 'flex-1 px-2',
               size === 'md' ? 'h-7 text-[12.5px]' : 'h-6 text-[12px]',
               active
                 ? 'bg-white text-fg shadow-[0_1px_3px_rgb(0_0_0/0.12),0_0_0_0.5px_var(--line-strong)] dark:bg-white/18'

@@ -1,4 +1,4 @@
-import { BackgroundSection, CameraSection, DecorSection, GroundSection, LightSection } from '@/app/panels/ScenePanel';
+import { BackgroundSection, CameraSection, DecorSection, LightSection } from '@/app/panels/ScenePanel';
 import { BrandPage, TextPage } from '@/app/panels/TextPanel';
 import type { StudioPage } from '@/store/ui';
 import { VideoPage } from './VideoPage';
@@ -11,7 +11,6 @@ export function StudioPageBody({ page }: { page: StudioPage }) {
         <>
           <BackgroundSection />
           <DecorSection />
-          <GroundSection />
         </>
       );
     case 'light':

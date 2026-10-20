@@ -195,8 +195,8 @@ export function generateLooks(count: number, axes: Axis[], seed: number, p: Proj
     }
     // looks with a strong mood (neon, aurora, dramatic black) keep their own background and light
     const moody = !!preset && ['neon', 'aurora', 'noir'].includes(preset.id);
-    // the background shows on its own only without a set or around a podium (a surface blends into it)
-    const freeBackground = look.decor.kind === 'none' || look.decor.kind === 'podium';
+    // the background shows on its own in the studio or around a podium (a surface blends into it)
+    const freeBackground = look.decor.kind === 'none' || look.decor.kind === 'sweep' || look.decor.kind === 'podium';
     if (on('background') && freeBackground && !moody && (!on('set') || r() < 0.45)) look.background = structuredClone(backgrounds[i % backgrounds.length]);
     // light
     if (on('light')) {

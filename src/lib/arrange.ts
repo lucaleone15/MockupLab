@@ -110,18 +110,23 @@ export function layoutItems(items: SceneItem[], layout: Layout): SceneItem[] {
       x += f.w + gap;
     }
   } else if (layout === 'fan' || layout === 'auto') {
-    // the middle one in front, the others stepping back on an arc and turning in (a gentler arc when balanced)
+    // the middle one in front, the others stepping back on an arc and turning in (a gentler arc when balanced);
+    // neighbours sit their own widths apart, so a laptop among phones does not overlap them
     const radius = avgW * (layout === 'fan' ? 2.6 : 5);
-    const step = (avgW + gap) / radius;
+    const angles = [0];
+    for (let i = 1; i < n; i++) angles.push(angles[i - 1] + ((sized[i - 1].f.w + sized[i].f.w) / 2 + gap) / radius);
+    const mid = (angles[0] + angles[n - 1]) / 2;
     sized.forEach(({ it, yaw }, i) => {
-      const a = (i - (n - 1) / 2) * step;
+      const a = angles[i] - mid;
       place(it, radius * Math.sin(a), radius * (1 - Math.cos(a)), turn(yaw) - a);
     });
   } else {
-    // a staircase going back to the right, each one a little behind the previous one
-    const dx = avgW * 0.62;
+    // a staircase going back to the right, each one a little behind the previous one (and clear of its width)
     const dz = maxD + avgW * 0.55;
-    sized.forEach(({ it, yaw }, i) => place(it, (i - (n - 1) / 2) * dx, (i - (n - 1) / 2) * dz, turn(yaw)));
+    const xs = [0];
+    for (let i = 1; i < n; i++) xs.push(xs[i - 1] + Math.max(sized[i - 1].f.w, sized[i].f.w) * 0.62);
+    const mid = (xs[0] + xs[n - 1]) / 2;
+    sized.forEach(({ it, yaw }, i) => place(it, xs[i] - mid, (i - (n - 1) / 2) * dz, turn(yaw)));
   }
   return items.map((it) => out.get(it.id) ?? it);
 }

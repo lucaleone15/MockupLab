@@ -301,7 +301,7 @@ export const DEFAULT_BRAND: Brand = {
 };
 
 export const DEFAULT_DECOR: Decor = {
-  kind: 'none',
+  kind: 'sweep',
   color: '#d9d4cb',
   material: 'marble-white',
   podiumFinish: 'paint',
@@ -598,6 +598,8 @@ export const useProject = create<ProjectState>()(
             s.decor,
           ),
         }));
+        // a device of another size takes its own room: the scene is laid out again
+        set((s) => (s.items.length > 1 ? { items: laidOut(s.items, s) } : {}));
       },
     }),
     {
