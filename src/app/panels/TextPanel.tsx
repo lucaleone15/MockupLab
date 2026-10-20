@@ -9,7 +9,7 @@ import { useAssets } from '@/store/assets';
 import { DEFAULT_BRAND, useProject, type Brand, type BrandFont, type Overlay, type OverlayFont } from '@/store/project';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { Button, ColorField, Field, Section, Segmented, Slider, Spinner, Switch, cx } from '@/ui/primitives';
+import { Advanced, Button, ColorField, Field, Section, Segmented, Slider, Spinner, Switch, cx } from '@/ui/primitives';
 
 type TextOverlay = Extract<Overlay, { kind: 'text' }>;
 type LogoOverlay = Extract<Overlay, { kind: 'logo' }>;
@@ -257,15 +257,10 @@ export function BrandKit() {
           <input
             value={brand.name}
             placeholder={t('brand.name')}
+            aria-label={t('brand.name')}
             onChange={(e) => setBrand({ name: e.target.value })}
             className="h-8 rounded-lg bg-surface-2 px-2.5 text-[13px] font-semibold text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none focus:shadow-[0_0_0_1px_var(--accent)_inset]"
             style={{ fontFamily: `"${brand.heading.family}", system-ui` }}
-          />
-          <input
-            value={brand.tagline}
-            placeholder={t('brand.tagline')}
-            onChange={(e) => setBrand({ tagline: e.target.value })}
-            className="h-7 rounded-lg bg-surface-2 px-2.5 text-[12px] text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] outline-none focus:shadow-[0_0_0_1px_var(--accent)_inset]"
           />
         </div>
       </div>
@@ -325,6 +320,15 @@ export function BrandKit() {
       </Field>
       <FontPicker role="heading" value={brand.heading} onChange={(heading) => setBrand({ heading })} />
       <FontPicker role="body" value={brand.body} onChange={(body) => setBrand({ body })} />
+      <Advanced more={t('ui.more')}>
+        <input
+          value={brand.tagline}
+          placeholder={t('brand.tagline')}
+          aria-label={t('brand.tagline')}
+          onChange={(e) => setBrand({ tagline: e.target.value })}
+          className="h-8 rounded-lg bg-surface-2 px-2.5 text-[12.5px] text-fg shadow-[0_0_0_1px_var(--line)_inset] outline-none focus:shadow-[0_0_0_1px_var(--accent)_inset]"
+        />
+      </Advanced>
     </Section>
   );
 }
@@ -364,45 +368,47 @@ function BrandShowcase({ add }: { add: (o: Overlay) => void }) {
 
   return (
     <Section title={t('brand.showcase')}>
-      <Button variant="primary" disabled={!!busy} onClick={() => run('board', board)}>
-        {busy === 'board' ? <Spinner size={13} /> : <LayoutPanelLeft size={14} />}
-        {t('brand.board')}
-      </Button>
-      <div className="grid grid-cols-3 gap-1.5">
-        <Button size="sm" onClick={() => add(newPaletteOverlay({ color: ink }))}>
-          <Palette size={13} />
-          {t('brand.paletteShort')}
+      <Advanced more={t('ui.more')}>
+        <Button variant="primary" disabled={!!busy} onClick={() => run('board', board)}>
+          {busy === 'board' ? <Spinner size={13} /> : <LayoutPanelLeft size={14} />}
+          {t('brand.board')}
         </Button>
-        <Button size="sm" onClick={() => add(newTypeOverlay({ color: ink }))}>
-          <Type size={13} />
-          {t('brand.typeShort')}
-        </Button>
-        <Button size="sm" disabled={!brand.logoAssetId} onClick={() => brand.logoAssetId && add(newLogoOverlay(brand.logoAssetId))}>
-          <ImageIcon size={13} />
-          {t('text.addLogo')}
-        </Button>
-      </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        <Button size="sm" disabled={!!busy} onClick={() => run('one', () => applyBrandArt())}>
-          {busy === 'one' ? <Spinner size={12} /> : <Wand2 size={13} />}
-          {t('brand.generate')}
-        </Button>
-        <Button size="sm" disabled={!!busy} onClick={() => run('all', () => applyBrandArt(useProject.getState().items.map((i) => i.id)))}>
-          {busy === 'all' ? <Spinner size={12} /> : <Sparkles size={13} />}
-          {t('brand.generateAll')}
-        </Button>
-      </div>
-      <p className="text-[11px] leading-snug text-fg-subtle">{t('brand.generateHint')}</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        <Button size="sm" onClick={() => addBrandObject('swatch-fan')}>
-          <Plus size={13} />
-          {t('brand.addFan')}
-        </Button>
-        <Button size="sm" onClick={() => addBrandObject('specimen')}>
-          <Plus size={13} />
-          {t('brand.addSpecimen')}
-        </Button>
-      </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button size="sm" onClick={() => add(newPaletteOverlay({ color: ink }))}>
+            <Palette size={13} />
+            {t('brand.paletteShort')}
+          </Button>
+          <Button size="sm" onClick={() => add(newTypeOverlay({ color: ink }))}>
+            <Type size={13} />
+            {t('brand.typeShort')}
+          </Button>
+          <Button size="sm" disabled={!brand.logoAssetId} onClick={() => brand.logoAssetId && add(newLogoOverlay(brand.logoAssetId))}>
+            <ImageIcon size={13} />
+            {t('text.addLogo')}
+          </Button>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button size="sm" disabled={!!busy} onClick={() => run('one', () => applyBrandArt())}>
+            {busy === 'one' ? <Spinner size={12} /> : <Wand2 size={13} />}
+            {t('brand.generate')}
+          </Button>
+          <Button size="sm" disabled={!!busy} onClick={() => run('all', () => applyBrandArt(useProject.getState().items.map((i) => i.id)))}>
+            {busy === 'all' ? <Spinner size={12} /> : <Sparkles size={13} />}
+            {t('brand.generateAll')}
+          </Button>
+        </div>
+        <p className="text-[11px] leading-snug text-fg-subtle">{t('brand.generateHint')}</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button size="sm" onClick={() => addBrandObject('swatch-fan')}>
+            <Plus size={13} />
+            {t('brand.addFan')}
+          </Button>
+          <Button size="sm" onClick={() => addBrandObject('specimen')}>
+            <Plus size={13} />
+            {t('brand.addSpecimen')}
+          </Button>
+        </div>
+      </Advanced>
     </Section>
   );
 }

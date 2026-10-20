@@ -134,4 +134,15 @@ await page.waitForTimeout(200);
 const back = await state();
 check(back.background.kind === 'solid' && back.decor.kind === 'sweep', 'leaving transparent brings the photo studio back');
 
+// 4. Brand: the basics first (name, logo, colours, fonts), the rest under Advanced settings
+await rail.getByRole('tab', { name: 'Marque', exact: true }).click();
+await page.waitForTimeout(300);
+check(await pageEl.getByPlaceholder('Nom de la marque').isVisible(), 'Brand: the name is visible');
+check(!(await pageEl.getByPlaceholder('Signature').isVisible().catch(() => false)), 'Brand: the tagline waits under Advanced settings');
+check(!(await pageEl.getByRole('button', { name: /Planche de marque/ }).isVisible().catch(() => false)), 'Brand: the brand board waits under Advanced settings');
+await shot('brand');
+for (const b of await pageEl.getByRole('button', { name: 'Paramètres avancés' }).all()) await b.click();
+check(await pageEl.getByPlaceholder('Signature').isVisible(), 'Brand: the tagline under Advanced settings');
+check(await pageEl.getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand: the brand board under Advanced settings');
+
 await done(browser, errors);

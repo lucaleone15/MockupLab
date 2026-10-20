@@ -57,7 +57,8 @@ check(await page.getByTestId('variants').isVisible(), 'Ideas opens the variants 
 await page.keyboard.press('Escape');
 await page.waitForTimeout(300);
 await rail.getByRole('tab', { name: 'Marque', exact: true }).click();
-check(await page.getByTestId('rail-page').getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand page has the brand board');
+for (const b of await page.getByTestId('rail-page').getByRole('button', { name: 'Paramètres avancés' }).all()) await b.click();
+check(await page.getByTestId('rail-page').getByRole('button', { name: /Planche de marque/ }).isVisible(), 'Brand page has the brand board (under Advanced settings)');
 await rail.getByRole('tab', { name: 'Texte', exact: true }).click();
 check(await page.getByTestId('rail-page').getByRole('button', { name: 'Titre', exact: true }).isVisible(), 'Text page adds titles');
 await rail.getByRole('tab', { name: 'Décor', exact: true }).click();
