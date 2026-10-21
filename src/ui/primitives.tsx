@@ -64,12 +64,13 @@ export function IconButton({
 
 /* ------------------------------------------------------------- Tooltip */
 
-export function Tooltip({ label, shortcut, children }: { label: string; shortcut?: string; children: ReactNode }) {
+export function Tooltip({ label, shortcut, side, children }: { label: string; shortcut?: string; side?: 'top' | 'right' | 'bottom' | 'left'; children: ReactNode }) {
   return (
     <RTooltip.Root>
       <RTooltip.Trigger asChild>{children}</RTooltip.Trigger>
       <RTooltip.Portal>
         <RTooltip.Content
+          side={side}
           sideOffset={6}
           className="menu-surface z-50 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[12px] font-medium text-fg animate-[fade-in_120ms_ease-out]"
         >
@@ -112,7 +113,8 @@ export function GroupTitle({ children, aside }: { children: ReactNode; aside?: R
  */
 export function Section({ title, aside, children }: { title: string; aside?: ReactNode; children: ReactNode; defaultOpen?: boolean }) {
   return (
-    <section className="flex flex-col gap-3.5 border-t border-line px-5 py-5 first:border-t-0">
+    // a small card of glass inside the panel: no rules between groups, air around them
+    <section className="mx-2 mb-2 flex flex-col gap-3.5 rounded-[16px] bg-[var(--card)] px-3.5 py-4 shadow-[inset_0_0_0_1px_var(--card-edge)]">
       <GroupTitle aside={aside}>{title}</GroupTitle>
       {children}
     </section>
@@ -163,7 +165,7 @@ export function Segmented<T extends string>({
             title={o.title}
             onClick={() => onChange(o.value)}
             className={cx(
-              'relative rounded-[8px] font-medium transition-[background-color,color,box-shadow] duration-150',
+              'relative whitespace-nowrap rounded-[8px] font-medium transition-[background-color,color,box-shadow] duration-150',
               fit ? 'flex-auto px-1.5' : 'flex-1 px-2',
               size === 'md' ? 'h-7 text-[12.5px]' : 'h-6 text-[12px]',
               active

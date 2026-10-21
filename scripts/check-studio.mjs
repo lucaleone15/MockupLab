@@ -2,8 +2,9 @@
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const rail = page.getByTestId('studio-rail');
-check((await rail.getByRole('tab', { selected: true }).textContent()).trim() === 'Appareils', 'a fresh Studio opens on Appareils (add or change devices first)');
-const names = (await rail.getByRole('tab').allTextContents()).map((s) => s.trim());
+// the rail shows icons; each page is named for screen readers and in its tooltip
+check((await rail.getByRole('tab', { selected: true }).getAttribute('aria-label')) === 'Appareils', 'a fresh Studio opens on Appareils (add or change devices first)');
+const names = await rail.getByRole('tab').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
 check(JSON.stringify(names) === JSON.stringify(['Appareils', 'Réglages', 'Décor', 'Lumière', 'Caméra', 'Texte', 'Marque']), `rail: ${names}`);
 for (const n of names) {
   await rail.getByRole('tab', { name: n, exact: true }).click();
@@ -68,7 +69,7 @@ check((await page.getByTestId('rail-page').getByRole('heading', { level: 3 }).co
 await rail.getByRole('tab', { name: 'Lumière', exact: true }).focus();
 await page.keyboard.press('ArrowDown');
 check((await page.evaluate(() => window.__mockuplab.ui.getState().studioPage)) === 'camera', 'ArrowDown in the rail moves to the next page');
-check((await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'Caméra', 'focus follows the keyboard in the rail');
+check((await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))) === 'Caméra', 'focus follows the keyboard in the rail');
 // only the untouched sample phone of a new project is replaced — not a phone picked on purpose, not an edited one
 const after = (setup) => page.evaluate((setup) => {
   const api = window.__mockuplab.project;

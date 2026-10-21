@@ -15,7 +15,7 @@ import { StudioPageBody } from './pages';
 const ICON = 20;
 
 /** The rail (68 px) and the page panel (312 px) with their margins: the frame is centred to their right. */
-const PANELS_WIDTH = 12 + 68 + 8 + 312;
+const PANELS_WIDTH = 12 + 56 + 8 + 312;
 
 export function StudioScreen() {
   const { t } = useT();

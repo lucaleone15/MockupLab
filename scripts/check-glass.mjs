@@ -59,6 +59,18 @@ for (const scheme of ['light', 'dark']) {
     check(gap >= 8, `${scheme} · ${name}: floats clear of the window's edges (${Math.round(gap)} px)`);
   }
   check(layout.canvas.top <= 1 && layout.canvas.left <= 1 && layout.canvas.right >= layout.w - 1, `${scheme} · the scene runs under the top bar and the panels`);
+  // thicker glass; a rail of icons (their names for screen readers and in tooltips); settings in glass cards, no rules
+  const blurPanel = await page.locator(SURFACES.panel).evaluate((el) => Number(/blur\((\d+)/.exec(getComputedStyle(el).backdropFilter)?.[1] ?? 0));
+  check(blurPanel >= 36, `${scheme} · thick glass (blur ${blurPanel} px)`);
+  const rail = await page.locator(SURFACES.rail).evaluate((el) => [...el.querySelectorAll('[role=tab]')].map((b) => ({ text: b.innerText.trim(), name: b.getAttribute('aria-label') })));
+  check(rail.length === 7 && rail.every((b) => !b.text && b.name), `${scheme} · the rail shows icons, named for screen readers (${rail.map((b) => b.name).join(', ')})`);
+  await page.evaluate(() => window.__mockuplab.ui.getState().setStudioPage('decor'));
+  await page.waitForTimeout(300);
+  const rules = await page.locator(SURFACES.panel).evaluate((el) => [...el.querySelectorAll('section')].filter((x) => parseFloat(getComputedStyle(x).borderTopWidth) > 0).length);
+  const cards = await page.locator(SURFACES.panel).evaluate((el) => [...el.querySelectorAll('section')].filter((x) => parseFloat(getComputedStyle(x).borderTopLeftRadius) >= 12).length);
+  check(rules === 0 && cards >= 2, `${scheme} · settings in cards, no rules (${cards} cards, ${rules} rules)`);
+  await page.evaluate(() => window.__mockuplab.ui.getState().setStudioPage('devices'));
+  await page.waitForTimeout(300);
   // the lit edge is a gradient (brighter at the top left)
   const edge = await page.locator(SURFACES.panel).evaluate((el) => getComputedStyle(el, '::before').backgroundImage);
   check(/linear-gradient/.test(edge), `${scheme} · the panel's edge is a lit gradient`);

@@ -1,9 +1,9 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { cx } from '@/ui/primitives';
+import { Tooltip, cx } from '@/ui/primitives';
 
 export type RailItem<P extends string> = { id: P; label: string; icon: ReactNode };
 
-/** Column of page buttons (icon + label). One page open at a time. */
+/** Column of page buttons: icons, their names in a tooltip and for screen readers. One page open at a time. */
 export function Rail<P extends string>({ items, value, onChange, testId }: { items: RailItem<P>[]; value: P; onChange: (p: P) => void; testId?: string }) {
   // tablist keyboard pattern: arrows move between pages, Home/End jump to the ends
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
@@ -17,26 +17,27 @@ export function Rail<P extends string>({ items, value, onChange, testId }: { ite
     (e.currentTarget.querySelector(`[data-page="${target.id}"]`) as HTMLElement | null)?.focus();
   };
   return (
-    <nav className="glass flex w-[68px] shrink-0 flex-col items-center gap-1 overflow-y-auto rounded-[24px] py-2" role="tablist" aria-orientation="vertical" data-testid={testId} onKeyDown={onKeyDown}>
+    <nav className="glass flex w-[56px] shrink-0 flex-col items-center gap-1.5 overflow-y-auto rounded-[28px] py-2" role="tablist" aria-orientation="vertical" data-testid={testId} onKeyDown={onKeyDown}>
       {items.map((it) => {
         const active = it.id === value;
         return (
-          <button
-            key={it.id}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            tabIndex={active ? 0 : -1}
-            data-page={it.id}
-            onClick={() => onChange(it.id)}
-            className={cx(
-              'flex w-[58px] shrink-0 flex-col items-center gap-1 rounded-[10px] py-2 text-[11px] font-medium leading-none transition-[background-color,color,transform] duration-150 active:scale-[0.95]',
-              active ? 'bg-accent-soft text-fg [&>svg]:text-accent' : 'text-fg-muted hover:bg-surface-3 hover:text-fg',
-            )}
-          >
-            {it.icon}
-            {it.label}
-          </button>
+          <Tooltip key={it.id} label={it.label} side="right">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={active}
+              aria-label={it.label}
+              tabIndex={active ? 0 : -1}
+              data-page={it.id}
+              onClick={() => onChange(it.id)}
+              className={cx(
+                'grid size-10 shrink-0 place-items-center rounded-full transition-[background-color,color,transform] duration-150 active:scale-[0.95]',
+                active ? 'bg-[var(--card)] text-accent shadow-[inset_0_0_0_1px_var(--card-edge),0_2px_8px_rgb(20_30_70/0.12)]' : 'text-fg-muted hover:bg-surface-3 hover:text-fg',
+              )}
+            >
+              {it.icon}
+            </button>
+          </Tooltip>
         );
       })}
     </nav>
