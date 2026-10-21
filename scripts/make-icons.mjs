@@ -1,4 +1,4 @@
-// scripts/make-icons.mjs — the app icon (macOS, Windows, PWA, Apple touch), drawn in HTML and rasterised.
+// scripts/make-icons.mjs — the app icon (macOS, Windows, PWA, Apple touch): the « studio sweep » mark on a graphite tile.
 // macOS style: a rounded square of 824 px on a 1024 px canvas with room for the shadow.
 import { chromium } from 'playwright';
 
@@ -9,15 +9,12 @@ const tile = (size, { margin, radius, shadow }) => `
     box-shadow:${shadow ? `0 ${size * 0.012}px ${size * 0.03}px rgba(0,0,0,.35), inset 0 ${size * 0.002}px 0 rgba(255,255,255,.14)` : 'none'};
     overflow:hidden">
     <!-- soft studio light from the top left -->
-    <div style="position:absolute;inset:0;background:radial-gradient(70% 55% at 25% 10%,rgba(255,255,255,.16),transparent 70%)"></div>
-    <!-- the phone -->
-    <div style="position:absolute;left:50%;top:50%;width:34%;height:62%;transform:translate(-50%,-50%) rotate(-8deg);
-      border-radius:${size * 0.075}px;border:${size * 0.03}px solid #f5f5f7;box-sizing:border-box;
-      background:linear-gradient(160deg,rgba(61,123,255,.95) 0%,rgba(61,123,255,.6) 35%,rgba(123,92,255,.6) 70%,rgba(30,139,255,.8) 100%)">
-      <div style="position:absolute;left:50%;top:7%;width:30%;height:5%;transform:translateX(-50%);border-radius:99px;background:#f5f5f7"></div>
-    </div>
-    <!-- the brand dot -->
-    <div style="position:absolute;right:18%;top:15%;width:13%;height:13%;border-radius:50%;background:#3d7bff;box-shadow:0 0 ${size * 0.04}px rgba(61,123,255,.6)"></div>
+    <div style="position:absolute;inset:0;background:radial-gradient(70% 55% at 25% 10%,rgba(255,255,255,.14),transparent 70%)"></div>
+    <!-- the mark: the paper sweep of a photo studio, a device standing on it -->
+    <svg viewBox="0 0 30 30" style="position:absolute;left:18%;top:18%;width:64%;height:64%">
+      <path d="M5 3.5V18a9 9 0 0 0 9 9h12.5" fill="none" stroke="#f5f5f7" stroke-width="2.6" stroke-linecap="round"/>
+      <rect x="14.5" y="11.5" width="7.2" height="13.5" rx="2.1" fill="#2f6bff"/>
+    </svg>
   </div>
 </body>`;
 

@@ -188,7 +188,11 @@ const mobile = await page.evaluate((ids) => ({
 check(!mobile.wide && mobile.stills.every(Boolean) && (await page.getByRole('dialog').count()) === 0, `phone: no sideways scroll, a still per chapter (${mobile.stills})`);
 await page.screenshot({ path: 'out/home5/mobile.png' });
 
-// 8. the blue brand
+// 8. the logo: the « studio sweep » mark drawn in SVG, the name in one colour
+const logo = await page.getByTestId('logo').first().evaluate((el) => ({ svg: !!el.querySelector('svg'), img: !!el.querySelector('img'), colours: new Set([...el.querySelectorAll('span')].map((s) => getComputedStyle(s).color)).size, text: el.innerText.trim() }));
+check(logo.svg && !logo.img && logo.colours === 1 && logo.text === 'MockupLab', `the logo: an SVG mark and « MockupLab » in one colour (${JSON.stringify(logo)})`);
+
+// 8b. the blue brand
 const orange = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] *')].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').length);
 check(orange === 0, `no orange on the home page (${orange})`);
 await done(browser, errors);
