@@ -14,7 +14,10 @@ import { AppDialogs } from '@/ui/dialogs';
 import { NameDialog } from '@/library/NameDialog';
 import { ProjectPage } from '@/library/ProjectPage';
 import { Toaster } from './Toaster';
-import { TopBar } from '@/shell/TopBar';
+import { TOP_BAR, TopBar } from '@/shell/TopBar';
+import { useSpecular } from '@/ui/useSpecular';
+import { sceneTone } from '@/lib/sceneTone';
+import { useProject } from '@/store/project';
 import { ExportSheet } from '@/shell/ExportSheet';
 import { AllProjectsSheet } from '@/library/AllProjectsSheet';
 import { UpdateBanner } from '@/pwa/UpdateBanner';
@@ -64,22 +67,27 @@ function SmallScreenNotice() {
 
 export function App() {
   useGlobalInput();
+  useSpecular();
   useRouteSync();
   const { t } = useT();
   if (!webgl) return <NoWebGL />;
   const screen = useUi((s) => s.screen);
+  const tone = useProject((s) => sceneTone(s.background));
   return (
     <Tooltip.Provider delayDuration={350} skipDelayDuration={150}>
       <div className="flex h-full flex-col">
         {screen === 'home' ? (
           <Home />
         ) : (
-          <>
+          <div className="relative flex min-h-0 flex-1 flex-col" data-scene={screen === 'studio' ? tone : undefined}>
             <TopBar />
-            <ErrorBoundary label={t(`screen.${screen}` as I18nKey)} key={screen}>
-              {screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
-            </ErrorBoundary>
-          </>
+            {/* the Studio's scene runs under the top bar; Rapide and Projet start below it */}
+            <div className="flex min-h-0 flex-1 flex-col" style={{ paddingTop: screen === 'studio' ? 0 : TOP_BAR }}>
+              <ErrorBoundary label={t(`screen.${screen}` as I18nKey)} key={screen}>
+                {screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
+              </ErrorBoundary>
+            </div>
+          </div>
         )}
         {(screen === 'quick' || screen === 'project') && <HiddenStage />}
       </div>

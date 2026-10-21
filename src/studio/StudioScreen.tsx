@@ -1,5 +1,6 @@
 import { Armchair, Camera, Palette, SlidersHorizontal, Smartphone, Sun, Type } from 'lucide-react';
 import { useT } from '@/i18n';
+import { TOP_BAR } from '@/shell/TopBar';
 import { Viewport } from '@/app/Viewport';
 import { Rail, RailPage, type RailItem } from '@/shell/Rail';
 import { useFirstVisitTour } from '@/shell/Tour';
@@ -14,7 +15,7 @@ import { StudioPageBody } from './pages';
 const ICON = 20;
 
 /** The rail (68 px) and the page panel (312 px) with their margins: the frame is centred to their right. */
-const PANELS_WIDTH = 8 + 68 + 8 + 312;
+const PANELS_WIDTH = 12 + 68 + 8 + 312;
 
 export function StudioScreen() {
   const { t } = useT();
@@ -37,8 +38,8 @@ export function StudioScreen() {
   return (
     // the scene fills the whole area; the rail and the page float over it
     <div className="relative min-h-0 flex-1">
-      <Viewport insetLeft={PANELS_WIDTH} />
-      <div className="pointer-events-none absolute inset-y-0 left-0 flex gap-2 p-2 [&>*]:pointer-events-auto">
+      <Viewport insetLeft={PANELS_WIDTH} insetTop={TOP_BAR} />
+      <div className="pointer-events-none absolute bottom-0 left-0 flex gap-2 px-3 pb-3 [&>*]:pointer-events-auto" style={{ top: TOP_BAR }}>
         <Rail items={items} value={page} onChange={setPage} testId="studio-rail" />
         <RailPage title={title}>
           {page === 'devices' && <DevicesPage />}

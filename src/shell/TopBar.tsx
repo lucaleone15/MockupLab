@@ -10,7 +10,10 @@ import { ModeSwitch } from './ModeSwitch';
 import { MoreMenu } from './MoreMenu';
 import { ProjectMenu } from './ProjectMenu';
 
-/** Logo / project · modes · undo, redo, more, export. */
+/** Height of the band the top bar's capsules float in (screens without a scene start below it). */
+export const TOP_BAR = 60;
+
+/** Logo / project · modes · undo, redo, more, export: three glass capsules floating over the screen. */
 export function TopBar() {
   const { t } = useT();
   const screen = useUi((s) => s.screen);
@@ -19,14 +22,16 @@ export function TopBar() {
   const canRedo = useStore(useProject.temporal, (s) => s.futureStates.length > 0);
   const editor = screen === 'studio';
   return (
-    <header className="glass-bar relative z-20 grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 px-4">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3" style={{ height: TOP_BAR }}>
+      <div data-testid="topbar-left" className="glass-float pointer-events-auto flex h-11 min-w-0 items-center gap-3 justify-self-start rounded-full pl-3.5 pr-1.5">
         <Logo />
         <span className="text-fg-subtle">/</span>
         <ProjectMenu />
       </div>
-      <ModeSwitch />
-      <div className="flex items-center justify-end gap-1">
+      <div className="glass-float pointer-events-auto rounded-full p-1">
+        <ModeSwitch />
+      </div>
+      <div data-testid="topbar-right" className="glass-float pointer-events-auto flex h-11 items-center justify-end gap-1 justify-self-end rounded-full px-1.5">
         {editor && (
           <>
             <IconButton label={t('top.undo')} shortcut={`${MOD}Z`} disabled={!canUndo} onClick={() => useProject.temporal.getState().undo()}>
@@ -39,7 +44,7 @@ export function TopBar() {
         )}
         <MoreMenu />
         {editor && (
-          <Button variant="primary" className="ml-2" onClick={() => useUi.getState().setExportOpen(true)} disabled={!!exporting} data-testid="top-export">
+          <Button variant="primary" className="ml-1 rounded-full" onClick={() => useUi.getState().setExportOpen(true)} disabled={!!exporting} data-testid="top-export">
             <Download size={15} strokeWidth={2.2} />
             {t('top.export')}
           </Button>

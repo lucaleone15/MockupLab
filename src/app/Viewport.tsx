@@ -182,15 +182,16 @@ export function ExportOverlay() {
  * The export frame inside an area of `box` (CSS px), centred in the space the
  * panels leave free on the left: the largest rectangle of `ratio` that fits.
  */
-export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft: number) {
+export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft: number, insetTop = 0) {
   const padX = 56;
   const padY = 84;
   const free = Math.max(0, box.w - insetLeft);
   const aw = Math.max(0, free - padX * 2);
-  const ah = Math.max(0, box.h - padY * 2);
+  const freeH = Math.max(0, box.h - insetTop);
+  const ah = Math.max(0, freeH - padY * 2);
   const width = Math.floor(Math.min(aw, ah * ratio));
   const height = Math.floor(width / ratio);
-  return { x: Math.round(insetLeft + (free - width) / 2), y: Math.round((box.h - height) / 2), width, height };
+  return { x: Math.round(insetLeft + (free - width) / 2), y: Math.round(insetTop + (freeH - height) / 2), width, height };
 }
 
 /**
@@ -198,7 +199,7 @@ export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft:
  * floating panels); the export frame sits in the free space, the camera frames
  * exactly its content, and a veil dims the scene around it.
  */
-export function Viewport({ insetLeft = 0 }: { insetLeft?: number }) {
+export function Viewport({ insetLeft = 0, insetTop = 0 }: { insetLeft?: number; insetTop?: number }) {
   const ratio = useProject((s) => s.export.ratio);
   const empty = useProject((s) => s.items.length === 0);
   const hasImage = useProject((s) => {
@@ -215,7 +216,7 @@ export function Viewport({ insetLeft = 0 }: { insetLeft?: number }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const f = frameIn(box, ratioValue(ratio), insetLeft);
+  const f = frameIn(box, ratioValue(ratio), insetLeft, insetTop);
   useLayoutEffect(() => {
     Object.assign(viewFrame, f);
     invalidateScene();

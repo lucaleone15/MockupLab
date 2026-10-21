@@ -22,7 +22,7 @@ const SURFACES = {
   rail: '[data-testid="studio-rail"]',
   panel: '[data-testid="rail-page"]',
   'floating bar': '[data-testid="floating-bar"]',
-  'top bar': 'header',
+  'top bar': '[data-testid=topbar-right]',
 };
 
 for (const scheme of ['light', 'dark']) {
@@ -49,6 +49,29 @@ for (const scheme of ['light', 'dark']) {
     check(tinted, `${scheme} · ${name}: a tinted shadow`);
   }
 
+  // 1b. visionOS: everything floats over the scene, clear of the window's edges
+  const layout = await page.evaluate((sels) => {
+    const r = (s) => document.querySelector(s)?.getBoundingClientRect().toJSON();
+    return { parts: Object.fromEntries(Object.entries(sels).map(([k, s]) => [k, r(s)])), left: r('[data-testid=topbar-left]'), canvas: r('[data-testid=scene-area] canvas'), w: innerWidth, h: innerHeight };
+  }, SURFACES);
+  for (const [name, b] of Object.entries({ ...layout.parts, 'top bar (left)': layout.left })) {
+    const gap = Math.min(b.left, b.top, layout.w - b.right, layout.h - b.bottom);
+    check(gap >= 8, `${scheme} · ${name}: floats clear of the window's edges (${Math.round(gap)} px)`);
+  }
+  check(layout.canvas.top <= 1 && layout.canvas.left <= 1 && layout.canvas.right >= layout.w - 1, `${scheme} · the scene runs under the top bar and the panels`);
+  // the lit edge is a gradient (brighter at the top left)
+  const edge = await page.locator(SURFACES.panel).evaluate((el) => getComputedStyle(el, '::before').backgroundImage);
+  check(/linear-gradient/.test(edge), `${scheme} · the panel's edge is a lit gradient`);
+  // a highlight follows the pointer over the glass
+  const panelBox = await page.locator(SURFACES.panel).boundingBox();
+  await page.mouse.move(panelBox.x + 40, panelBox.y + 60);
+  await page.waitForTimeout(100);
+  const mx1 = await page.locator(SURFACES.panel).evaluate((el) => el.style.getPropertyValue('--mx'));
+  await page.mouse.move(panelBox.x + panelBox.width - 40, panelBox.y + 300);
+  await page.waitForTimeout(100);
+  const mx2 = await page.locator(SURFACES.panel).evaluate((el) => el.style.getPropertyValue('--mx'));
+  check(!!mx1 && mx1 !== mx2, `${scheme} · the highlight follows the pointer (${mx1} → ${mx2})`);
+
   // 2. text on the glass reads (≥ 4.5:1), measured against the rendered panel
   const shot = await page.screenshot();
   const measures = await page.evaluate(async ({ png }) => {
@@ -73,6 +96,30 @@ for (const scheme of ['light', 'dark']) {
   }, { png: shot.toString('base64') });
   const worst = Math.min(...measures.colours.map((c) => contrast(c, measures.bg)));
   check(worst >= 4.5, `${scheme} · every text colour on the panel reads at ≥ 4.5:1 (worst ${worst.toFixed(2)} on ${measures.bg})`);
+  // and in front of a white scene and a black scene
+  for (const color of ['#ffffff', '#000000']) {
+    await page.evaluate((color) => window.__mockuplab.project.getState().setBackground({ kind: 'solid', color }), color);
+    await page.waitForTimeout(900);
+    const png = (await page.screenshot()).toString('base64');
+    const m = await page.evaluate(async ({ png }) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${png}`;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      const k = img.width / innerWidth;
+      const box = document.querySelector('[data-testid="rail-page"]').getBoundingClientRect();
+      const bg = [...g.getImageData(Math.round((box.left + 10) * k), Math.round((box.bottom - 10) * k), 1, 1).data.slice(0, 3)];
+      const panel = document.querySelector('[data-testid="rail-page"]');
+      const colours = [...new Set([...panel.querySelectorAll('h2, h3, label, span, p')].filter((e) => e.offsetParent && e.innerText.trim() && !e.closest('button, [role="radio"]')).map((e) => getComputedStyle(e).color))].map((s) => (/rgba?\((\d+), (\d+), (\d+)/.exec(s) ?? []).slice(1, 4).map(Number));
+      return { bg, colours };
+    }, { png });
+    const w = Math.min(...m.colours.map((c) => contrast(c, m.bg)));
+    check(w >= 4.5, `${scheme} · in front of a ${color} scene the panel reads at ≥ 4.5:1 (worst ${w.toFixed(2)} on ${m.bg})`);
+  }
 
   // 3. menus and windows: glass too
   await page.getByTestId('top-export').click();
