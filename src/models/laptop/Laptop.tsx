@@ -249,7 +249,7 @@ function Laptop({ spec: s, finish, surfaces, screen, params }: DeviceProps & { s
         <mesh geometry={g.trackpadGap} material={mattePlastic('#5c5d61', 0.6)} position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.006]} />
         <mesh
           geometry={g.trackpad}
-          material={brushedMetal(finish.colors.frame, 0.24, 0)}
+          material={brushedMetal(finish.colors.frame, 0.34, 0.12)}
           position={[0, -s.depth / 2 + s.trackpad.front + s.trackpad.depth / 2, 0.012]}
         />
         {s.grilles && (
