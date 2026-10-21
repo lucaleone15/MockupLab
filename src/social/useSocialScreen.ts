@@ -30,10 +30,12 @@ export function useSocialScreen(params: Record<string, ParamValue>, brand: Brand
   const account = handleOf(String(params.account ?? ''), brand);
   const caption = String(params.caption ?? '');
   const frame = frameOf(params, photoId === brand.logoAssetId);
+  // how far the feed has scrolled (the home page's story), 0 by default
+  const scroll = typeof params.feed === 'number' ? params.feed : 0;
   return {
-    key: JSON.stringify([app, account, caption, lang, face ? logo!.url : '', aspect, device, frame]),
+    key: JSON.stringify([app, account, caption, lang, face ? logo!.url : '', aspect, device, frame, scroll]),
     draw: (image) => {
-      const c = paintPhoneScreen(app, image, aspect, { account, caption, words: socialWords(), avatar: face, avatarFrame: frame }, { device });
+      const c = paintPhoneScreen(app, image, aspect, { account, caption, words: socialWords(), avatar: face, avatarFrame: frame }, { device, scroll });
       // the check scripts read the last painted screens
       if (import.meta.env.DEV) ((window as unknown as { __phoneScreens?: HTMLCanvasElement[] }).__phoneScreens ??= []).splice(0, Infinity, c);
       return c;

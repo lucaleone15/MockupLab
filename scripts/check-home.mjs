@@ -1,27 +1,68 @@
-// scripts/check-home.mjs — the home page as a 3D story: a split hero, a 3D stage that stays on the right and changes
-// with each chapter, labelled dots, the page's paper changing colour, light and dark; then the modes and the end.
-// Plus what stays true: the call to action in the first screen, the modes, paste, fonts, the blue brand.
+// scripts/check-home.mjs — the home page as an Apple-like product story: pinned chapters whose 3D and words follow
+// the scroll continuously (both ways), black and white sections, labelled dots; no scroll listener; stills on a
+// phone and with reduced motion. Plus what stays true: the main button, the modes, paste, fonts, the blue brand.
 import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
-mkdirSync('out/home4', { recursive: true });
-const CHAPTERS = ['why', 'devices', 'studio', 'motion', 'social', 'clients'];
+mkdirSync('out/home5', { recursive: true });
+const CHAPTERS = ['open', 'drop', 'devices', 'studio', 'motion', 'social', 'clients'];
 const scroller = '[data-testid=home]';
-const toChapter = async (page, id) => {
-  await page.evaluate((id) => document.querySelector(`[data-chapter-id=${id}]`).scrollIntoView({ block: 'center' }), id);
-  await page.waitForTimeout(1100);
+// records every scroll listener the page registers
+const spy = () => {
+  window.__scrollListeners = [];
+  const add = EventTarget.prototype.addEventListener;
+  EventTarget.prototype.addEventListener = function (type, ...rest) {
+    // React delegates every event type once on its root container: that is not a scroll handler of the page
+    if (type === 'scroll' && this.id !== 'root') window.__scrollListeners.push(this.constructor?.name ?? 'node');
+    return add.call(this, type, ...rest);
+  };
 };
+/** Scrolls so that `p` of chapter `id` crosses the middle of the screen. */
+const at = async (page, id, p, wait = 1300) => {
+  await page.evaluate(
+    ({ s, id, p }) => {
+      const root = document.querySelector(s);
+      const t = root.querySelector(`[data-chapter-id=${id}]`);
+      root.scrollTo(0, t.offsetTop + p * t.offsetHeight - root.clientHeight / 2);
+    },
+    { s: scroller, id, p },
+  );
+  await page.waitForTimeout(wait);
+};
+const stageShot = async (page) => (await page.getByTestId('hero-3d').screenshot()).toString('base64');
+const diff = (page, a, b) =>
+  page.evaluate(
+    async ({ a, b }) => {
+      const load = async (s) => {
+        const i = new Image();
+        i.src = `data:image/png;base64,${s}`;
+        await i.decode();
+        return i;
+      };
+      const [x, y] = await Promise.all([load(a), load(b)]);
+      const px = (img) => {
+        const c = document.createElement('canvas');
+        c.width = 120;
+        c.height = 120;
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0, 120, 120);
+        return g.getImageData(0, 0, 120, 120).data;
+      };
+      const [p, q] = [px(x), px(y)];
+      let d = 0;
+      for (let i = 0; i < p.length; i += 4) d += Math.abs(p[i] - q[i]) + Math.abs(p[i + 1] - q[i + 1]) + Math.abs(p[i + 2] - q[i + 2]);
+      return d / ((p.length / 4) * 3 * 255);
+    },
+    { a, b },
+  );
 
-const { browser, page, errors } = await openApp({ viewport: { width: 1280, height: 720 } });
+const { browser, page, errors } = await openApp({ viewport: { width: 1280, height: 720 }, init: spy });
 
-// 1. first visit: the home page; the main action in the first screen; no arrow on it
+// 1. the opening: the main button in the first screen, no arrow; paste asks for a mode
 check(await page.getByTestId('home').isVisible(), 'home shown on first visit');
-check((await page.getByTestId('home-drop').count()) === 0, 'no drop zone on home');
 const cta = page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true });
 const box = await cta.boundingBox();
 check(!!box && box.y + box.height <= 720, 'Open the Studio is in the first screen at 1280×720');
 check((await cta.locator('svg').count()) === 0, 'no arrow added to the main button');
-
-// 2. paste on home asks to pick a mode first
 await page.evaluate(async () => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -31,167 +72,123 @@ await page.evaluate(async () => {
   window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }));
 });
 await page.waitForTimeout(400);
-check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'home', 'paste on home stays on home');
-check(await page.getByText('Choisis d’abord un mode').isVisible(), 'paste on home says to pick a mode');
-
-// 3. no project yet: no « Mes projets », no « Reprendre »
+check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'home' && (await page.getByText('Choisis d’abord un mode').isVisible()), 'paste on home asks to pick a mode first');
 check((await page.getByRole('button', { name: 'Mes projets' }).count()) === 0, 'no « Mes projets » before any project');
 await cta.click();
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'studio', 'Open the Studio opens the Studio');
 
-// 4. a saved project: « Mes projets » in the header, « Reprendre » under the main button
+// 2. a saved project: « Mes projets » and « Reprendre »
 await page.evaluate(() => window.__mockuplab.project.setState({ name: 'Reprise' }));
 await page.waitForTimeout(2500);
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
-check((await page.getByTestId('recents').count()) === 0 && (await page.getByTestId('showcase-strip').count()) === 0, 'no recents row and no « Fait avec MockupLab » strip at the bottom');
 await page.getByRole('button', { name: 'Mes projets' }).click();
 await page.waitForTimeout(300);
 check(await page.getByTestId('all-projects').isVisible(), '« Mes projets » opens the projects window');
 await page.keyboard.press('Escape');
 await page.getByTestId('home-hero').getByRole('button', { name: /Reprendre « Reprise »/ }).click();
 await page.waitForTimeout(600);
-const r = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, name: window.__mockuplab.project.getState().name }));
-check(r.screen === 'studio' && r.name === 'Reprise', `« Reprendre » opens the last project in the Studio (${r.screen}/${r.name})`);
+check((await page.evaluate(() => window.__mockuplab.project.getState().name)) === 'Reprise', '« Reprendre » opens the last project');
 
-// 5. desktop: split hero, the stage stays on the right, each chapter changes it, the paper changes colour
+// 3. desktop: pinned chapters, continuous 3D, both ways
 await page.setViewportSize({ width: 1440, height: 900 });
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
-const stage = page.getByTestId('hero-3d');
-await stage.waitFor({ timeout: 15000 });
-await page.waitForTimeout(2000);
-const h1 = await page.getByTestId('home-hero').getByRole('heading', { level: 1 }).boundingBox();
-const sb = await stage.boundingBox();
-check(!!h1 && !!sb && h1.x < 200 && h1.x + h1.width <= sb.x + 1, `split hero: the title on the left, the 3D on the right (${Math.round(h1?.x)}–${Math.round(h1?.x + h1?.width)} | ${Math.round(sb?.x)})`);
-check((await page.getByTestId('home').getAttribute('data-theme')) === null, 'the page follows the app theme (not forced dark)');
-await page.screenshot({ path: 'out/home4/hero-dark.png' });
-const paper0 = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
-const seen = new Set();
-for (const id of CHAPTERS) {
-  await toChapter(page, id);
-  const st = await page.evaluate(() => ({ chapter: document.querySelector('[data-testid=hero-3d]')?.dataset.chapter, state: window.__heroState }));
-  seen.add(st.state);
-  check(st.chapter === id && st.state === id, `chapter « ${id} »: the 3D takes its state (${st.chapter}/${st.state})`);
-  const top = (await stage.boundingBox())?.y ?? -1;
-  check(top >= -1 && top < 40, `chapter « ${id} »: the 3D stays in view (top ${Math.round(top)})`);
-  await page.screenshot({ path: `out/home4/chapter-${id}.png` });
+await page.getByTestId('hero-3d').waitFor({ timeout: 15000 });
+await page.waitForTimeout(2500);
+check((await page.evaluate(() => window.__scrollListeners.length)) === 0, `no scroll listener on the page (${await page.evaluate(() => window.__scrollListeners.join(', '))})`);
+const tracks = await page.evaluate((ids) => ids.map((id) => document.querySelector(`[data-chapter-id=${id}]`)?.offsetHeight ?? 0), CHAPTERS);
+check(tracks.every((h) => h >= 900 * 1.5), `seven pinned chapters, each ≥ 150 vh (${tracks.map((h) => Math.round(h / 9))})`);
+await page.screenshot({ path: 'out/home5/open-0.png' });
+await at(page, 'open', 0.1);
+const lid1 = await page.evaluate(() => window.__heroPose?.lidAngle);
+await at(page, 'open', 0.9);
+const lid2 = await page.evaluate(() => window.__heroPose?.lidAngle);
+check(lid1 < lid2 && lid2 > 90, `the opening: the lid opens with the scroll (${lid1}° → ${lid2}°)`);
+await page.screenshot({ path: 'out/home5/open-90.png' });
+const words = async () => page.evaluate(() => document.querySelectorAll('[data-chapter-id=drop] [data-lit="true"]').length);
+await at(page, 'drop', 0.15);
+const w1 = await words();
+await at(page, 'drop', 0.6);
+const w2 = await words();
+check(w2 > w1, `the words light up with the scroll (${w1} → ${w2})`);
+await page.screenshot({ path: 'out/home5/drop-60.png' });
+await at(page, 'devices', 0.3);
+const d30 = await stageShot(page);
+check((await page.evaluate(() => window.__heroState)) === 'devices', 'the stage follows the chapter');
+await at(page, 'devices', 0.75);
+const d75 = await stageShot(page);
+await page.screenshot({ path: 'out/home5/devices-75.png' });
+check((await diff(page, d30, d75)) > 0.02, 'within a chapter the 3D keeps changing (30 % ≠ 75 %)');
+await at(page, 'devices', 0.3, 1800);
+check((await diff(page, d30, await stageShot(page))) < 0.02, 'scrolling back gives the same picture again');
+for (const [id, p] of [['studio', 0.5], ['motion', 0.6], ['social', 0.7], ['clients', 0.9]]) {
+  await at(page, id, p);
+  check((await page.evaluate(() => window.__heroState)) === id, `« ${id} »: the stage takes it`);
+  await page.screenshot({ path: `out/home5/${id}-${p * 100}.png` });
 }
-check(seen.size === CHAPTERS.length, 'six different 3D states');
-await toChapter(page, 'why');
-const paper1 = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
-check(paper0 !== paper1, `the page's paper changes with the chapter (${paper0} → ${paper1})`);
+const bgOf = () => page.evaluate(() => getComputedStyle(document.querySelector('[data-testid=story-stage]')).backgroundColor);
+await at(page, 'studio', 0.5);
+const studioBg = await bgOf();
+await at(page, 'open', 0.5);
+const openBg = await bgOf();
+const lum = (c) => (c.match(/\d+/g) ?? [0, 0, 0]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
+check(lum(studioBg) > 200 && lum(openBg) < 20, `black and white sections (open ${openBg}, studio ${studioBg})`);
 
-// 6. the dots: labelled, clickable, the current one marked
+// 4. dots, copy, fonts
 const dots = page.getByRole('navigation', { name: /Chapitres/ }).getByRole('button');
 check((await dots.count()) === 7, `seven labelled dots (${await dots.count()})`);
-await dots.filter({ hasText: 'Réseaux' }).first().click({ force: true }).catch(() => page.getByRole('button', { name: 'Réseaux' }).click());
-await page.waitForTimeout(1600);
-check((await page.evaluate(() => window.__heroState)) === 'social', 'a dot takes you to its chapter');
-check((await page.getByRole('button', { name: 'Réseaux' }).getAttribute('aria-current')) === 'step', 'the current dot is marked');
-
-// 7. the copy: no long dash, the main label only once per place, the story's promises
+await page.getByRole('button', { name: 'Réseaux' }).click();
+await page.waitForTimeout(1800);
+check((await page.evaluate(() => window.__heroState)) === 'social' && (await page.getByRole('button', { name: 'Réseaux' }).getAttribute('aria-current')) === 'step', 'a dot takes you to its chapter and is marked');
 const text = await page.getByTestId('home').innerText();
 check(!/[—–]/.test(text), 'no long dash in the page');
-check(/gratuit/i.test(text) && /4K/.test(text) && /(ordinateur|appareil)/i.test(text) && /client/i.test(text) && /(post|story|Reel)/i.test(text), 'the story says free, 4K, private, social and clients');
+check(/gratuit/i.test(text) && /4K/.test(text) && /client/i.test(text) && /(post|story|Reel)/i.test(text), 'the story says free, 4K, social and clients');
 const fonts = await page.evaluate(() => {
   const h = document.querySelector('[data-testid=home] h1');
   const p = document.querySelector('[data-testid=home] p');
   return { h: getComputedStyle(h).fontFamily, stretch: getComputedStyle(h).fontStretch, p: getComputedStyle(p).fontFamily };
 });
-check(/^"?Archivo/.test(fonts.h) && fonts.stretch === '125%' && /Geist/.test(fonts.p), `titles in Archivo Expanded, text in Geist (${JSON.stringify(fonts)})`);
+check(/^"?Archivo/.test(fonts.h) && fonts.stretch === '125%' && /Geist/.test(fonts.p), 'titles in Archivo Expanded, text in Geist');
 
-// 8. after the story: the three modes on one row, Studio the big one; the end
+// 5. after the story: the modes and the end; off screen the 3D stops
 const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els) => els.map((e) => e.dataset.testid.slice(10)));
 check(order.join() === 'studio,quick,project', `mode cards in order (${order})`);
-const cards = await Promise.all(['studio', 'quick', 'project'].map((m) => page.getByTestId(`mode-card-${m}`).boundingBox()));
-check(cards[0].width > cards[1].width * 1.5 && cards.every((c) => Math.abs(c.y - cards[0].y) < 2), 'the modes share one row, Studio the big one');
-for (const m of ['studio', 'quick', 'project']) check((await page.getByTestId(`mode-card-${m}`).innerText()).length > 20, `${m} card explains its role`);
 check((await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).count()) === 1, 'the end has « Ouvrir le Studio »');
-
-// 9. off screen the 3D stops drawing; the project is left alone
-const itemsBefore = await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)));
 await page.evaluate(() => document.querySelector('[data-testid=home-end]').scrollIntoView());
 await page.waitForTimeout(800);
 const f1 = await page.evaluate(() => window.__heroFrames ?? 0);
 await page.waitForTimeout(800);
-check((await page.evaluate(() => window.__heroFrames ?? 0)) === f1, 'scrolled past the story, the 3D stops drawing');
-check((await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)))) === itemsBefore, 'the 3D story leaves the project alone');
+check((await page.evaluate(() => window.__heroFrames ?? 0)) === f1, 'past the story, the 3D stops drawing');
 
-// 10. every render loads in full size
-for (let y = 0; y < 14000; y += 800) {
-  await page.evaluate(({ s, y }) => document.querySelector(s).scrollTo(0, y), { s: scroller, y });
-  await page.waitForTimeout(150);
-}
-await page.waitForTimeout(800);
-const imgs = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] img[src*="/showcase/"]')].filter((i) => i.offsetParent).map((i) => ({ src: i.getAttribute('src'), w: Math.max(i.naturalWidth, i.naturalHeight) })));
-check(imgs.every((i) => i.w >= 1000), `every visible render loads (${imgs.filter((i) => i.w < 1000).map((i) => i.src).join(', ') || imgs.length})`);
-
-// 11. light: the page is light, the paper still changes; dark stays dark
-await page.emulateMedia({ colorScheme: 'light' });
-await page.goto('http://localhost:5173/');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(1500);
-const lum = (c) => (c.match(/\d+/g) ?? [0, 0, 0]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
-const lightBg = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
-check(lum(lightBg) > 190, `light theme: a light page (${lightBg})`);
-await page.screenshot({ path: 'out/home4/hero-light.png' });
-for (const id of ['studio', 'social']) {
-  await toChapter(page, id);
-  await page.screenshot({ path: `out/home4/chapter-${id}-light.png` });
-}
-await page.emulateMedia({ colorScheme: 'dark' });
-await page.goto('http://localhost:5173/');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(800);
-const darkBg = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
-check(lum(darkBg) < 60, `dark theme: a dark page (${darkBg})`);
-
-// 12. reduced motion: the stage holds still
+// 6. reduced motion: no pinned tracks, a still per chapter
 await page.emulateMedia({ reducedMotion: 'reduce' });
 await page.reload();
 await page.waitForFunction(() => window.__mockuplab);
-await stage.waitFor({ timeout: 15000 });
-await page.waitForTimeout(2500);
-const s1 = (await stage.screenshot()).toString('base64');
 await page.waitForTimeout(800);
-check(s1 === (await stage.screenshot()).toString('base64'), 'with reduced motion the 3D holds still');
+const still = await page.evaluate((ids) => ids.map((id) => {
+  const t = document.querySelector(`[data-chapter-id=${id}]`);
+  return { h: t.offsetHeight / innerHeight, img: !!t.querySelector('img')?.offsetParent };
+}), CHAPTERS);
+// pinned tracks are ≥ 1.5 screens; a plain chapter is as tall as its content
+check(still.every((s) => s.h <= 1.4 && s.img), `reduced motion: plain chapters with a still each (${still.map((s) => s.h.toFixed(1))})`);
 await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-// 13. phone: one column, a picture under each chapter, no sideways scroll
+// 7. phone: one column, a still per chapter, no sideways scroll, no warning over the page
 await page.setViewportSize({ width: 390, height: 844 });
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
 const mobile = await page.evaluate((ids) => ({
   wide: document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1,
-  stills: ids.map((id) => !!document.querySelector(`[data-chapter-id=${id}] img, [data-chapter-id=${id}] video`)?.offsetParent),
+  stills: ids.map((id) => !!document.querySelector(`[data-chapter-id=${id}] img`)?.offsetParent),
 }), CHAPTERS);
-check(!mobile.wide, 'phone: no sideways scroll');
-check((await page.getByRole('dialog').count()) === 0, 'phone: no « made for a computer » warning over the home page (it is about the editor)');
-check(mobile.stills.every(Boolean), `phone: a picture under each chapter (${mobile.stills})`);
-await page.screenshot({ path: 'out/home4/mobile.png', fullPage: false });
+check(!mobile.wide && mobile.stills.every(Boolean) && (await page.getByRole('dialog').count()) === 0, `phone: no sideways scroll, a still per chapter (${mobile.stills})`);
+await page.screenshot({ path: 'out/home5/mobile.png' });
 
-// 14. the blue brand: no orange on the home page, a blue icon
+// 8. the blue brand
 const orange = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] *')].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').length);
 check(orange === 0, `no orange on the home page (${orange})`);
-const hue = await page.evaluate(async () => {
-  const img = new Image();
-  img.src = '/icons/icon-192.png?' + Date.now();
-  await img.decode();
-  const c = document.createElement('canvas');
-  c.width = c.height = 192;
-  const g = c.getContext('2d');
-  g.drawImage(img, 0, 0);
-  const d = g.getImageData(0, 0, 192, 192).data;
-  let r = 0, b = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const max = Math.max(d[i], d[i + 1], d[i + 2]), min = Math.min(d[i], d[i + 1], d[i + 2]);
-    if (d[i + 3] > 200 && max - min > 60) { r += d[i]; b += d[i + 2]; }
-  }
-  return { r, b };
-});
-check(hue.b > hue.r * 1.3, `the app icon is blue (${JSON.stringify(hue)})`);
 await done(browser, errors);

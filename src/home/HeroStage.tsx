@@ -5,103 +5,135 @@ import * as THREE from 'three';
 import { getModel } from '@/models/registry';
 import { defaultParams, type ParamValue } from '@/models/types';
 import { bundledAsset } from '@/lib/samples';
-import { useRealMaterial } from '@/scene/realMaterials';
 import { StudioEnvironment } from '@/scene/StudioEnvironment';
 import { DEFAULT_BRAND, DEFAULT_SCREEN, DEFAULT_SURFACE, type SurfaceBinding } from '@/store/project';
+import type { StoryChapter } from './useStoryProgress';
 
 /*
- * The home page's 3D stage: MockupLab's own device models, with the sample
- * designs on their screens, on a stage that follows the story. Each chapter
- * has its pose for every device (where it stands, where it faces, hidden or
- * not), its camera and its set; the stage eases to it (≈ 600 ms). It draws
- * only while on screen, and with reduced motion it jumps to each pose.
+ * The home page's 3D story, scrubbed by the scroll. Each chapter is a function
+ * of its progress (0 → 1) giving every device's pose, the camera and the set;
+ * the stage eases to it every frame, so the 3D follows the reader's finger,
+ * both ways. MockupLab's own models and sample designs; the user's project is
+ * never touched. It draws only while on screen.
  */
 
-export type ChapterId = 'intro' | 'why' | 'devices' | 'studio' | 'motion' | 'social' | 'clients';
-
-const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
+type Key = 'laptop' | 'phone' | 'phoneB' | 'phoneC' | 'tablet';
 interface Pose {
   x: number;
+  y?: number;
   z: number;
   yaw: number;
-  /** Scale (1 by default). */
+  /** Scale; 0 hides the device. */
   s?: number;
 }
-
-interface Actor {
-  key: string;
-  model: string;
-  /** The screen's image (a path from the site's root) in a chapter. */
-  screen: (c: ChapterId) => string;
-  params?: (c: ChapterId) => Record<string, ParamValue>;
-  finish?: number;
-  poses: Partial<Record<ChapterId, Pose>>;
+interface Frame {
+  actors: Partial<Record<Key, Pose>>;
+  /** Camera position and the point it looks at. */
+  camera: [number, number, number, number, number, number];
+  /** The whole group's yaw. */
+  turn?: number;
+  /** The laptop's lid (degrees). */
+  lid?: number;
+  /** The laptop's screen brightness (0 → 1). */
+  glow?: number;
+  /** The key light sweeping across (0 → 1). */
+  sweep?: number;
+  /** « drop »: the capture's descent (0 → 1) and whether it has landed on the screen. */
+  capture?: number;
+  landed?: boolean;
+  /** « social »: how far the feed has scrolled. */
+  feed?: number;
+  /** « studio »: how far the layers stand apart (0 → 1). */
+  explode?: number;
 }
 
-const SAMPLE = (n: string) => `samples/sample-${n}.png`;
-const HOME: Pose[] = [
-  { x: -5, z: -3, yaw: 0.15 },
-  { x: 15, z: 9, yaw: -0.35 },
-];
+const clamp = (v: number) => Math.min(1, Math.max(0, v));
+/** The phone's scale in « drop » (the capture lands on its screen). */
+const DROP = 1;
+const ramp = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
+const ease = (t: number) => t * t * (3 - 2 * t);
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+const pose = (a: Pose, b: Pose, t: number): Pose => ({ x: mix(a.x, b.x, t), y: mix(a.y ?? 0, b.y ?? 0, t), z: mix(a.z, b.z, t), yaw: mix(a.yaw, b.yaw, t), s: mix(a.s ?? 1, b.s ?? 1, t) });
 
-const ACTORS: Actor[] = [
-  {
-    key: 'laptop',
-    model: 'laptop-14',
-    // « why »: the laptop shows MockupLab itself
-    screen: (c) => (c === 'why' ? 'showcase/studio-ui.jpg' : SAMPLE('web')),
-    poses: { intro: HOME[0], why: { x: -3, z: -2, yaw: 0.3 }, devices: { x: -13, z: -6, yaw: 0.35 }, studio: HOME[0], motion: HOME[0] },
+/** Every chapter, as a function of its progress. At p ≈ 0.2 the chapter's title sits mid-screen. */
+export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
+  open: (p) => {
+    const t = ease(ramp(p, 0.25, 0.8));
+    return {
+      actors: { laptop: { x: 0, z: 0, yaw: mix(-0.5, 0, t) } },
+      camera: [0, mix(26, 15, t), mix(96, 68, t), 0, mix(6, 11, t), 0],
+      lid: Math.round(108 * t),
+      glow: ramp(p, 0.55, 0.85),
+      sweep: ramp(p, 0, 0.7),
+    };
   },
-  {
-    key: 'phone',
-    model: 'phone-pro',
-    screen: (c) => (c === 'social' ? SAMPLE('poster') : SAMPLE('app')),
-    // « social »: the phone shows the design as an Insta post
-    params: (c): Record<string, ParamValue> => (c === 'social' ? { app: 'post', caption: 'Le nouveau site est en ligne' } : {}),
-    poses: { intro: HOME[1], why: { x: 12, z: 7, yaw: -0.15 }, studio: HOME[1], motion: HOME[1], social: { x: 2, z: 16, yaw: 0, s: 1.45 }, clients: { x: 2, z: 9, yaw: 0 } },
+  drop: (p) => {
+    const c = ease(ramp(p, 0.2, 0.7));
+    return { actors: { phone: { x: 0, z: 8, yaw: mix(-0.25, 0, c), s: DROP } }, camera: [0, 12, 60, 0, 10, 8], capture: c, landed: p > 0.7 };
   },
-  {
-    // « devices »: another phone, another colour, and a tablet comes in
-    key: 'classic',
-    model: 'phone',
-    finish: 2,
-    screen: () => SAMPLE('app'),
-    poses: { devices: { x: 7, z: 9, yaw: -0.2 } },
+  devices: (p) => {
+    const e = ease(ramp(p, 0.15, 0.8));
+    const from: Pose = { x: 0, z: 8, yaw: 0, s: 0.4 };
+    return {
+      actors: {
+        phone: { x: 0, z: 10, yaw: 0 },
+        phoneB: pose(from, { x: -15, z: 5, yaw: 0.42 }, e),
+        phoneC: pose(from, { x: 15, z: 5, yaw: -0.42 }, e),
+        tablet: pose(from, { x: 33, z: -2, yaw: -0.55 }, e),
+        laptop: pose(from, { x: -35, z: -6, yaw: 0.55 }, e),
+      },
+      camera: [0, 20, mix(62, 104, e), 0, 10, 0],
+      turn: mix(0.35, -0.35, p),
+    };
   },
-  { key: 'tablet', model: 'tablet-pro-11', screen: () => SAMPLE('poster'), poses: { devices: { x: 23, z: 1, yaw: -0.45 } } },
-  { key: 'fanL', model: 'phone-pro', finish: 1, screen: () => SAMPLE('poster'), poses: { clients: { x: -13, z: 4, yaw: 0.45 } } },
-  { key: 'fanR', model: 'phone-pro', finish: 3, screen: () => SAMPLE('label'), poses: { clients: { x: 17, z: 4, yaw: -0.45 } } },
-];
-
-/** Camera per chapter: position and the point it looks at. */
-const CAMERA: Record<ChapterId, [number, number, number, number, number, number]> = {
-  intro: [0, 19, 78, 3, 10, 0],
-  why: [0, 18, 70, 4, 10, 1],
-  devices: [2, 20, 82, 4, 10, 0],
-  studio: [0, 21, 80, 4, 9, 2],
-  motion: [0, 19, 76, 4, 10, 2],
-  social: [2, 15, 60, 2, 13, 12],
-  clients: [2, 16, 70, 2, 10, 4],
+  studio: (p) => {
+    const x = Math.sin(Math.PI * ramp(p, 0.15, 0.95));
+    return { actors: { phone: { x: 0, y: 5 + 6 * x, z: 6, yaw: -0.35, s: 1.2 } }, camera: [28, 22, 90, 0, 13, 0], explode: x };
+  },
+  motion: (p) => {
+    const a = mix(-0.9, 0.9, p);
+    const r = mix(92, 46, ease(p));
+    return { actors: { laptop: { x: -11, z: -5, yaw: 0.2 }, phone: { x: 8, z: 7, yaw: -0.3 } }, camera: [Math.sin(a) * r, mix(26, 12, p), Math.cos(a) * r, 2, 10, 2] };
+  },
+  social: (p) => {
+    const turn = ease(ramp(p, 0.1, 0.4));
+    return { actors: { phone: { x: 0, z: 10, yaw: mix(-1.1, 0, turn), s: 1.12 } }, camera: [0, 12, 68, 0, 8.5, 10], feed: ease(ramp(p, 0.45, 0.85)) };
+  },
+  clients: (p) => {
+    const e = ease(ramp(p, 0.15, 0.8));
+    return {
+      actors: {
+        laptop: pose({ x: -30, z: 14, yaw: 0.9 }, { x: -20, z: -2, yaw: 0 }, e),
+        phone: pose({ x: 4, z: 22, yaw: -1.2 }, { x: 3, z: 4, yaw: 0 }, e),
+        phoneB: pose({ x: 24, z: -10, yaw: 1.1 }, { x: 14, z: 4, yaw: 0 }, e),
+        phoneC: pose({ x: 36, z: 12, yaw: -0.8 }, { x: 25, z: 4, yaw: 0 }, e),
+      },
+      camera: [mix(30, 2, e), mix(30, 18, e), mix(86, 80, e), 2, 10, 0],
+    };
+  },
 };
 
-/** The group's yaw per chapter (the motion chapter spins). */
-const TURN: Record<ChapterId, number> = { intro: -0.35, why: -0.15, devices: -0.2, studio: -0.3, motion: -0.35, social: 0, clients: 0 };
-
-type Set = 'sweep' | 'podium' | 'table';
-const LIFT: Record<Set, number> = { sweep: 0, podium: 5, table: 3 };
-const SETS: Set[] = ['sweep', 'podium', 'table'];
-
+const SAMPLE = (n: string) => `samples/sample-${n}.png`;
+const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string }[] = [
+  { key: 'laptop', model: 'laptop-14', screen: () => SAMPLE('web') },
+  { key: 'phone', model: 'phone-pro', screen: (c) => (c === 'social' ? SAMPLE('poster') : SAMPLE('app')) },
+  { key: 'phoneB', model: 'phone-pro', finish: 1, screen: () => SAMPLE('poster') },
+  { key: 'phoneC', model: 'phone', finish: 1, screen: () => SAMPLE('label') },
+  { key: 'tablet', model: 'tablet-pro-11', screen: () => SAMPLE('poster') },
+];
 const BRAND = { ...DEFAULT_BRAND, name: 'Solstice festival' };
 const damp = THREE.MathUtils.damp;
 
-/** One device, its screen showing a bundled image. */
-function Device({ actor, chapter }: { actor: Actor; chapter: ChapterId }) {
-  const model = getModel(actor.model);
-  const screen = actor.screen(chapter);
+/** One device, its screen showing a bundled image (none: an empty screen). */
+function Device({ model: id, finish, screen, params, brightness }: { model: string; finish?: number; screen: string | null; params: Record<string, ParamValue>; brightness: number }) {
+  const model = getModel(id);
   const [surfaces, setSurfaces] = useState<Record<string, SurfaceBinding> | null>(null);
   useEffect(() => {
     let alive = true;
+    if (!screen) {
+      setSurfaces(Object.fromEntries(model.surfaces.map((s) => [s.id, { ...DEFAULT_SURFACE }])));
+      return;
+    }
     void bundledAsset(screen).then((assetId) => {
       if (alive) setSurfaces(Object.fromEntries(model.surfaces.map((s, i) => [s.id, { ...DEFAULT_SURFACE, assetId: i === 0 ? assetId : null }])));
     });
@@ -109,183 +141,192 @@ function Device({ actor, chapter }: { actor: Actor; chapter: ChapterId }) {
       alive = false;
     };
   }, [model, screen]);
-  const params = useMemo(() => ({ ...defaultParams(model), ...(actor.params?.(chapter) ?? {}) }), [model, actor, chapter]);
+  const all = useMemo(() => ({ ...defaultParams(model), ...params }), [model, params]);
+  const look = useMemo(() => ({ ...DEFAULT_SCREEN, brightness: DEFAULT_SCREEN.brightness * brightness }), [brightness]);
   if (!surfaces) return null;
   const Component = model.Component;
-  const finish = model.finishes[actor.finish ?? 0] ?? model.finishes[0];
-  // centre-anchored devices (phones, tablets) are lifted onto the floor
   const lift = model.anchor === 'bottom' ? 0 : model.size[1] / 2;
   return (
     <group position={[0, lift, 0]}>
-      <Component finish={finish} surfaces={surfaces} screen={DEFAULT_SCREEN} params={params} brand={BRAND} />
+      <Component finish={model.finishes[finish ?? 0] ?? model.finishes[0]} surfaces={surfaces} screen={look} params={all} brand={BRAND} />
     </group>
   );
 }
 
-/** An actor eased towards its pose of the chapter; hidden ones shrink away and stop drawing. */
-function ActorNode({ actor, chapter, still }: { actor: Actor; chapter: ChapterId; still: boolean }) {
-  const ref = useRef<THREE.Group>(null);
-  const pose = actor.poses[chapter];
-  // mounted the first time it is needed, then kept (no reload when coming back)
-  const [mounted, setMounted] = useState(!!pose);
-  useEffect(() => {
-    if (pose) setMounted(true);
-  }, [pose]);
-  const start = actor.poses.intro ?? pose ?? { x: 0, z: 0, yaw: 0 };
-  useFrame((_, dt) => {
-    const g = ref.current;
-    if (!g) return;
-    const target = pose ?? { ...(g.userData.last ?? start), s: 0 };
-    if (pose) g.userData.last = pose;
-    const k = still ? Infinity : 7;
-    const t = Math.min(dt, 0.05);
-    g.position.x = damp(g.position.x, target.x, k, t);
-    g.position.z = damp(g.position.z, target.z, k, t);
-    g.rotation.y = damp(g.rotation.y, target.yaw, k, t);
-    const s = damp(g.scale.x, target.s ?? 1, k, t);
-    g.scale.setScalar(Math.max(s, 0.0001));
-    g.visible = s > 0.02;
-  });
-  if (!mounted) return null;
-  return (
-    <group ref={ref} position={[start.x, 0, start.z]} rotation={[0, start.yaw, 0]} scale={pose ? 1 : 0.0001}>
-      <Device actor={actor} chapter={chapter} />
-    </group>
-  );
-}
-
-/** A soft pool of light on the floor (a texture, disposed with the stage). */
-function useGlow(inner: string, outer: string) {
+/** The capture of « drop »: a flat design coming down onto the phone's screen. */
+function Capture({ t, landed }: { t: RefObject<number>; landed: boolean }) {
+  const mesh = useRef<THREE.Mesh>(null);
   const texture = useMemo(() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 256;
-    const g = c.getContext('2d')!;
-    const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-    r.addColorStop(0, inner);
-    r.addColorStop(1, outer);
-    g.fillStyle = r;
-    g.fillRect(0, 0, 256, 256);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
-  }, [inner, outer]);
+    const tex = new THREE.TextureLoader().load(`${import.meta.env.BASE_URL}${SAMPLE('app')}`);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
   useEffect(() => () => texture.dispose(), [texture]);
-  return texture;
+  const phone = getModel('phone-pro');
+  const aspect = phone.surfaces[0].aspect;
+  useFrame(() => {
+    const m = mesh.current;
+    if (!m) return;
+    const c = t.current ?? 0;
+    // from above, tilted, to flat on the screen (the phone stands at z 8)
+    m.position.set(0, mix(40, phone.size[1] * DROP * 0.5, c), mix(26, 8 + phone.size[2] * DROP * 0.5 + 0.4, c));
+    m.rotation.x = mix(-0.9, 0, c);
+    const s = mix(1.6, 1, c);
+    m.scale.set(s, s, 1);
+    (m.material as THREE.MeshBasicMaterial).opacity = mix(0.2, 1, ramp(c, 0, 0.3));
+    m.visible = !landed;
+  });
+  const w = 6.4 * DROP;
+  return (
+    <mesh ref={mesh}>
+      <planeGeometry args={[w, w / aspect]} />
+      <meshBasicMaterial map={texture} transparent toneMapped={false} side={THREE.DoubleSide} />
+    </mesh>
+  );
 }
 
-/** The set of the « studio » chapter: a podium or a wooden table rises under the devices. */
-function SetPieces({ set, still, light }: { set: Set; still: boolean; light: boolean }) {
+/** « studio »: the set comes apart in layers (backdrop, podium, softbox) and back. */
+function StudioSet({ explode }: { explode: RefObject<number> }) {
+  const wall = useRef<THREE.Mesh>(null);
   const podium = useRef<THREE.Mesh>(null);
-  const table = useRef<THREE.Mesh>(null);
-  const oak = useRealMaterial('oak', 120, 70);
-  const stone = useMemo(() => new THREE.MeshPhysicalMaterial({ color: light ? '#e2e0dc' : '#2b2c33', roughness: 0.7, clearcoat: 0.15 }), [light]);
-  useEffect(() => () => stone.dispose(), [stone]);
-  useFrame((_, dt) => {
-    const k = still ? Infinity : 7;
-    const t = Math.min(dt, 0.05);
-    for (const [m, on, h] of [
-      [podium.current, set === 'podium', LIFT.podium],
-      [table.current, set === 'table', LIFT.table],
-    ] as const) {
-      if (!m) continue;
-      // it rises from the floor (scaled in height) rather than popping in
-      const y = damp(m.scale.y, on ? 1 : 0.001, k, t);
-      m.scale.y = y;
-      m.position.y = (h * y) / 2;
-      m.visible = y > 0.01;
+  const softbox = useRef<THREE.Group>(null);
+  const materials = useMemo(
+    () => ({
+      wall: new THREE.MeshStandardMaterial({ color: '#e7e2f3', roughness: 0.95 }),
+      podium: new THREE.MeshPhysicalMaterial({ color: '#f1efec', roughness: 0.6, clearcoat: 0.2 }),
+      light: new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 1.6 }),
+      frame: new THREE.MeshStandardMaterial({ color: '#2a2b30', roughness: 0.5 }),
+    }),
+    [],
+  );
+  useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials]);
+  useFrame(() => {
+    const x = Math.max(0, explode.current ?? 0);
+    wall.current?.position.set(0, 40, -30 - 34 * x);
+    podium.current?.position.set(0, 2.5 - 8 * x, 6);
+    if (softbox.current) {
+      softbox.current.position.set(-26 - 8 * x, 16 + 6 * x, 2);
+      softbox.current.rotation.set(0.1, 0.75, 0);
     }
   });
   return (
     <>
-      <mesh ref={podium} material={stone} position={[4, 0, 3]} scale={[1, 0.001, 1]} castShadow receiveShadow>
-        <cylinderGeometry args={[32, 32, LIFT.podium, 96]} />
+      <mesh ref={wall} material={materials.wall} receiveShadow>
+        <planeGeometry args={[260, 140]} />
       </mesh>
-      <mesh ref={table} material={oak} position={[4, 0, 2]} scale={[1, 0.001, 1]} castShadow receiveShadow>
-        <boxGeometry args={[120, LIFT.table, 70]} />
+      <mesh ref={podium} material={materials.podium} castShadow receiveShadow>
+        <cylinderGeometry args={[15, 15, 5, 96]} />
       </mesh>
+      <group ref={softbox}>
+        {/* a softbox: a lit diffuser in a thin dark rim, its back facing away */}
+        <mesh material={materials.frame}>
+          <boxGeometry args={[16.6, 16.6, 4]} />
+        </mesh>
+        <mesh material={materials.light} position={[0, 0, 2.05]}>
+          <planeGeometry args={[16, 16]} />
+        </mesh>
+      </group>
     </>
   );
 }
 
-function Story({ chapter, still, light }: { chapter: ChapterId; still: boolean; light: boolean }) {
+function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: number; light: boolean }) {
   const group = useRef<THREE.Group>(null);
-  const lifted = useRef<THREE.Group>(null);
-  const spin = useRef(0);
-  const look = useRef(new THREE.Vector3(...CAMERA.intro.slice(3)));
+  const actors = useRef<Partial<Record<Key, THREE.Group>>>({});
+  const key = useRef<THREE.DirectionalLight>(null);
+  const smooth = useRef({ chapter, p: progress });
+  const look = useRef(new THREE.Vector3(0, 8, 0));
+  const capture = useRef(0);
+  const explode = useRef(0);
   const invalidate = useThree((s) => s.invalidate);
-  const [set, setSet] = useState<Set>('sweep');
-  const pool = useGlow(light ? 'rgba(255,255,255,0.55)' : 'rgba(150,165,210,0.35)', 'rgba(255,255,255,0)');
-
-  // the studio chapter shows its sets one after the other (the table, held still, with reduced motion)
-  useEffect(() => {
-    if (chapter !== 'studio') return setSet('sweep');
-    if (still) return setSet('table');
-    let i = 0;
-    setSet(SETS[1]);
-    const id = setInterval(() => setSet(SETS[(++i + 1) % SETS.length]), 1600);
-    return () => clearInterval(id);
-  }, [chapter, still]);
+  // what changes the devices themselves (their settings, their screens), in coarse steps
+  const [disc, setDisc] = useState({ lid: 0, glow: 0, landed: false, feed: 0 });
+  const discRef = useRef(disc);
 
   useEffect(() => {
-    (window as unknown as { __heroState?: ChapterId }).__heroState = chapter;
+    const w = window as unknown as { __heroState?: StoryChapter; __heroProgress?: number };
+    w.__heroState = chapter;
+    w.__heroProgress = progress;
     invalidate();
-  }, [chapter, set, invalidate]);
+  }, [chapter, progress, invalidate]);
 
   useFrame((state, dt) => {
-    const w = window as unknown as { __heroFrames?: number };
+    const w = window as unknown as { __heroFrames?: number; __heroPose?: { lidAngle: number } };
     w.__heroFrames = (w.__heroFrames ?? 0) + 1;
     const t = Math.min(dt, 0.05);
-    const k = still ? Infinity : 6;
-    const g = group.current;
-    if (g) {
-      // the motion chapter spins the devices; elsewhere they settle back to the chapter's angle
-      if (chapter === 'motion' && !still) spin.current += t * 1.3;
-      else spin.current = damp(spin.current, Math.round(spin.current / (Math.PI * 2)) * Math.PI * 2, k, t);
-      const sway = chapter === 'intro' && !still ? Math.sin(state.clock.elapsedTime * 0.35) * 0.18 : 0;
-      g.rotation.y = damp(g.rotation.y, TURN[chapter] + sway, k, t) + (spin.current - (g.userData.spin ?? 0));
-      g.userData.spin = spin.current;
-      // the pointer tilts the stage a little
-      if (!still) {
-        g.rotation.x = damp(g.rotation.x, -state.pointer.y * 0.06, 4, t);
-        g.rotation.z = damp(g.rotation.z, state.pointer.x * 0.03, 4, t);
-      }
+    // the progress eases to the reader's; a new chapter starts from where the reader is
+    if (smooth.current.chapter !== chapter) smooth.current = { chapter, p: progress };
+    smooth.current.p = damp(smooth.current.p, progress, 9, t);
+    const f = FRAMES[chapter](smooth.current.p);
+    for (const a of ACTORS) {
+      const g = actors.current[a.key];
+      if (!g) continue;
+      const target = f.actors[a.key] ?? { x: g.position.x, y: g.position.y, z: g.position.z, yaw: g.rotation.y, s: 0 };
+      g.position.x = damp(g.position.x, target.x, 8, t);
+      g.position.y = damp(g.position.y, target.y ?? 0, 8, t);
+      g.position.z = damp(g.position.z, target.z, 8, t);
+      g.rotation.y = damp(g.rotation.y, target.yaw, 8, t);
+      const s = damp(g.scale.x, target.s ?? 1, 8, t);
+      g.scale.setScalar(Math.max(s, 0.0001));
+      g.visible = s > 0.02;
     }
-    if (lifted.current) lifted.current.position.y = damp(lifted.current.position.y, LIFT[set], k, t);
-    const [px, py, pz, lx, ly, lz] = CAMERA[chapter];
-    // a tall stage (the right column) needs the camera further back for the same framing as a wide one
-    const back = THREE.MathUtils.clamp(1.35 / (state.size.width / state.size.height), 1, 1.9);
-    const cx = lx + (px - lx) * back;
-    const cy = ly + (py - ly) * back;
-    const cz = lz + (pz - lz) * back;
+    if (group.current) {
+      group.current.rotation.y = damp(group.current.rotation.y, f.turn ?? 0, 6, t);
+      group.current.rotation.x = damp(group.current.rotation.x, -state.pointer.y * 0.05, 4, t);
+    }
+    const [px, py, pz, lx, ly, lz] = f.camera;
+    // the words take the top of the screen, as on Apple's pages: the picture moves down and steps back a little
+    const back = THREE.MathUtils.clamp(1.75 / (state.size.width / state.size.height), 1.15, 2.1);
+    const { width: sw, height: sh } = state.size;
+    const shiftY = -sh * 0.17;
+    const v = (state.camera as THREE.PerspectiveCamera).view;
+    if (!v?.enabled || v.offsetY !== shiftY || v.width !== sw || v.height !== sh) (state.camera as THREE.PerspectiveCamera).setViewOffset(sw, sh, 0, shiftY, sw, sh);
     const cam = state.camera;
-    cam.position.set(damp(cam.position.x, cx, k * 0.8, t), damp(cam.position.y, cy, k * 0.8, t), damp(cam.position.z, cz, k * 0.8, t));
-    look.current.set(damp(look.current.x, lx, k * 0.8, t), damp(look.current.y, ly, k * 0.8, t), damp(look.current.z, lz, k * 0.8, t));
+    cam.position.set(damp(cam.position.x, lx + (px - lx) * back, 7, t), damp(cam.position.y, ly + (py - ly) * back, 7, t), damp(cam.position.z, lz + (pz - lz) * back, 7, t));
+    look.current.set(damp(look.current.x, lx, 7, t), damp(look.current.y, ly, 7, t), damp(look.current.z, lz, 7, t));
     cam.lookAt(look.current);
+    if (key.current) key.current.position.x = mix(-90, 50, f.sweep ?? 0.6);
+    capture.current = f.capture ?? 0;
+    explode.current = f.explode ?? 0;
+    const next = { lid: f.lid ?? 108, glow: Math.round((f.glow ?? 1) * 20) / 20, landed: f.landed ?? true, feed: Math.round((f.feed ?? 0) * 25) / 25 };
+    const d = discRef.current;
+    if (next.lid !== d.lid || next.glow !== d.glow || next.landed !== d.landed || next.feed !== d.feed) {
+      discRef.current = next;
+      setDisc(next);
+    }
+    w.__heroPose = { lidAngle: discRef.current.lid };
   });
 
+  const phoneParams = useMemo(() => (chapter === 'social' ? { app: 'post', caption: 'Le nouveau site est en ligne', feed: disc.feed } : {}), [chapter, disc.feed]);
+  const laptopParams = useMemo(() => ({ angle: disc.lid }), [disc.lid]);
+  const none = useMemo(() => ({}), []);
+  const dark = chapter === 'drop' && !disc.landed;
   return (
-    <group ref={group} rotation={[0, TURN.intro, 0]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[3, 0.02, 2]}>
-        <planeGeometry args={[96, 64]} />
-        <meshBasicMaterial map={pool} transparent depthWrite={false} toneMapped={false} />
-      </mesh>
-      <SetPieces set={set} still={still} light={light} />
-      <group ref={lifted}>
+    <>
+      <directionalLight ref={key} position={[-40, 80, 60]} intensity={light ? 1.4 : 1.15} castShadow shadow-mapSize={[1024, 1024]} />
+      <group ref={group}>
         {ACTORS.map((a) => (
-          <ActorNode key={a.key} actor={a} chapter={chapter} still={still} />
+          <group key={a.key} ref={(g) => void (g && (actors.current[a.key] = g))} scale={0.0001}>
+            <Device
+              model={a.model}
+              finish={a.finish}
+              screen={a.key === 'phone' && dark ? null : a.screen(chapter)}
+              params={a.key === 'laptop' ? laptopParams : a.key === 'phone' ? phoneParams : none}
+              brightness={a.key === 'laptop' ? disc.glow : a.key === 'phone' && dark ? 0.05 : 1}
+            />
+          </group>
         ))}
-        <ContactShadows position={[0, 0.03, 0]} scale={140} blur={2.6} far={40} opacity={light ? 0.45 : 0.65} resolution={512} color={light ? '#1a2240' : '#000010'} />
+        {chapter === 'drop' && <Capture t={capture} landed={disc.landed} />}
+        {chapter === 'studio' && <StudioSet explode={explode} />}
+        <ContactShadows position={[0, 0.03, 0]} scale={140} blur={2.6} far={40} opacity={light ? 0.4 : 0.7} resolution={512} color={light ? '#1a2240' : '#000010'} />
       </group>
-    </group>
+    </>
   );
 }
 
-export default function HeroStage({ className, chapter, light, eventSource }: { className?: string; chapter: ChapterId; light: boolean; eventSource?: RefObject<HTMLElement | null> }) {
+export default function HeroStage({ className, chapter, progress, light, eventSource }: { className?: string; chapter: StoryChapter; progress: number; light: boolean; eventSource?: RefObject<HTMLElement | null> }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
-  const [still] = useState(reducedMotion);
-
-  // draws only while on screen
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;
@@ -293,24 +334,22 @@ export default function HeroStage({ className, chapter, light, eventSource }: { 
     io.observe(el);
     return () => io.disconnect();
   }, []);
-
   return (
-    // the set fades into the page's paper at its edges (no hard edge of the canvas)
-    <div ref={wrap} data-testid="hero-3d" data-chapter={chapter} className={className} style={{ maskImage: 'radial-gradient(72% 68% at 50% 48%, #000 62%, transparent 100%)', WebkitMaskImage: 'radial-gradient(72% 68% at 50% 48%, #000 62%, transparent 100%)' }}>
+    <div ref={wrap} data-testid="hero-3d" data-chapter={chapter} className={className}>
       <Canvas
         shadows
         dpr={[1, 2]}
-        frameloop={!visible ? 'never' : still ? 'demand' : 'always'}
-        camera={{ position: CAMERA.intro.slice(0, 3) as [number, number, number], fov: 30, near: 1, far: 1000 }}
+        frameloop={visible ? 'always' : 'never'}
+        // measured without scroll listeners: the stage is sticky, its size only changes with the window
+        resize={{ scroll: false }}
+        camera={{ position: [0, 26, 96], fov: 30, near: 1, far: 2000 }}
         gl={{ antialias: true, alpha: true }}
         eventSource={eventSource?.current ?? undefined}
         eventPrefix="client"
-        onCreated={({ camera }) => camera.lookAt(...(CAMERA.intro.slice(3) as [number, number, number]))}
       >
         <StudioEnvironment />
-        <ambientLight intensity={light ? 0.35 : 0.15} />
-        <directionalLight position={[-40, 80, 60]} intensity={light ? 1.3 : 1.1} castShadow shadow-mapSize={[1024, 1024]} />
-        <Story chapter={chapter} still={still} light={light} />
+        <ambientLight intensity={light ? 0.4 : 0.15} />
+        <Story chapter={chapter} progress={progress} light={light} />
       </Canvas>
     </div>
   );

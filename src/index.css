@@ -14,7 +14,9 @@
  * and windows, floating bars. Text on the glass stays at 4.5:1 or more.
  */
 :root,
-:root[data-theme='light'] {
+:root[data-theme='light'],
+/* a part of the page that is always light (the home page's white sections) */
+[data-theme='light'] {
   --bg: #e6e8ee;
   --app-bg:
     radial-gradient(60% 55% at 78% 8%, rgb(47 107 255 / 0.13), transparent 70%),

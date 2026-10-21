@@ -257,7 +257,7 @@ export function cardAspect(app: Exclude<PhoneApp, 'none'>) {
  * screen (status bar, app bars), or with `device: false` the post, story or
  * Reel on its own. The photo rect is kept in `dataset.photo`.
  */
-export function paintPhoneScreen(app: Exclude<PhoneApp, 'none'>, image: CanvasImageSource, aspect: number, text: SocialText, { device = true } = {}): HTMLCanvasElement {
+export function paintPhoneScreen(app: Exclude<PhoneApp, 'none'>, image: CanvasImageSource, aspect: number, text: SocialText, { device = true, scroll = 0 }: { device?: boolean; scroll?: number } = {}): HTMLCanvasElement {
   const w = 1080;
   const h = Math.round(w / aspect);
   const k = w / 1080;
@@ -279,11 +279,22 @@ export function paintPhoneScreen(app: Exclude<PhoneApp, 'none'>, image: CanvasIm
     const top = status + header;
     const room = chromeOf('ig-post');
     const ph = (w * 5) / 4;
-    photo = [0, top + room.top * w, w, ph];
-    cover(ctx, image, ...photo);
+    // the feed scrolls under the app's bars (`scroll` 0 → 1: by one post), the next post coming up
+    const postH = (room.top + room.bottom) * w + ph;
+    const dy = -scroll * postH;
+    photo = [0, top + room.top * w + dy, w, ph];
     ctx.save();
-    ctx.translate(0, top);
-    paintChrome(ctx, 'ig-post', w, ph, text);
+    ctx.beginPath();
+    ctx.rect(0, top, w, h - top);
+    ctx.clip();
+    for (const n of scroll > 0 ? [0, 1] : [0]) {
+      const y = top + dy + n * postH;
+      cover(ctx, image, 0, y + room.top * w, w, ph);
+      ctx.save();
+      ctx.translate(0, y);
+      paintChrome(ctx, 'ig-post', w, ph, text);
+      ctx.restore();
+    }
     ctx.restore();
     if (device) {
       tabBar(ctx, w, h, k, false);
