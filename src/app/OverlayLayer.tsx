@@ -12,7 +12,18 @@ const SNAP = 0.012;
  * Pointer handling runs in the capture phase on the frame, so a press on a
  * layer selects / drags it instead of orbiting the camera.
  */
-export function OverlayLayer({ width, height, frame }: { width: number; height: number; frame: React.RefObject<HTMLDivElement | null> }) {
+export function OverlayLayer({
+  width,
+  height,
+  frame,
+  events,
+}: {
+  width: number;
+  height: number;
+  frame: React.RefObject<HTMLDivElement | null>;
+  /** Where presses are listened to (the scene area around the frame); positions stay relative to the frame. */
+  events?: React.RefObject<HTMLElement | null>;
+}) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const overlays = useProject((s) => s.overlays);
   const brand = useProject((s) => s.brand);
@@ -51,7 +62,8 @@ export function OverlayLayer({ width, height, frame }: { width: number; height: 
 
   useEffect(() => {
     const el = frame.current;
-    if (!el) return;
+    const target = events?.current ?? el;
+    if (!el || !target) return;
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       const r = el.getBoundingClientRect();
@@ -87,9 +99,9 @@ export function OverlayLayer({ width, height, frame }: { width: number; height: 
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up);
     };
-    el.addEventListener('pointerdown', onDown, { capture: true });
-    return () => el.removeEventListener('pointerdown', onDown, { capture: true });
-  }, [frame]);
+    target.addEventListener('pointerdown', onDown, { capture: true });
+    return () => target.removeEventListener('pointerdown', onDown, { capture: true });
+  }, [frame, events]);
 
   return (
     <>

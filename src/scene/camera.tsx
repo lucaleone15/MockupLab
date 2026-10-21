@@ -10,6 +10,7 @@ import { useAssets } from '@/store/assets';
 import { selectSelectedItem, useProject, type CameraPresetId, type CameraSettings, type SceneItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Accumulator, applyLensSample, type LensSetup } from './accumulator';
+import { isOfflineRender, setBackdropTile } from './backdrop';
 import { aspectsOf } from '@/models/imageAspects';
 
 /* ------------------------------------------------------------ optics */
@@ -37,6 +38,35 @@ export function applyShift(cam: THREE.PerspectiveCamera, width: number, height: 
     return;
   }
   cam.setViewOffset(width, height, -cameraState.shift * width, 0, width, height);
+}
+
+/**
+ * The export frame inside the live canvas, in CSS pixels (set by the
+ * viewport). The canvas covers the whole window; the camera keeps the frame's
+ * aspect and draws a larger window around it, so the frame shows exactly what
+ * is exported and the scene goes on under the panels.
+ */
+export const viewFrame = { x: 0, y: 0, width: 0, height: 0 };
+
+/** The live camera: the frame's aspect, the canvas as a window around it, plus the lens shift. */
+export function applyView(cam: THREE.PerspectiveCamera, width: number, height: number) {
+  const f = viewFrame.width > 0 && viewFrame.height > 0 ? viewFrame : { x: 0, y: 0, width, height };
+  const whole = f.x === 0 && f.y === 0 && f.width === width && f.height === height;
+  if (whole) {
+    if (Math.abs(cam.aspect - width / height) > 1e-6) {
+      cam.aspect = width / height;
+      cam.updateProjectionMatrix();
+    }
+    return applyShift(cam, width, height);
+  }
+  cam.aspect = f.width / f.height;
+  const v = cam.view;
+  const ox = -f.x - cameraState.shift * f.width;
+  const oy = -f.y;
+  if (v?.enabled && v.fullWidth === f.width && v.fullHeight === f.height && v.offsetX === ox && v.offsetY === oy && v.width === width && v.height === height) return;
+  cam.setViewOffset(f.width, f.height, ox, oy, width, height);
+  // walls and the sweep show the background where the frame is
+  if (!isOfflineRender()) setBackdropTile(-f.x / f.width, -f.y / f.height, width / f.width, height / f.height);
 }
 
 /** f-number for the aperture slider: 0 → f/16, 1 → f/1.4 (log scale). */
@@ -370,7 +400,8 @@ export function useAdaptiveNear() {
   useFrame(({ camera, controls, size }) => {
     const cam = camera as THREE.PerspectiveCamera;
     cameraState.shift = useProject.getState().camera.shift ?? 0;
-    applyShift(cam, size.width, size.height);
+    applyView(cam, size.width, size.height);
+    if (!isOfflineRender() && viewFrame.width > 0) setBackdropTile(-viewFrame.x / viewFrame.width, -viewFrame.y / viewFrame.height, size.width / viewFrame.width, size.height / viewFrame.height);
     cam.getWorldDirection(cameraState.forward);
     const target = (controls as unknown as { target?: THREE.Vector3 } | null)?.target ?? cameraState.target;
     const near = THREE.MathUtils.clamp(cam.position.distanceTo(target) * 0.15, 0.5, 600);

@@ -7,6 +7,8 @@ import { useAssets } from '@/store/assets';
 import { pickImages } from '@/lib/importImage';
 import { loadSamples } from '@/lib/samples';
 import { Stage } from '@/scene/Stage';
+import { viewFrame } from '@/scene/camera';
+import { invalidateScene } from '@/scene/exporter';
 import { useProject, selectSelectedItem } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { Spinner, cx } from '@/ui/primitives';
@@ -39,26 +41,7 @@ export function PreviewOverlay() {
   );
 }
 
-/** Size of the largest rectangle of the given aspect fitting in the container (minus padding). */
-export function useFrameSize(ratio: number) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [box, setBox] = useState({ w: 0, h: 0 });
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setBox({ w: e.contentRect.width, h: e.contentRect.height }));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const padX = 56;
-  const padY = 84;
-  const aw = Math.max(0, box.w - padX * 2);
-  const ah = Math.max(0, box.h - padY * 2);
-  const w = Math.min(aw, ah * ratio);
-  return { ref, width: Math.floor(w), height: Math.floor(w / ratio) };
-}
-
-function BackgroundCanvas({ width, height }: { width: number; height: number }) {
+function BackgroundCanvas({ width, height, frame }: { width: number; height: number; frame?: { x: number; y: number; width: number; height: number } }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const background = useProject((s) => s.background);
   const theme = useUi((s) => s.theme);
@@ -72,12 +55,20 @@ function BackgroundCanvas({ width, height }: { width: number; height: number }) 
       if (!alive) return;
       c.width = Math.round(width * dpr);
       c.height = Math.round(height * dpr);
-      paintBackground(c.getContext('2d')!, background, c.width, c.height, { checker: 10 * dpr });
+      const g = c.getContext('2d')!;
+      // the whole area first (under the veil), then the exact background of the export inside the frame
+      paintBackground(g, background, c.width, c.height, { checker: 10 * dpr });
+      if (frame && frame.width > 0) {
+        g.save();
+        g.translate(Math.round(frame.x * dpr), Math.round(frame.y * dpr));
+        paintBackground(g, background, Math.round(frame.width * dpr), Math.round(frame.height * dpr), { checker: 10 * dpr });
+        g.restore();
+      }
     });
     return () => {
       alive = false;
     };
-  }, [background, width, height, theme, assets]);
+  }, [background, width, height, theme, assets, frame?.x, frame?.y, frame?.width, frame?.height]); // eslint-disable-line react-hooks/exhaustive-deps
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" />;
 }
 
@@ -187,7 +178,27 @@ export function ExportOverlay() {
   );
 }
 
-export function Viewport() {
+/**
+ * The export frame inside an area of `box` (CSS px), centred in the space the
+ * panels leave free on the left: the largest rectangle of `ratio` that fits.
+ */
+export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft: number) {
+  const padX = 56;
+  const padY = 84;
+  const free = Math.max(0, box.w - insetLeft);
+  const aw = Math.max(0, free - padX * 2);
+  const ah = Math.max(0, box.h - padY * 2);
+  const width = Math.floor(Math.min(aw, ah * ratio));
+  const height = Math.floor(width / ratio);
+  return { x: Math.round(insetLeft + (free - width) / 2), y: Math.round((box.h - height) / 2), width, height };
+}
+
+/**
+ * The Studio's view: the 3D scene fills the whole area (it goes on under the
+ * floating panels); the export frame sits in the free space, the camera frames
+ * exactly its content, and a veil dims the scene around it.
+ */
+export function Viewport({ insetLeft = 0 }: { insetLeft?: number }) {
   const ratio = useProject((s) => s.export.ratio);
   const empty = useProject((s) => s.items.length === 0);
   const hasImage = useProject((s) => {
@@ -195,34 +206,43 @@ export function Viewport() {
     // objects without faces (brand objects) never need an image
     return !it || Object.keys(it.surfaces).length === 0 || Object.values(it.surfaces).some((b) => b.assetId);
   });
-  const { ref, width, height } = useFrameSize(ratioValue(ratio));
+  const area = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setBox({ w: e.contentRect.width, h: e.contentRect.height }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const f = frameIn(box, ratioValue(ratio), insetLeft);
+  useLayoutEffect(() => {
+    Object.assign(viewFrame, f);
+    invalidateScene();
+  }, [f.x, f.y, f.width, f.height]); // eslint-disable-line react-hooks/exhaustive-deps
   const frame = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   useAssets((s) => s.assets);
 
-  const scene = (
-    <div
-      className="relative overflow-hidden rounded-[3px] transition-[width,height] duration-300 ease-[var(--ease-out-quart)]"
-      style={{ width, height, boxShadow: 'var(--frame-shadow)' }}
-      data-testid="frame"
-      ref={frame}
-    >
-      <BackgroundCanvas width={width} height={height} />
-      {width > 0 && <Stage />}
-      <OverlayLayer width={width} height={height} frame={frame} />
-      {empty ? <EmptyScene /> : !hasImage && <EmptyHint />}
-    </div>
-  );
-
   return (
-    <div ref={root} className="relative flex min-w-0 flex-1">
-    <main ref={ref} className="stage-bg relative flex min-w-0 flex-1 items-center justify-center overflow-hidden">
-      {scene}
-
-      <DropOverlay />
-      <ExportOverlay />
-    </main>
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+    <div ref={root} className="absolute inset-0">
+      <main ref={area} data-testid="scene-area" className="stage-bg absolute inset-0 overflow-hidden">
+        {box.w > 0 && <BackgroundCanvas width={box.w} height={box.h} frame={f} />}
+        {f.width > 0 && <Stage />}
+        {/* the export frame: what is inside is what is exported; the veil dims the rest */}
+        <div
+          className="pointer-events-none absolute rounded-[3px]"
+          style={{ left: f.x, top: f.y, width: f.width, height: f.height, boxShadow: '0 0 0 100vmax var(--veil), var(--frame-shadow)' }}
+          data-testid="frame"
+          ref={frame}
+        >
+          <OverlayLayer width={f.width} height={f.height} frame={frame} events={area} />
+          <div className="pointer-events-auto">{empty ? <EmptyScene /> : !hasImage && <EmptyHint />}</div>
+        </div>
+        <DropOverlay />
+        <ExportOverlay />
+      </main>
+      <div className="pointer-events-none absolute bottom-4 right-0 flex justify-center" style={{ left: insetLeft }}>
         <FloatingBar onFullscreen={() => void root.current?.requestFullscreen?.()} />
       </div>
     </div>

@@ -13,6 +13,9 @@ import { StudioPageBody } from './pages';
 
 const ICON = 20;
 
+/** The rail (68 px) and the page panel (312 px) with their margins: the frame is centred to their right. */
+const PANELS_WIDTH = 8 + 68 + 8 + 312;
+
 export function StudioScreen() {
   const { t } = useT();
   const page = useUi((s) => s.studioPage);
@@ -32,15 +35,16 @@ export function StudioScreen() {
   ];
   const title = items.find((i) => i.id === page)?.label ?? '';
   return (
-    <div className="flex min-h-0 flex-1 gap-2 p-2">
-      <Rail items={items} value={page} onChange={setPage} testId="studio-rail" />
-      <RailPage title={title}>
-        {page === 'devices' && <DevicesPage />}
-        {page === 'settings' && <SettingsPage />}
-        {page !== 'devices' && page !== 'settings' && <StudioPageBody page={page} />}
-      </RailPage>
-      <div className="relative flex min-w-0 flex-1 overflow-hidden rounded-[14px]">
-        <Viewport />
+    // the scene fills the whole area; the rail and the page float over it
+    <div className="relative min-h-0 flex-1">
+      <Viewport insetLeft={PANELS_WIDTH} />
+      <div className="pointer-events-none absolute inset-y-0 left-0 flex gap-2 p-2 [&>*]:pointer-events-auto">
+        <Rail items={items} value={page} onChange={setPage} testId="studio-rail" />
+        <RailPage title={title}>
+          {page === 'devices' && <DevicesPage />}
+          {page === 'settings' && <SettingsPage />}
+          {page !== 'devices' && page !== 'settings' && <StudioPageBody page={page} />}
+        </RailPage>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@
     radial-gradient(60% 55% at 78% 8%, rgb(47 107 255 / 0.13), transparent 70%),
     radial-gradient(55% 60% at 6% 96%, rgb(140 110 255 / 0.1), transparent 70%),
     linear-gradient(180deg, #eef0f5, #e2e5ec);
-  --surface: rgb(255 255 255 / 0.66);
+  --surface: rgb(255 255 255 / 0.8);
   --surface-2: rgb(255 255 255 / 0.62);
   --surface-3: rgb(20 30 70 / 0.07);
   --surface-4: rgb(20 30 70 / 0.12);
@@ -28,7 +28,7 @@
   --line-strong: rgb(20 30 70 / 0.14);
   --fg: #16171b;
   --fg-muted: #5c5d66;
-  --fg-subtle: #6b6c75;
+  --fg-subtle: #5f606a;
   --accent: #0071e3;
   --accent-hover: #0077ed;
   --accent-soft: rgb(0 113 227 / 0.1);
@@ -44,6 +44,8 @@
   --panel-blur: var(--glass-blur);
   --menu-bg: rgb(250 251 253 / 0.78);
   --overlay: rgb(16 22 48 / 0.22);
+  /* around the export frame in the Studio */
+  --veil: rgb(236 238 244 / 0.55);
   --stage: #ececf0;
   --stage-bg: radial-gradient(90% 80% at 50% 30%, #f7f8fb, #e3e6ed);
   --frame-shadow: 0 30px 70px -24px rgb(22 32 72 / 0.32), 0 0 0 1px rgb(22 32 72 / 0.06);
@@ -84,6 +86,7 @@
   --panel-blur: var(--glass-blur);
   --menu-bg: rgb(40 41 49 / 0.8);
   --overlay: rgb(2 4 14 / 0.45);
+  --veil: rgb(8 10 18 / 0.45);
   --stage: #121317;
   --stage-bg: radial-gradient(120% 90% at 50% 35%, #23252c, #0e0f13);
   --frame-shadow: 0 30px 80px -20px rgb(2 6 24 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.06);

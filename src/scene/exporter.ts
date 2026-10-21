@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Accumulator, applyLensSample, type LensSetup } from './accumulator';
 import { cameraState } from './camera';
-import { setBackdropTile } from './backdrop';
+import { setBackdropTile, setOfflineRender } from './backdrop';
 
 /**
  * Offline renderer for exports.
@@ -46,6 +46,8 @@ export function setExportBridge(b: Bridge | null) {
 
 /** Dev only: renderer internals for debugging scripts. */
 export const debugBridge = () => bridge;
+/** Asks the live view for a new frame (after the frame moved in the window). */
+export const invalidateScene = () => bridge?.invalidate();
 
 /**
  * Lets the live view draw a few frames, so that everything updated once per
@@ -128,6 +130,7 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
   const rows = Math.ceil(rh / step);
   const total = cols * rows;
   let tiles = 0;
+  setOfflineRender(true);
   try {
     for (let y = 0; y < rh; y += step) {
       for (let x = 0; x < rw; x += step) {
@@ -161,6 +164,7 @@ export async function renderFrame({ width, height, supersample, samples = 1, onP
       }
     }
   } finally {
+    setOfflineRender(false);
     setBackdropTile();
     camera.clearViewOffset();
     accumulator?.dispose();

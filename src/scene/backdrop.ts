@@ -36,6 +36,13 @@ export function setBackdropTile(x = 0, y = 0, width = 1, height = 1) {
   tile.set(x, y, width, height);
 }
 
+/** True while the exporter renders: the live view then leaves the backdrop's tile alone. */
+let offline = false;
+export const setOfflineRender = (v: boolean) => {
+  offline = v;
+};
+export const isOfflineRender = () => offline;
+
 function patch(material: THREE.MeshStandardMaterial, uniforms: BackdropUniforms) {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
