@@ -1,13 +1,10 @@
 import { loadImage } from '@/store/assets';
-import type { Background } from '@/store/project';
-import { hexToHsl, lighten, tone, type Hsl } from '@/lib/color';
-
-export { lighten };
+import { hexToHsl, hslToHex, hueGap, tone, type Hsl } from '@/lib/color';
 
 /*
- * Pack colours. Palettes are drawn from the designs themselves: their
- * dominant hues, softened into colours that work behind a mock-up (light
- * tints, deep shades, muted tones), so a whole pack looks like one project.
+ * Pack colours. The designs' dominant colours are read, then turned into one
+ * palette in a single hue family (a light tint, a soft tone, a deep shade), so
+ * the backgrounds never clash; the raw colours stay on offer to pick by hand.
  */
 
 /** Dominant colours of an image: hue buckets weighted by how many pixels and how colourful. */
@@ -37,38 +34,29 @@ async function dominant(url: string): Promise<Hsl[]> {
   return [...buckets.values()].sort((a, b) => b.w - a.w).map((b) => ({ h: b.h / b.w, s: b.s / b.w, l: b.l / b.w }));
 }
 
-/** Up to five background palettes (2–3 colours each) drawn from the designs. */
-export async function palettesFromImages(urls: string[]): Promise<string[][]> {
+/** The palette when the designs have no colour of their own: warm white, stone, graphite. */
+export const DEFAULT_PALETTE = ['#f4f2ee', '#e3e0da', '#2b2b2e'];
+
+/** The designs' own colours, most present first (six at most, distinct hues). */
+export async function imageColors(urls: string[]): Promise<string[]> {
   const found: Hsl[] = [];
   for (const url of urls) {
     try {
-      for (const c of (await dominant(url)).slice(0, 2)) if (!found.some((f) => Math.abs(((f.h - c.h + 540) % 360) - 180) < 24)) found.push(c);
+      for (const c of (await dominant(url)).slice(0, 2)) if (!found.some((f) => hueGap(f.h, c.h) < 24)) found.push(c);
     } catch {
       // an image that cannot be read adds no colour
     }
   }
-  if (!found.length) return [];
-  const [a, b = { ...a, h: (a.h + 30) % 360 }, c = { ...a, h: (a.h + 330) % 360 }] = found;
-  return [
-    // light tints
-    [tone(a, 0.9, 0.45), tone(b, 0.86, 0.4), tone(c, 0.82, 0.35)],
-    // soft, muted mid-tones
-    [tone(a, 0.74, 0.3), tone(b, 0.68, 0.28), tone(c, 0.62, 0.25)],
-    // deep shades
-    [tone(a, 0.2, 0.45), tone(b, 0.16, 0.4), tone(c, 0.24, 0.35)],
-    // the brand's own colours, a little calmer
-    [tone(a, Math.min(0.6, Math.max(0.42, a.l)), 0.7), tone(b, Math.min(0.6, Math.max(0.42, b.l)), 0.7), tone(c, 0.5, 0.6)],
-    // warm neutrals in the main hue
-    [tone(a, 0.88, 0.1), tone(a, 0.74, 0.08), tone(a, 0.26, 0.1)],
-  ];
+  return found.slice(0, 6).map(hslToHex);
 }
 
 /**
- * A style's background in a pack colour: plain for sets with a wall, a soft
- * gradient for the studio looks, the colours of the pattern for a pattern look.
+ * A background palette from the designs' colours: the main hue as a light
+ * tint, a soft tone (of a neighbouring hue when there is one) and a deep shade.
  */
-export function colourBackground(original: Background | undefined, color: string, palette: string[]): Background {
-  if (original?.kind === 'gradient') return { ...original, stops: [{ color: lighten(color, 0.08), at: 0 }, { color, at: 1 }] };
-  if (original?.kind === 'pattern') return { ...original, colors: [color, palette[1] ?? lighten(color, 0.2), palette[2] ?? lighten(color, -0.2)] };
-  return { kind: 'solid', color };
+export function harmonize(colors: string[]): string[] {
+  if (!colors.length) return DEFAULT_PALETTE;
+  const [main, ...rest] = colors.map(hexToHsl);
+  const near = rest.find((c) => hueGap(c.h, main.h) <= 50) ?? main;
+  return [tone(main, 0.92, 0.4), tone(near, 0.82, 0.3), tone(main, 0.2, 0.25)];
 }

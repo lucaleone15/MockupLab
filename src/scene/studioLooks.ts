@@ -12,7 +12,7 @@ export type StudioLook = 'studio' | 'podium' | 'dark';
 /** The deep shade of a colour (dark colours stay as they are). */
 export function deepShade(color: string): string {
   const c = hexToHsl(color);
-  return c.l <= 0.22 ? color : tone(c, 0.14, 0.3);
+  return c.l <= 0.22 ? color : tone(c, 0.14, 0.2);
 }
 
 /** Stages a studio look in a colour; `second` paints the podium (a close tone of the colour by default). */

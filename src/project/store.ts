@@ -5,7 +5,7 @@ import { fileToAsset } from '@/lib/importImage';
 import { expandPdfs, isPdf, pdfPageCount, pdfToImage } from '@/lib/pdf';
 import { ZipWriter } from '@/lib/zip';
 import { getModel } from '@/models/registry';
-import { SCENE_PRESETS, applyScenePreset } from '@/scene/scenePresets';
+import { applyStudioLook, type StudioLook } from '@/scene/studioLooks';
 import { useAssets } from '@/store/assets';
 import { makeItem, useProject, type SceneItem } from '@/store/project';
 import { toast } from '@/store/toasts';
@@ -13,7 +13,8 @@ import { useUi } from '@/store/ui';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { detectSupport, modelForSupport, type Support } from '@/quick/detect';
 import { composeBoard } from './board';
-import { colourBackground, palettesFromImages } from './palettes';
+import { lighten } from '@/lib/color';
+import { DEFAULT_PALETTE, harmonize, imageColors } from './palettes';
 
 /*
  * Project mode: several images of one project (website, app, print…), each
@@ -31,29 +32,31 @@ export interface PackFile {
   pdf?: { file: File; pages: number };
 }
 
-export const STYLES = ['table-oak-white', 'table-marble-sand', 'studio-light', 'studio-dark', 'podium-terrazzo', 'aurora'];
+/** Plain studio looks, all in the pack's colours. */
+export const STYLES: StudioLook[] = ['studio', 'podium', 'dark'];
 /** Which supports go in the hero first (at most five). */
 const HERO_ORDER: Support[] = ['laptop', 'browser', 'phone', 'tablet', 'print', 'screen', 'objects', 'watch'];
 const HERO_MAX = 5;
 
-/** Colours of the pack: none (the style's own), or a palette applied to every scene. */
+/** Colours of the pack: detected from the images, then the user's to change. */
 export interface PackColors {
-  source: 'style' | 'images' | 'brand' | 'custom';
-  /** Which suggestion (palettes drawn from the images). */
-  index: number;
-  palette: string[] | null;
-  /** Scenes take the palette's colours in turn instead of all the first one. */
+  palette: string[];
+  /** Each visual takes the palette's colours in turn instead of all the first one. */
   vary: boolean;
   /** A colour of its own for one scene ('hero' or a file id). */
   perScene: Record<string, string>;
-  suggestions: string[][];
+  /** The designs' own colours, offered when picking a colour. */
+  imageColors: string[];
+  /** Changed by hand: new images no longer redo the palette. */
+  edited: boolean;
 }
 
-const NO_COLORS: PackColors = { source: 'style', index: 0, palette: null, vary: false, perScene: {}, suggestions: [] };
+const MAX_COLORS = 5;
+const NO_COLORS: PackColors = { palette: DEFAULT_PALETTE, vary: false, perScene: {}, imageColors: [], edited: false };
 
 interface PackState {
   files: PackFile[];
-  style: string;
+  style: StudioLook;
   colors: PackColors;
   board: boolean;
   thumbs: { hero?: string; items: Record<string, string>; styles: Record<string, string>; board?: string };
@@ -96,43 +99,31 @@ function stage(target: 'hero' | string, style = get().style) {
   const files = target === 'hero' ? heroFiles() : get().files.filter((f) => f.id === target);
   const items = files.map((f) => deviceFor(f, target === 'hero'));
   useProject.setState({ items, selectedId: items[0]?.id ?? null, overlays: [] });
-  const preset = SCENE_PRESETS.find((p) => p.id === style)!;
-  applyScenePreset(preset);
-  const color = sceneColor(target);
-  if (color) {
-    const { palette } = get().colors;
-    const p = useProject.getState();
-    p.setBackground(colourBackground(preset.background ?? p.background, color, palette ?? [color]));
-    // a painted podium takes the palette's second colour
-    if (p.decor.kind === 'podium' && p.decor.podiumFinish === 'paint') p.setDecor({ color: palette?.[1] ?? color });
-  }
+  applyStudioLook(style, sceneColor(target));
   if (items.length > 1) useProject.getState().arrange('auto');
 }
 
-/** The pack colour of a scene: its own, the palette's next one (varied) or the first one; none without a palette. */
-function sceneColor(target: 'hero' | string): string | null {
+/** The pack colour of a scene: its own, the palette's next one (one per visual) or the first one. */
+function sceneColor(target: 'hero' | string): string {
   const { palette, vary, perScene } = get().colors;
-  if (!palette?.length) return null;
   if (perScene[target]) return perScene[target];
   if (!vary) return palette[0];
   const i = target === 'hero' ? 0 : get().files.findIndex((f) => f.id === target) + 1;
   return palette[Math.max(0, i) % palette.length];
 }
 
-/** Palettes drawn from the pack's images (recomputed when images come and go). */
+/** Reads the images' colours; the palette follows them until it is changed by hand. */
 async function suggest() {
   const urls = get().files.map((f) => useAssets.getState().assets[f.assetId]?.url).filter((u): u is string => !!u);
-  const suggestions = await palettesFromImages(urls);
-  set((s) => {
-    const colors = { ...s.colors, suggestions };
-    // a palette taken from the images follows them
-    if (colors.source === 'images') {
-      colors.palette = suggestions[colors.index] ?? null;
-      // no colour left in the images: back to the style's
-      if (!colors.palette) colors.source = 'style';
-    }
-    return { colors };
-  });
+  const found = await imageColors(urls);
+  set((s) => ({ colors: { ...s.colors, imageColors: found, palette: s.colors.edited ? s.colors.palette : harmonize(found) } }));
+}
+
+const hex = (v: string) => v.trim().toLowerCase();
+
+function editPalette(palette: string[]) {
+  set((s) => ({ colors: { ...s.colors, palette, edited: true } }));
+  changed(true);
 }
 
 const revoke = (url?: string) => url && URL.revokeObjectURL(url);
@@ -149,8 +140,9 @@ function dropPackThumbs(withStyles: boolean) {
 const boardInput = (hero: string, shots: string[]) => {
   const p = useProject.getState();
   const { palette } = get().colors;
-  // the board wears the pack's colours when there are some
-  const brand = palette?.length && get().colors.source !== 'brand' ? { ...p.brand, colors: palette.map((hex) => ({ hex, name: '' })) } : p.brand;
+  // the board wears the pack's colours (with the brand's names when they are the brand's)
+  const isBrand = palette.join() === p.brand.colors.map((c) => c.hex.toLowerCase()).join();
+  const brand = isBrand ? p.brand : { ...p.brand, colors: palette.map((hex) => ({ hex, name: '' })) };
   return { hero, shots, name: p.name === 'Untitled' ? '' : p.name, brand, logo: p.brand.logoAssetId ? useAssets.getState().assets[p.brand.logoAssetId]?.url : undefined };
 };
 
@@ -272,10 +264,32 @@ export const pack = {
     set((s) => ({ files: s.files.filter((f) => f.id !== id) }));
     void suggest().then(() => changed(true));
   },
-  /** Pack colours: a palette (from the images, the brand or picked) or none (the style's own colours). */
-  setPalette(source: PackColors['source'], palette: string[] | null, index = 0) {
-    // back to the style's colours: scenes drop their own colours too
-    set((s) => ({ colors: { ...s.colors, source, index, palette: source === 'style' ? null : palette, perScene: source === 'style' ? {} : s.colors.perScene } }));
+  /** One colour of the palette, changed by hand. */
+  setColor(i: number, value: string) {
+    const c = hex(value);
+    const { palette } = get().colors;
+    if (!/^#[0-9a-f]{6}$/.test(c) || !palette[i] || palette[i] === c) return;
+    editPalette(palette.map((x, j) => (j === i ? c : x)));
+  },
+  /** One more colour: an image colour not yet used, or a lighter tone of the last one. */
+  addColor() {
+    const { palette, imageColors: found } = get().colors;
+    if (palette.length >= MAX_COLORS) return;
+    editPalette([...palette, found.find((x) => !palette.includes(x)) ?? lighten(palette[palette.length - 1], 0.12)]);
+  },
+  removeColor(i: number) {
+    const { palette } = get().colors;
+    if (palette.length <= 1) return;
+    editPalette(palette.filter((_, j) => j !== i));
+  },
+  /** The brand's colours as the palette. */
+  takeBrand() {
+    const colors = useProject.getState().brand.colors.map((c) => hex(c.hex)).slice(0, MAX_COLORS);
+    if (colors.length) editPalette(colors);
+  },
+  /** Back to the palette detected from the images. */
+  redetect() {
+    set((s) => ({ colors: { ...s.colors, palette: harmonize(s.colors.imageColors), perScene: {}, edited: false } }));
     changed(true);
   },
   setVary(vary: boolean) {
@@ -306,7 +320,7 @@ export const pack = {
     set((s) => ({ files: s.files.map((f) => (f.id === id ? { ...f, support, confident: true } : f)) }));
     changed(true);
   },
-  setStyle(style: string) {
+  setStyle(style: StudioLook) {
     if (style === get().style) return;
     set({ style });
     changed(false);

@@ -18,8 +18,8 @@ await rows.nth(2).locator('select').selectOption('tablet');
 check((await page.evaluate(() => window.__mockuplab.pack.state().files[2].support)) === 'tablet', 'support changed by hand');
 await rows.nth(2).locator('select').selectOption('print');
 // styles: 6 previews
-await page.waitForFunction(() => document.querySelectorAll('[data-testid=project-style] img').length === 6, null, { timeout: 120000 }).catch(() => {});
-check((await page.locator('[data-testid=project-style] img').count()) === 6, 'six styles rendered');
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=project-style] img').length === 3, null, { timeout: 120000 }).catch(() => {});
+check((await page.locator('[data-testid=project-style] img').count()) === 3, 'three studio styles rendered');
 await page.getByTestId('project-style').nth(1).click();
 // pack: hero + 3 + board
 await page.waitForFunction(() => document.querySelectorAll('[data-testid=pack-item] img').length === 5, null, { timeout: 180000 }).catch(() => {});
