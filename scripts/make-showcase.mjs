@@ -80,10 +80,12 @@ if (want('studio-travertine')) {
 if (want('social-post')) {
   // the social phone: the sample design as an Insta post, on a podium
   await scene({ models: ['phone-pro'], preset: 'podium-arch', ratio: '4:5' });
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const s = window.__mockuplab.project.getState();
     s.setParam(s.items[0].id, 'app', 'post');
     s.setParam(s.items[0].id, 'caption', 'Le nouveau site est en ligne');
+    // a phone showing a post takes the poster sample
+    await window.__mockuplab.loadSamples(s.items[0].id);
   });
   await page.waitForTimeout(1500);
   await still('social-post.webp');

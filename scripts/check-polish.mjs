@@ -30,7 +30,8 @@ const monoOnScreen = () =>
 // the hero shows the real devices in 3D (or their still without WebGL 2)
 await page.waitForFunction(() => document.querySelector('[data-testid=hero-3d] canvas') || [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /hero-still/.test(i.src) && i.naturalWidth > 0), null, { timeout: 15000 }).catch(() => {});
 check(await page.evaluate(() => !!document.querySelector('[data-testid=hero-3d] canvas') || [...document.querySelectorAll('[data-testid=home-hero] img')].some((i) => /hero-still/.test(i.src))), 'home hero shows the real devices');
-check((await page.locator('[data-testid=showcase-strip] img').count()) >= 5, 'strip of real mock-ups');
+// the « Fait avec MockupLab » strip is gone (user, 2026-10-21): the story shows the devices in 3D instead
+check((await page.locator('[data-testid=showcase-strip]').count()) === 0, 'no strip of mock-ups at the bottom');
 const cta = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
 check(!!cta && cta.y + cta.height <= 900, '“Open the Studio” visible without scrolling');
 check(await page.evaluate(() => /icons\/(favicon|icon)/.test(document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '')), 'favicon is the app icon');

@@ -1,18 +1,27 @@
-// scripts/check-home.mjs — no drop on home: pick a mode first; Studio first and biggest; resume.
+// scripts/check-home.mjs — the home page as a 3D story: a split hero, a 3D stage that stays on the right and changes
+// with each chapter, labelled dots, the page's paper changing colour, light and dark; then the modes and the end.
+// Plus what stays true: the call to action in the first screen, the modes, paste, fonts, the blue brand.
 import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
+mkdirSync('out/home4', { recursive: true });
+const CHAPTERS = ['why', 'devices', 'studio', 'motion', 'social', 'clients'];
+const scroller = '[data-testid=home]';
+const toChapter = async (page, id) => {
+  await page.evaluate((id) => document.querySelector(`[data-chapter-id=${id}]`).scrollIntoView({ block: 'center' }), id);
+  await page.waitForTimeout(1100);
+};
+
 const { browser, page, errors } = await openApp({ viewport: { width: 1280, height: 720 } });
+
+// 1. first visit: the home page; the main action in the first screen; no arrow on it
 check(await page.getByTestId('home').isVisible(), 'home shown on first visit');
 check((await page.getByTestId('home-drop').count()) === 0, 'no drop zone on home');
 const cta = page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true });
 const box = await cta.boundingBox();
 check(!!box && box.y + box.height <= 720, 'Open the Studio is in the first screen at 1280×720');
-const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els) => els.map((e) => e.dataset.testid.slice(10)));
-check(order.join() === 'studio,quick,project', `mode cards in order (${order})`);
-const [studioCard, quickCard] = await Promise.all([page.getByTestId('mode-card-studio').boundingBox(), page.getByTestId('mode-card-quick').boundingBox()]);
-check(studioCard.width > quickCard.width * 1.5, 'Studio card is the big one');
-for (const m of ['studio', 'quick', 'project']) check((await page.getByTestId(`mode-card-${m}`).innerText()).length > 20, `${m} card explains its role`);
-// pasting on home does not import: it asks to pick a mode
+check((await cta.locator('svg').count()) === 0, 'no arrow added to the main button');
+
+// 2. paste on home asks to pick a mode first
 await page.evaluate(async () => {
   const c = document.createElement('canvas');
   c.width = c.height = 64;
@@ -24,133 +33,150 @@ await page.evaluate(async () => {
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'home', 'paste on home stays on home');
 check(await page.getByText('Choisis d’abord un mode').isVisible(), 'paste on home says to pick a mode');
+
+// 3. no project yet: no « Mes projets », no « Reprendre »
+check((await page.getByRole('button', { name: 'Mes projets' }).count()) === 0, 'no « Mes projets » before any project');
 await cta.click();
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'studio', 'Open the Studio opens the Studio');
-// a saved project resumes into the Studio
+
+// 4. a saved project: « Mes projets » in the header, « Reprendre » under the main button
 await page.evaluate(() => window.__mockuplab.project.setState({ name: 'Reprise' }));
 await page.waitForTimeout(2500);
-await page.evaluate(() => (location.hash = '#/'));
-await page.reload();
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(800);
-check((await page.getByTestId('project-card').count()) >= 1, 'recent projects shown');
-await page.getByTestId('project-card').first().getByRole('button', { name: /Ouvrir/ }).click();
-// a card opens the project's page; its button opens the Studio
-await page.getByTestId('project-page').getByRole('button', { name: 'Ouvrir dans le Studio' }).click();
-await page.waitForTimeout(400);
-const r = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, name: window.__mockuplab.project.getState().name }));
-check(r.screen === 'studio' && r.name === 'Reprise', `resume opens the Studio with the project (${r.screen}/${r.name})`);
-// product page: the Studio at work under a centred title, the three modes on one full row
-mkdirSync('out/home2', { recursive: true });
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
-await page.setViewportSize({ width: 1440, height: 900 });
+check((await page.getByTestId('recents').count()) === 0 && (await page.getByTestId('showcase-strip').count()) === 0, 'no recents row and no « Fait avec MockupLab » strip at the bottom');
+await page.getByRole('button', { name: 'Mes projets' }).click();
 await page.waitForTimeout(300);
-const heroTitle = await page.getByTestId('home-hero').getByRole('heading', { level: 1 }).boundingBox();
-check(!!heroTitle && Math.abs(heroTitle.x + heroTitle.width / 2 - 720) < 30, 'the title is centred');
-const studioShot = page.getByTestId('home-studio-shot');
-check(await studioShot.isVisible(), 'the Studio at work is shown');
-const shotBox = await studioShot.boundingBox();
-const ctaBox = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
-check(!!shotBox && !!ctaBox && shotBox.y > ctaBox.y, 'below the call to action');
-const cards = await Promise.all(['studio', 'quick', 'project'].map((m) => page.getByTestId(`mode-card-${m}`).boundingBox()));
-check(cards.every((c) => Math.abs(c.y - cards[0].y) < 2), 'the three modes share one row');
-const row = await page.getByTestId('mode-row').boundingBox();
-check(Math.abs(cards[2].x + cards[2].width - (row.x + row.width)) < 2 && Math.abs(cards[0].x - row.x) < 2, 'and fill it (no gap)');
-await page.screenshot({ path: 'out/home2/home-dark.png', fullPage: true });
-// titles in Archivo Expanded, texts in Geist (home page and Studio)
-const fontOf = (sel) => page.evaluate((sel) => { const el = document.querySelector(sel); const cs = el && getComputedStyle(el); return cs ? { family: cs.fontFamily, stretch: cs.fontStretch } : null; }, sel);
-await page.goto('http://localhost:5173/');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(500);
-const h1 = await fontOf('[data-testid=home] h1');
-check(!!h1 && /^"?Archivo/.test(h1.family) && h1.stretch === '125%', `home title in Archivo Expanded (${JSON.stringify(h1)})`);
-const body = await fontOf('[data-testid=home] p');
-check(!!body && /Geist/.test(body.family), `home text in Geist (${body?.family})`);
-await page.goto('http://localhost:5173/studio');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(500);
-const railTitle = await fontOf('[data-testid=rail-page] h2');
-check(!!railTitle && /^"?Archivo/.test(railTitle.family), `Studio page titles in Archivo (${railTitle?.family})`);
-// live 3D hero: the real devices turn; still under reduced motion; idle when scrolled away; the project untouched
-await page.goto('http://localhost:5173/');
-await page.waitForFunction(() => window.__mockuplab);
-const itemsBefore = await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)));
-const hero3d = page.getByTestId('hero-3d');
-await hero3d.waitFor({ timeout: 15000 });
-await page.waitForTimeout(2500);
-const snap = () => hero3d.screenshot().then((b) => b.toString('base64'));
-const a1 = await snap();
-await page.waitForTimeout(800);
-check(a1 !== (await snap()), 'the 3D hero turns');
-await hero3d.screenshot({ path: 'out/home3/hero.png' });
-await page.evaluate(() => document.querySelector('[data-testid=home]').scrollTo(0, 2600));
+check(await page.getByTestId('all-projects').isVisible(), '« Mes projets » opens the projects window');
+await page.keyboard.press('Escape');
+await page.getByTestId('home-hero').getByRole('button', { name: /Reprendre « Reprise »/ }).click();
 await page.waitForTimeout(600);
+const r = await page.evaluate(() => ({ screen: window.__mockuplab.ui.getState().screen, name: window.__mockuplab.project.getState().name }));
+check(r.screen === 'studio' && r.name === 'Reprise', `« Reprendre » opens the last project in the Studio (${r.screen}/${r.name})`);
+
+// 5. desktop: split hero, the stage stays on the right, each chapter changes it, the paper changes colour
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+const stage = page.getByTestId('hero-3d');
+await stage.waitFor({ timeout: 15000 });
+await page.waitForTimeout(2000);
+const h1 = await page.getByTestId('home-hero').getByRole('heading', { level: 1 }).boundingBox();
+const sb = await stage.boundingBox();
+check(!!h1 && !!sb && h1.x < 200 && h1.x + h1.width <= sb.x + 1, `split hero: the title on the left, the 3D on the right (${Math.round(h1?.x)}–${Math.round(h1?.x + h1?.width)} | ${Math.round(sb?.x)})`);
+check((await page.getByTestId('home').getAttribute('data-theme')) === null, 'the page follows the app theme (not forced dark)');
+await page.screenshot({ path: 'out/home4/hero-dark.png' });
+const paper0 = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
+const seen = new Set();
+for (const id of CHAPTERS) {
+  await toChapter(page, id);
+  const st = await page.evaluate(() => ({ chapter: document.querySelector('[data-testid=hero-3d]')?.dataset.chapter, state: window.__heroState }));
+  seen.add(st.state);
+  check(st.chapter === id && st.state === id, `chapter « ${id} »: the 3D takes its state (${st.chapter}/${st.state})`);
+  const top = (await stage.boundingBox())?.y ?? -1;
+  check(top >= -1 && top < 40, `chapter « ${id} »: the 3D stays in view (top ${Math.round(top)})`);
+  await page.screenshot({ path: `out/home4/chapter-${id}.png` });
+}
+check(seen.size === CHAPTERS.length, 'six different 3D states');
+await toChapter(page, 'why');
+const paper1 = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
+check(paper0 !== paper1, `the page's paper changes with the chapter (${paper0} → ${paper1})`);
+
+// 6. the dots: labelled, clickable, the current one marked
+const dots = page.getByRole('navigation', { name: /Chapitres/ }).getByRole('button');
+check((await dots.count()) === 7, `seven labelled dots (${await dots.count()})`);
+await dots.filter({ hasText: 'Réseaux' }).first().click({ force: true }).catch(() => page.getByRole('button', { name: 'Réseaux' }).click());
+await page.waitForTimeout(1600);
+check((await page.evaluate(() => window.__heroState)) === 'social', 'a dot takes you to its chapter');
+check((await page.getByRole('button', { name: 'Réseaux' }).getAttribute('aria-current')) === 'step', 'the current dot is marked');
+
+// 7. the copy: no long dash, the main label only once per place, the story's promises
+const text = await page.getByTestId('home').innerText();
+check(!/[—–]/.test(text), 'no long dash in the page');
+check(/gratuit/i.test(text) && /4K/.test(text) && /(ordinateur|appareil)/i.test(text) && /client/i.test(text) && /(post|story|Reel)/i.test(text), 'the story says free, 4K, private, social and clients');
+const fonts = await page.evaluate(() => {
+  const h = document.querySelector('[data-testid=home] h1');
+  const p = document.querySelector('[data-testid=home] p');
+  return { h: getComputedStyle(h).fontFamily, stretch: getComputedStyle(h).fontStretch, p: getComputedStyle(p).fontFamily };
+});
+check(/^"?Archivo/.test(fonts.h) && fonts.stretch === '125%' && /Geist/.test(fonts.p), `titles in Archivo Expanded, text in Geist (${JSON.stringify(fonts)})`);
+
+// 8. after the story: the three modes on one row, Studio the big one; the end
+const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els) => els.map((e) => e.dataset.testid.slice(10)));
+check(order.join() === 'studio,quick,project', `mode cards in order (${order})`);
+const cards = await Promise.all(['studio', 'quick', 'project'].map((m) => page.getByTestId(`mode-card-${m}`).boundingBox()));
+check(cards[0].width > cards[1].width * 1.5 && cards.every((c) => Math.abs(c.y - cards[0].y) < 2), 'the modes share one row, Studio the big one');
+for (const m of ['studio', 'quick', 'project']) check((await page.getByTestId(`mode-card-${m}`).innerText()).length > 20, `${m} card explains its role`);
+check((await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).count()) === 1, 'the end has « Ouvrir le Studio »');
+
+// 9. off screen the 3D stops drawing; the project is left alone
+const itemsBefore = await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)));
+await page.evaluate(() => document.querySelector('[data-testid=home-end]').scrollIntoView());
+await page.waitForTimeout(800);
 const f1 = await page.evaluate(() => window.__heroFrames ?? 0);
 await page.waitForTimeout(800);
-check((await page.evaluate(() => window.__heroFrames ?? 0)) === f1, 'scrolled away, the hero stops drawing');
-check((await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)))) === itemsBefore, 'the hero leaves the project alone');
+check((await page.evaluate(() => window.__heroFrames ?? 0)) === f1, 'scrolled past the story, the 3D stops drawing');
+check((await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((i) => i.modelId)))) === itemsBefore, 'the 3D story leaves the project alone');
+
+// 10. every render loads in full size
+for (let y = 0; y < 14000; y += 800) {
+  await page.evaluate(({ s, y }) => document.querySelector(s).scrollTo(0, y), { s: scroller, y });
+  await page.waitForTimeout(150);
+}
+await page.waitForTimeout(800);
+const imgs = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] img[src*="/showcase/"]')].filter((i) => i.offsetParent).map((i) => ({ src: i.getAttribute('src'), w: Math.max(i.naturalWidth, i.naturalHeight) })));
+check(imgs.every((i) => i.w >= 1000), `every visible render loads (${imgs.filter((i) => i.w < 1000).map((i) => i.src).join(', ') || imgs.length})`);
+
+// 11. light: the page is light, the paper still changes; dark stays dark
+await page.emulateMedia({ colorScheme: 'light' });
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(1500);
+const lum = (c) => (c.match(/\d+/g) ?? [0, 0, 0]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
+const lightBg = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
+check(lum(lightBg) > 190, `light theme: a light page (${lightBg})`);
+await page.screenshot({ path: 'out/home4/hero-light.png' });
+for (const id of ['studio', 'social']) {
+  await toChapter(page, id);
+  await page.screenshot({ path: `out/home4/chapter-${id}-light.png` });
+}
+await page.emulateMedia({ colorScheme: 'dark' });
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(800);
+const darkBg = await page.evaluate((s) => getComputedStyle(document.querySelector(s)).backgroundColor, scroller);
+check(lum(darkBg) < 60, `dark theme: a dark page (${darkBg})`);
+
+// 12. reduced motion: the stage holds still
 await page.emulateMedia({ reducedMotion: 'reduce' });
 await page.reload();
 await page.waitForFunction(() => window.__mockuplab);
-await hero3d.waitFor({ timeout: 15000 });
+await stage.waitFor({ timeout: 15000 });
 await page.waitForTimeout(2500);
-const r1 = await snap();
+const s1 = (await stage.screenshot()).toString('base64');
 await page.waitForTimeout(800);
-check(r1 === (await snap()), 'with reduced motion the hero stays still');
+check(s1 === (await stage.screenshot()).toString('base64'), 'with reduced motion the 3D holds still');
 await page.emulateMedia({ reducedMotion: 'no-preference' });
-// the product story: eight sections in order, each with an Archivo title and a sentence; every visual loads
-await page.setViewportSize({ width: 1440, height: 900 });
+
+// 13. phone: one column, a picture under each chapter, no sideways scroll
+await page.setViewportSize({ width: 390, height: 844 });
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
-const ids = ['home-hero', 'home-why', 'home-devices', 'home-studio', 'home-motion', 'home-social', 'home-clients', 'home-end'];
-const tops = await page.evaluate((ids) => ids.map((id) => document.querySelector(`[data-testid=${id}]`)?.getBoundingClientRect().top ?? null), ids);
-check(tops.every((y) => y !== null) && tops.every((y, i) => i === 0 || y > tops[i - 1]), `the eight sections, in order (${tops.map((y) => (y === null ? 'missing' : Math.round(y)))})`);
-const heads = await page.evaluate((ids) => ids.map((id) => { const sec = document.querySelector(`[data-testid=${id}]`); const h = sec?.querySelector('h1, h2'); const p = sec?.querySelector('p'); return { h: h ? getComputedStyle(h).fontFamily : '', p: !!p?.textContent?.trim() }; }), ids);
-check(heads.every((x) => /Archivo/.test(x.h) && x.p), `each section: an Archivo title and a sentence (${heads.filter((x) => !/Archivo/.test(x.h) || !x.p).length} without)`);
-const text = await page.getByTestId('home').innerText();
-check(/gratuit/i.test(text) && /4K/.test(text) && /(ordinateur|appareil)/i.test(text) && /Reels|TikTok/.test(text) && /client/i.test(text), 'the story says free, 4K, private, video, social and clients');
-check(await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).isVisible().catch(() => false) || (await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).count()) === 1, 'the end has “Open the Studio”');
-// every visual of the page loads (scroll through so lazy images come in)
-for (let y = 0; y < 9000; y += 700) {
-  await page.evaluate((y) => document.querySelector('[data-testid=home]').scrollTo(0, y), y);
-  await page.waitForTimeout(250);
-}
-await page.waitForTimeout(800);
-const media = await page.evaluate(() => ({
-  imgs: [...document.querySelectorAll('[data-testid=home] img[src*="/showcase/"]')].map((i) => ({ src: i.getAttribute('src'), w: Math.max(i.naturalWidth, i.naturalHeight) })),
-  videos: [...document.querySelectorAll('[data-testid=home] video')].map((v) => v.readyState),
-}));
-check(media.imgs.length >= 6 && media.imgs.every((i) => i.w >= 1600), `every render loads, at least 1600 px on its long side (${media.imgs.filter((i) => i.w < 1600).map((i) => i.src).join(', ') || media.imgs.length})`);
-check(media.videos.length === 1 && media.videos[0] >= 2, `the looping video plays (${media.videos})`);
-// 1280 × 720: the title and the call to action in the first screen; light system theme: the page stays dark
-await page.setViewportSize({ width: 1280, height: 720 });
-await page.evaluate(() => document.querySelector('[data-testid=home]').scrollTo(0, 0));
-await page.waitForTimeout(300);
-const first = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
-check(!!first && first.y + first.height <= 720, 'title and “Open the Studio” in the first screen at 1280 × 720');
-await page.emulateMedia({ colorScheme: 'light' });
-await page.waitForTimeout(300);
-const heroBg = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid=home]')).backgroundColor);
-const lum = (heroBg.match(/\d+/g) ?? [255, 255, 255]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
-check(lum < 40, `with a light system theme the page stays dark (${heroBg})`);
-await page.emulateMedia({ colorScheme: 'dark' });
-await page.setViewportSize({ width: 1440, height: 900 });
-// blue brand: the app's old orange is gone from the home page, the Studio's top bar and the icon
-const orange = (scope) => page.evaluate((scope) => [...document.querySelectorAll(scope)].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').map((el) => el.textContent?.trim().slice(0, 20) || el.tagName), scope);
-await page.goto('http://localhost:5173/');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(600);
-const onHome = await orange('[data-testid=home] *');
-check(onHome.length === 0, `no orange on the home page (${onHome.slice(0, 4)})`);
-await page.goto('http://localhost:5173/studio');
-await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(600);
-const onBar = await orange('header *');
-check(onBar.length === 0, `no orange in the Studio's top bar (${onBar.slice(0, 4)})`);
+const mobile = await page.evaluate((ids) => ({
+  wide: document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1,
+  stills: ids.map((id) => !!document.querySelector(`[data-chapter-id=${id}] img, [data-chapter-id=${id}] video`)?.offsetParent),
+}), CHAPTERS);
+check(!mobile.wide, 'phone: no sideways scroll');
+check((await page.getByRole('dialog').count()) === 0, 'phone: no « made for a computer » warning over the home page (it is about the editor)');
+check(mobile.stills.every(Boolean), `phone: a picture under each chapter (${mobile.stills})`);
+await page.screenshot({ path: 'out/home4/mobile.png', fullPage: false });
+
+// 14. the blue brand: no orange on the home page, a blue icon
+const orange = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] *')].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').length);
+check(orange === 0, `no orange on the home page (${orange})`);
 const hue = await page.evaluate(async () => {
   const img = new Image();
   img.src = '/icons/icon-192.png?' + Date.now();

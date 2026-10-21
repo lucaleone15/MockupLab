@@ -91,7 +91,8 @@ export function App() {
       <ProjectPage />
       <VariantsDialog />
       <PreviewOverlay />
-      <SmallScreenNotice />
+      {/* the warning is about the editor: the home page reads fine on a phone */}
+      {screen !== 'home' && <SmallScreenNotice />}
       <BatchDialog />
       <ExportSheet />
       <AllProjectsSheet />

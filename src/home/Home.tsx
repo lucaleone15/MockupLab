@@ -1,70 +1,65 @@
 import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ArrowRight, ChevronDown, Code, Download } from 'lucide-react';
+import { Code, Download, FolderOpen } from 'lucide-react';
 import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
 import { AVAILABLE, MODE_ORDER, navigate } from '@/shell/route';
-import { ProjectCard } from '@/library/ProjectCard';
+import { openProject } from '@/library/actions';
 import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
+import type { ChapterId } from './HeroStage';
 
 /*
- * The home page tells MockupLab like a product page: the real devices turning
- * in 3D, why it exists, then what it does — devices, the studio, motion, the
- * social networks, clients — and the end. Every visual is rendered by
- * MockupLab itself (scripts/make-showcase.mjs).
+ * The home page is the studio. A split hero, then the story: the chapters
+ * scroll on the left while the 3D stage stays on the right and changes with
+ * each one, and the page's paper slides to the chapter's colour, like a
+ * photographer rolling out another backdrop. Then the three modes and the end.
+ * The chapter is found with an IntersectionObserver (no scroll listener).
+ * On a phone: one column, a still under each chapter.
  */
 
 const HeroStage = lazy(() => import('./HeroStage'));
 const webgl = hasWebGL2();
 const BASE = import.meta.env.BASE_URL;
-const shot = (name: string) => `${BASE}showcase/${name}.webp`;
+const shot = (name: string) => `${BASE}showcase/${name}`;
 const REPO = 'https://github.com/lucaleone15/MockupLab';
-
-const STRIP = ['devices-phones', 'studio-podium', 'devices-desk', 'studio-marble', 'devices-print', 'studio-travertine', 'clients-pack'];
-const MODE_SHOTS: Record<Screen, string> = { home: '', studio: 'studio-marble', quick: 'studio-podium', project: 'clients-pack' };
-
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Fades its content in the first time it scrolls into view (still under reduced motion). */
-function Reveal({ children, className }: { children: ReactNode; className?: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(reducedMotion);
+const CHAPTERS: Exclude<ChapterId, 'intro'>[] = ['why', 'devices', 'studio', 'motion', 'social', 'clients'];
+
+/** The page's paper per chapter, taken from the renders: studio grey, pale lilac, sand, sage… */
+const PAPER: Record<'light' | 'dark', Record<ChapterId, string>> = {
+  light: { intro: '#e4e5e9', why: '#e7e4ee', devices: '#e2e6eb', studio: '#e9e5de', motion: '#e1e4ec', social: '#e9e3ec', clients: '#e2e8e3' },
+  dark: { intro: '#1c1d22', why: '#1f1c26', devices: '#1a1d23', studio: '#211f1c', motion: '#191c25', social: '#221c25', clients: '#1b201d' },
+};
+
+/** What a phone shows under each chapter (no 3D on small screens). */
+const STILL: Record<Exclude<ChapterId, 'intro'>, string> = {
+  why: 'studio-ui.jpg',
+  devices: 'devices-phones.webp',
+  studio: 'studio-podium.webp',
+  motion: 'motion-still.webp',
+  social: 'social-post.webp',
+  clients: 'clients-pack.webp',
+};
+
+const MODE_SHOTS: Record<Screen, string> = { home: '', studio: 'studio-marble.webp', quick: 'studio-podium.webp', project: 'clients-pack.webp' };
+
+function useWide() {
+  const query = '(min-width: 1024px)';
+  const [wide, setWide] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches);
   useEffect(() => {
-    const el = ref.current;
-    if (!el || shown) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && setShown(true), { threshold: 0.15 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [shown]);
-  return (
-    <div ref={ref} className={cx('transition-[opacity,transform] duration-[900ms] ease-[var(--ease-out-quart)]', shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0', className)}>
-      {children}
-    </div>
-  );
+    const m = matchMedia(query);
+    const on = () => setWide(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return wide;
 }
 
-/** A chapter of the story: a big title, one sentence, then its visuals. */
-function Chapter({ id, title, lead, children }: { id: string; title: I18nKey; lead: I18nKey; children: ReactNode }) {
-  const { t } = useT();
-  return (
-    <section data-testid={id} className="mx-auto flex max-w-[1180px] flex-col gap-10 px-6 py-24">
-      <Reveal className="mx-auto flex max-w-[760px] flex-col items-center gap-4 text-center">
-        <h2 className="font-display text-balance text-[clamp(30px,4.2vw,52px)] font-extrabold leading-[1.02]">{t(title)}</h2>
-        <p className="max-w-[620px] text-pretty text-[17px] leading-relaxed text-white/68">{t(lead)}</p>
-      </Reveal>
-      <Reveal>{children}</Reveal>
-    </section>
-  );
-}
-
-/** A render, large, with a soft shadow. */
-function Render({ name, className, alt = '' }: { name: string; className?: string; alt?: string }) {
-  return <img src={shot(name)} alt={alt} loading="lazy" className={cx('w-full rounded-[22px] object-cover shadow-[0_30px_80px_rgb(0_0_0/0.5),0_0_0_1px_rgb(255_255_255/0.06)]', className)} draggable={false} />;
-}
-
+/** The one main button of the page: blue, a pill, no arrow. */
 function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   const { t } = useT();
   return (
@@ -72,36 +67,51 @@ function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
       type="button"
       onClick={() => navigate('studio')}
       className={cx(
-        'flex items-center gap-2 rounded-full bg-white font-semibold text-[#1d1d1f] transition-[background-color,transform] duration-150 hover:bg-white/90 active:scale-[0.98]',
-        size === 'lg' ? 'h-12 px-6 text-[15px]' : 'h-11 px-5 text-[14px]',
+        'rounded-full bg-[#2f6bff] font-semibold text-white shadow-[0_8px_20px_-10px_rgb(20_40_120/0.7)] transition-[background-color,transform] duration-150 ease-out hover:bg-[#245ff2] active:scale-[0.97]',
+        size === 'lg' ? 'h-12 px-7 text-[15px]' : 'h-11 px-6 text-[14px]',
       )}
     >
       {t('home.openStudio')}
-      <ArrowRight size={17} />
     </button>
   );
 }
 
-function Recents() {
+/** A chapter of the story: its title and sentence on the left; on a phone, its still below. */
+function Chapter({ id, children }: { id: Exclude<ChapterId, 'intro'>; children?: ReactNode }) {
   const { t } = useT();
-  const list = useLibrary((s) => s.list);
-  if (!list.length) return null;
   return (
-    <section className="flex flex-col gap-3" data-testid="recents">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[13px] font-medium text-fg-muted">{t('library.recent')}</h2>
-        {list.length > 4 && (
-          <button type="button" className="text-[13px] font-medium text-accent hover:underline" onClick={() => useUi.getState().setAllProjectsOpen(true)}>
-            {t('library.seeAll')}
-          </button>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {list.slice(0, 4).map((m) => (
-          <ProjectCard key={m.id} meta={m} />
-        ))}
-      </div>
+    <section data-testid={`home-${id}`} data-chapter-id={id} className="flex min-h-[86dvh] flex-col justify-center gap-6 py-16 lg:min-h-[100dvh]">
+      <h2 className="font-display max-w-[520px] text-balance text-[clamp(32px,3.6vw,48px)] font-extrabold leading-[1.02]">{t(`home.${id}.title` as I18nKey)}</h2>
+      <p className="max-w-[440px] text-pretty text-[17px] leading-[1.55] text-fg-muted">{t(`home.${id}.lead` as I18nKey)}</p>
+      {children}
+      <img src={shot(STILL[id])} alt="" loading="lazy" className="mt-2 w-full rounded-[20px] object-cover shadow-[0_24px_60px_-24px_rgb(16_22_60/0.45)] lg:hidden" draggable={false} />
     </section>
+  );
+}
+
+/** The labelled dots: where you are in the story, and a way to jump. */
+function Dots({ chapter, onPick }: { chapter: ChapterId; onPick: (id: ChapterId) => void }) {
+  const { t } = useT();
+  return (
+    <nav aria-label={t('home.chapters')} className="absolute right-6 top-1/2 flex -translate-y-1/2 flex-col items-end gap-1">
+      {(['intro', ...CHAPTERS] as ChapterId[]).map((id) => {
+        const on = id === chapter;
+        const label = t(`home.dot.${id}` as I18nKey);
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-label={label}
+            aria-current={on ? 'step' : undefined}
+            onClick={() => onPick(id)}
+            className="group flex h-7 items-center gap-2.5 rounded-full pl-3 pr-1 text-[12.5px] font-medium"
+          >
+            <span className={cx('text-fg-muted transition-opacity duration-200 ease-out', on ? 'opacity-100 text-fg' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100')}>{label}</span>
+            <span className={cx('block h-2 rounded-full transition-[width,background-color] duration-300 ease-out', on ? 'w-5 bg-[#2f6bff]' : 'w-2 bg-[color-mix(in_srgb,var(--fg)_28%,transparent)]')} />
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -118,17 +128,17 @@ function Modes() {
             data-testid={`mode-card-${m}`}
             disabled={!AVAILABLE[m]}
             onClick={() => navigate(m)}
-            className="group flex flex-col overflow-hidden rounded-[18px] bg-white/[0.06] text-left shadow-[0_0_0_1px_rgb(255_255_255/0.08)_inset] transition-transform duration-200 ease-[var(--ease-out-quart)] hover:-translate-y-0.5 active:scale-[0.99]"
+            className="glass group flex flex-col overflow-hidden rounded-[20px] text-left transition-transform duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.99]"
           >
-            <span className="block aspect-[16/9] overflow-hidden bg-white/5">
-              <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-[var(--ease-out-quart)] group-hover:scale-[1.04]" draggable={false} />
+            <span className="block aspect-[16/9] overflow-hidden md:aspect-auto md:h-[260px]">
+              <img src={shot(MODE_SHOTS[m])} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" draggable={false} />
             </span>
             <span className="flex flex-1 flex-col gap-1.5 px-5 pb-5 pt-4">
               <span className="flex items-center gap-2">
                 <span className={cx('font-display font-bold', main ? 'text-[24px]' : 'text-[19px]')}>{t(`screen.${m}` as I18nKey)}</span>
-                {main && <span className="rounded-full bg-[#3d7bff]/20 px-2.5 py-0.5 text-[12px] font-semibold text-[#8fb2ff]">{t('home.main')}</span>}
+                {main && <span className="rounded-full bg-[#2f6bff]/15 px-2.5 py-0.5 text-[12px] font-semibold text-[#2f6bff] dark:text-[#8fb2ff]">{t('home.main')}</span>}
               </span>
-              <span className={cx('leading-snug text-white/65', main ? 'text-[15px]' : 'text-[13px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
+              <span className={cx('leading-snug text-fg-muted', main ? 'text-[15px]' : 'text-[13.5px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
             </span>
           </button>
         );
@@ -140,145 +150,129 @@ function Modes() {
 export function Home() {
   const { t } = useT();
   const desktop = !!window.mockuplabDesktop;
-  const still = reducedMotion();
+  const theme = useUi((s) => s.theme);
+  const light = theme === 'light';
+  // the empty project autosaved on a first visit is not worth listing
+  const projects = useLibrary((s) => s.list).filter((m) => (m.name && m.name !== 'Untitled') || m.exportCount > 0 || m.assets.length > 0);
+  const last = projects[0];
+  const wide = useWide();
+  const root = useRef<HTMLDivElement>(null);
+  const [chapter, setChapter] = useState<ChapterId>('intro');
+
+  // the chapter in the middle band of the screen is the current one
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setChapter((e.target as HTMLElement).dataset.chapterId as ChapterId);
+      },
+      { root: el, rootMargin: '-45% 0px -45% 0px', threshold: 0 },
+    );
+    el.querySelectorAll('[data-chapter-id]').forEach((s) => io.observe(s));
+    return () => io.disconnect();
+  }, []);
+
+  const pick = (id: ChapterId) => root.current?.querySelector(`[data-chapter-id=${id}]`)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'center' });
+
   return (
-    <div data-testid="home" data-theme="dark" className="scroll-thin h-full overflow-y-auto bg-[#0e0f13] text-white">
-      {/* 1. the real devices, turning */}
-      <section data-testid="home-hero" className="relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px] bg-[radial-gradient(60%_60%_at_50%_0%,rgb(61_123_255/0.28),transparent_70%)]" />
-        <header className="mx-auto flex h-16 max-w-[1180px] items-center justify-between px-6">
-          <Logo asLink={false} tone="light" />
-          <MoreMenu tone="light" />
-        </header>
-        <div className="mx-auto flex max-w-[1180px] flex-col items-center px-6 pb-6 pt-10 text-center">
-          <h1 className="font-display max-w-[860px] text-balance text-[clamp(40px,6vw,76px)] font-extrabold leading-[0.98]">{t('home.title')}</h1>
-          <p className="mt-5 max-w-[560px] text-[17px] leading-relaxed text-white/72">{t(desktop ? 'home.leadDesktop' : 'home.lead')}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-            <OpenStudio />
-            <a href="#home-clients" className="flex items-center gap-1 text-[14px] font-medium text-white/75 transition-colors hover:text-white">
-              {t('home.otherModes')}
-              <ChevronDown size={15} />
-            </a>
-          </div>
-        </div>
-        {/* loaded after the title; a still without WebGL 2 */}
-        <div className="relative mx-auto -mt-6 h-[min(64vh,640px)] min-h-[380px] max-w-[1400px] [mask-image:linear-gradient(180deg,black_80%,transparent)]">
-          {webgl ? (
-            <Suspense fallback={null}>
-              <HeroStage className="absolute inset-0" />
-            </Suspense>
-          ) : (
-            <img src={shot('hero-still')} alt="" className="absolute inset-0 h-full w-full object-contain" draggable={false} />
+    <div
+      ref={root}
+      data-testid="home"
+      className="scroll-thin h-full overflow-y-auto overflow-x-hidden text-fg transition-[background-color] duration-700 ease-in-out"
+      style={{ backgroundColor: PAPER[light ? 'light' : 'dark'][chapter] }}
+    >
+      <header className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6 lg:px-10">
+        <Logo asLink={false} tone={light ? undefined : 'light'} />
+        <div className="flex items-center gap-1">
+          {projects.length > 0 && (
+            <button type="button" onClick={() => useUi.getState().setAllProjectsOpen(true)} className="flex h-9 items-center gap-2 rounded-full px-3.5 text-[13.5px] font-medium text-fg transition-colors hover:bg-surface-3">
+              <FolderOpen size={16} />
+              {t('home.myProjects')}
+            </button>
           )}
+          <MoreMenu tone={light ? undefined : 'light'} />
         </div>
-      </section>
+      </header>
 
-      {/* 2. why it exists */}
-      <section data-testid="home-why" className="mx-auto flex max-w-[1180px] flex-col items-center gap-10 px-6 py-24 text-center">
-        <Reveal className="flex max-w-[820px] flex-col items-center gap-5">
-          <h2 className="font-display text-balance text-[clamp(30px,4.2vw,52px)] font-extrabold leading-[1.02]">{t('home.why.title')}</h2>
-          <p className="max-w-[660px] text-pretty text-[18px] leading-relaxed text-white/70">{t('home.why.lead')}</p>
-        </Reveal>
-        <Reveal className="grid w-full max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-3">
-          {(['time', 'price', 'private'] as const).map((k) => (
-            <div key={k} className="flex flex-col items-center gap-1 rounded-[20px] bg-white/[0.05] px-6 py-7 shadow-[0_0_0_1px_rgb(255_255_255/0.07)_inset]">
-              <span className="font-display text-[44px] font-extrabold leading-none text-[#8fb2ff]">{t(`home.why.${k}` as I18nKey)}</span>
-              <span className="text-[14px] text-white/65">{t(`home.why.${k}.label` as I18nKey)}</span>
+      {/* the hero and the story, the 3D stage on the right */}
+      <div className="mx-auto grid max-w-[1440px] grid-cols-1 px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-6 lg:px-10">
+        <div>
+          <section data-testid="home-hero" data-chapter-id="intro" className="flex min-h-[calc(100dvh-64px)] flex-col justify-center gap-6 pb-16 pt-6 lg:pb-24">
+            <h1 className="font-display max-w-[600px] text-balance text-[clamp(44px,5.4vw,76px)] font-extrabold leading-[0.98]">{t('home.title')}</h1>
+            <p className="max-w-[440px] text-pretty text-[17px] leading-[1.55] text-fg-muted">{t(desktop ? 'home.leadDesktop' : 'home.lead')}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <OpenStudio />
+              <a href="#home-modes" className="text-[14px] font-medium text-fg-muted underline-offset-4 transition-colors hover:text-fg hover:underline">
+                {t('home.otherModes')}
+              </a>
             </div>
-          ))}
-        </Reveal>
-      </section>
+            {last && (
+              <button type="button" onClick={() => void openProject(last)} className="self-start text-[13.5px] font-medium text-fg-muted underline decoration-[color-mix(in_srgb,var(--fg)_25%,transparent)] underline-offset-4 transition-colors hover:text-fg">
+                {t('home.resume', { name: last.name })}
+              </button>
+            )}
+            <img src={shot('hero-still.webp')} alt="" className="mt-4 w-full rounded-[20px] lg:hidden" draggable={false} />
+          </section>
 
-      {/* 3. devices */}
-      <Chapter id="home-devices" title="home.devices.title" lead="home.devices.lead">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <Render name="devices-phones" className="md:col-span-2" alt={t('home.devices.title')} />
-          <Render name="devices-desk" />
-          <Render name="devices-print" />
+          <Chapter id="why">
+            <dl className="flex flex-wrap gap-x-8 gap-y-3">
+              {(['time', 'price', 'private'] as const).map((k) => (
+                <div key={k} className="flex flex-col">
+                  <dt className="font-display text-[32px] font-extrabold leading-none">{t(`home.why.${k}` as I18nKey)}</dt>
+                  <dd className="mt-1 text-[13.5px] text-fg-muted">{t(`home.why.${k}.label` as I18nKey)}</dd>
+                </div>
+              ))}
+            </dl>
+          </Chapter>
+          <Chapter id="devices" />
+          <Chapter id="studio" />
+          <Chapter id="motion" />
+          <Chapter id="social" />
+          <Chapter id="clients" />
         </div>
-      </Chapter>
 
-      {/* 4. the studio */}
-      <Chapter id="home-studio" title="home.studio.title" lead="home.studio.lead">
-        <div className="flex flex-col gap-5">
-          <img data-testid="home-studio-shot" src={`${BASE}showcase/studio-ui.jpg`} alt={t('home.studioShot')} loading="lazy" className="w-full rounded-[22px] shadow-[0_40px_120px_rgb(0_0_0/0.6),0_0_0_1px_rgb(255_255_255/0.08)]" draggable={false} />
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            <Render name="studio-marble" />
-            <Render name="studio-podium" />
-            <Render name="studio-travertine" />
+        {/* the stage stays on screen while the chapters scroll */}
+        {wide && (
+          <div className="sticky top-0 hidden h-[100dvh] lg:block">
+            {webgl ? (
+              <Suspense fallback={null}>
+                <HeroStage className="absolute inset-0" chapter={chapter} light={light} eventSource={root} />
+              </Suspense>
+            ) : (
+              <img src={shot('hero-still.webp')} alt="" className="absolute inset-0 h-full w-full object-contain" draggable={false} />
+            )}
+            <Dots chapter={chapter} onPick={pick} />
           </div>
-        </div>
-      </Chapter>
+        )}
+      </div>
 
-      {/* 5. motion */}
-      <Chapter id="home-motion" title="home.motion.title" lead="home.motion.lead">
-        <div className="overflow-hidden rounded-[22px] shadow-[0_30px_80px_rgb(0_0_0/0.5),0_0_0_1px_rgb(255_255_255/0.06)]">
-          {still ? (
-            <img src={shot('motion-still')} alt="" className="w-full" draggable={false} />
-          ) : (
-            <video className="w-full" autoPlay muted loop playsInline preload="auto" poster={shot('motion-still')} aria-label={t('home.motion.title')}>
-              <source src={`${BASE}showcase/motion.webm`} type="video/webm" />
-              <source src={`${BASE}showcase/motion.mp4`} type="video/mp4" />
-            </video>
-          )}
-        </div>
-      </Chapter>
-
-      {/* 6. social networks */}
-      <section data-testid="home-social" className="mx-auto grid max-w-[1180px] grid-cols-1 items-center gap-12 px-6 py-24 md:grid-cols-[1fr_380px]">
-        <Reveal className="flex flex-col gap-5">
-          <h2 className="font-display text-balance text-[clamp(30px,4.2vw,52px)] font-extrabold leading-[1.02]">{t('home.social.title')}</h2>
-          <p className="max-w-[520px] text-pretty text-[17px] leading-relaxed text-white/68">{t('home.social.lead')}</p>
-        </Reveal>
-        <Reveal>
-          <img src={shot('social-story')} alt="" loading="lazy" className="w-full rounded-[34px] shadow-[0_30px_80px_rgb(0_0_0/0.55),0_0_0_8px_#1d1d22,0_0_0_9px_rgb(255_255_255/0.1)]" draggable={false} />
-        </Reveal>
-      </section>
-
-      {/* 7. for clients: the modes, the pack, the recents */}
-      <section id="home-clients" data-testid="home-clients" className="mx-auto flex max-w-[1180px] scroll-mt-6 flex-col gap-10 px-6 py-24">
-        <Reveal className="mx-auto flex max-w-[760px] flex-col items-center gap-4 text-center">
-          <h2 className="font-display text-balance text-[clamp(30px,4.2vw,52px)] font-extrabold leading-[1.02]">{t('home.clients.title')}</h2>
-          <p className="max-w-[620px] text-pretty text-[17px] leading-relaxed text-white/68">{t('home.clients.lead')}</p>
-        </Reveal>
-        <Reveal>
-          <Render name="clients-pack" />
-        </Reveal>
-        <h3 className="font-display text-[22px] font-bold">{t('home.modes')}</h3>
+      {/* the three ways in */}
+      <section id="home-modes" data-testid="home-modes" className="mx-auto flex max-w-[1440px] scroll-mt-6 flex-col gap-8 px-6 py-24 lg:px-10">
+        <h2 className="font-display text-[clamp(28px,3vw,40px)] font-extrabold leading-[1.05]">{t('home.modes')}</h2>
         <Modes />
-        <Recents />
       </section>
 
-      <section className="pb-6" aria-label={t('home.made')}>
-        <h2 className="mx-auto mb-4 max-w-[1180px] px-6 text-[13px] font-medium text-white/60">{t('home.made')}</h2>
-        <div className="group relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]" data-testid="showcase-strip">
-          <div className="flex w-max gap-4 animate-[strip_70s_linear_infinite] group-hover:[animation-play-state:paused] motion-reduce:animate-none">
-            {[...STRIP, ...STRIP].map((name, i) => (
-              <img key={i} src={shot(name)} alt="" loading="lazy" aria-hidden={i >= STRIP.length} className="h-[210px] w-[374px] shrink-0 rounded-[16px] object-cover" draggable={false} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 8. the end */}
-      <section data-testid="home-end" className="mx-auto flex max-w-[1180px] flex-col items-center gap-6 px-6 pb-28 pt-20 text-center">
-        <Reveal className="flex flex-col items-center gap-5">
-          <h2 className="font-display text-balance text-[clamp(32px,4.6vw,58px)] font-extrabold leading-[1.02]">{t('home.end.title')}</h2>
-          <p className="max-w-[600px] text-pretty text-[17px] leading-relaxed text-white/68">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+      {/* the end: the promise on the left, the Studio at work on the right */}
+      <section data-testid="home-end" className="mx-auto grid max-w-[1440px] grid-cols-1 items-center gap-12 px-6 pb-28 pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] lg:px-10">
+        <div className="flex flex-col gap-5">
+          <h2 className="font-display text-balance text-[clamp(34px,4.4vw,60px)] font-extrabold leading-[1.0]">{t('home.end.title')}</h2>
+          <p className="max-w-[460px] text-pretty text-[17px] leading-[1.55] text-fg-muted">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <OpenStudio size="md" />
             {!desktop && (
-              <a href={`${REPO}/releases/latest`} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-[14px] font-medium text-white transition-colors hover:bg-white/15">
+              <a href={`${REPO}/releases/latest`} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full bg-surface-3 px-5 text-[14px] font-medium text-fg transition-colors hover:bg-surface-4">
                 <Download size={16} />
                 {t('home.end.app')}
               </a>
             )}
-            <a href={REPO} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-medium text-white/75 transition-colors hover:text-white">
+            <a href={REPO} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full px-4 text-[14px] font-medium text-fg-muted transition-colors hover:text-fg">
               <Code size={16} />
               {t('home.end.source')}
             </a>
           </div>
-        </Reveal>
+        </div>
+        <img src={shot('studio-ui.jpg')} alt={t('home.studioShot')} loading="lazy" className="w-full rounded-[20px] shadow-[0_40px_100px_-30px_rgb(16_22_60/0.55),0_0_0_1px_var(--line)]" draggable={false} />
       </section>
     </div>
   );

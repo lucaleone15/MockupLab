@@ -41,19 +41,24 @@ function sampleName(modelId: string, slotId: string, aspect: number, app: unknow
 
 const cache = new Map<string, Promise<string>>();
 
-/** Asset id of a bundled sample (loaded once). */
-export function sampleAsset(name: string): Promise<string> {
-  let p = cache.get(name);
+/** Asset id of a bundled image at `path` (from the site's root), loaded once. */
+export function bundledAsset(path: string, name = path.split('/').pop() ?? path): Promise<string> {
+  let p = cache.get(path);
   if (!p) {
     p = (async () => {
-      const blob = await (await fetch(`${import.meta.env.BASE_URL}samples/${name}`)).blob();
+      const blob = await (await fetch(`${import.meta.env.BASE_URL}${path}`)).blob();
       const asset = await fileToAsset(blob, name);
       useAssets.getState().add(asset);
       return asset.id;
     })();
-    cache.set(name, p);
+    cache.set(path, p);
   }
   return p;
+}
+
+/** Asset id of a bundled sample (loaded once). */
+export function sampleAsset(name: string): Promise<string> {
+  return bundledAsset(`samples/${name}`, name);
 }
 
 export const isSampleAsset = (assetId: string | null | undefined) => !!assetId && !!useAssets.getState().assets[assetId]?.name.startsWith('sample-');
