@@ -4,7 +4,7 @@
 import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
 mkdirSync('out/home5', { recursive: true });
-const CHAPTERS = ['open', 'drop', 'devices', 'studio', 'motion', 'social', 'clients', 'modes'];
+const CHAPTERS = ['open', 'drop', 'devices', 'print', 'studio', 'motion', 'social', 'clients', 'modes'];
 const scroller = '[data-testid=home]';
 // records every scroll listener the page registers
 const spy = () => {
@@ -100,7 +100,7 @@ await page.getByTestId('hero-3d').waitFor({ timeout: 15000 });
 await page.waitForTimeout(2500);
 check((await page.evaluate(() => window.__scrollListeners.length)) === 0, `no scroll listener on the page (${await page.evaluate(() => window.__scrollListeners.join(', '))})`);
 const tracks = await page.evaluate((ids) => ids.map((id) => document.querySelector(`[data-chapter-id=${id}]`)?.offsetHeight ?? 0), CHAPTERS);
-check(tracks.every((h) => h >= 900 * 1.5), `eight pinned chapters, each ≥ 150 vh (${tracks.map((h) => Math.round(h / 9))})`);
+check(tracks.every((h) => h >= 900 * 1.5), `nine pinned chapters, each ≥ 150 vh (${tracks.map((h) => Math.round(h / 9))})`);
 await page.screenshot({ path: 'out/home5/open-0.png' });
 await at(page, 'open', 0.1);
 const lid1 = await page.evaluate(() => window.__heroPose?.lidAngle);
@@ -124,6 +124,12 @@ await page.screenshot({ path: 'out/home5/devices-75.png' });
 check((await diff(page, d30, d75)) > 0.02, 'within a chapter the 3D keeps changing (30 % ≠ 75 %)');
 await at(page, 'devices', 0.3, 1800);
 check((await diff(page, d30, await stageShot(page))) < 0.02, 'scrolling back gives the same picture again');
+// print: the printed goods land one by one, then the camera looks down on the flat lay
+await at(page, 'print', 0.25);
+const pr1 = await stageShot(page);
+await at(page, 'print', 0.85);
+await page.screenshot({ path: 'out/home5/print-85.png' });
+check((await page.evaluate(() => window.__heroState)) === 'print' && (await diff(page, pr1, await stageShot(page))) > 0.02, 'the print chapter: the printed goods come in and the camera moves');
 for (const [id, p] of [['studio', 0.5], ['motion', 0.6], ['social', 0.7], ['clients', 0.9]]) {
   await at(page, id, p);
   check((await page.evaluate(() => window.__heroState)) === id, `« ${id} »: the stage takes it`);
@@ -139,7 +145,7 @@ check(lum(studioBg) > 200 && lum(openBg) < 20, `black and white sections (open $
 
 // 4. dots, copy, fonts
 const dots = page.getByRole('navigation', { name: /Chapitres/ }).getByRole('button');
-check((await dots.count()) === 8, `eight labelled dots (${await dots.count()})`);
+check((await dots.count()) === 9, `nine labelled dots (${await dots.count()})`);
 await page.getByRole('button', { name: 'Réseaux' }).click();
 await page.waitForTimeout(1800);
 check((await page.evaluate(() => window.__heroState)) === 'social' && (await page.getByRole('button', { name: 'Réseaux' }).getAttribute('aria-current')) === 'step', 'a dot takes you to its chapter and is marked');

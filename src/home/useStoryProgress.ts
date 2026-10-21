@@ -1,7 +1,7 @@
 import { useEffect, useState, type RefObject } from 'react';
 
-export type StoryChapter = 'open' | 'drop' | 'devices' | 'studio' | 'motion' | 'social' | 'clients' | 'modes';
-export const STORY: StoryChapter[] = ['open', 'drop', 'devices', 'studio', 'motion', 'social', 'clients', 'modes'];
+export type StoryChapter = 'open' | 'drop' | 'devices' | 'print' | 'studio' | 'motion' | 'social' | 'clients' | 'modes';
+export const STORY: StoryChapter[] = ['open', 'drop', 'devices', 'print', 'studio', 'motion', 'social', 'clients', 'modes'];
 
 /** Slices per chapter: the progress moves in steps of 2 %, eased by the 3D. */
 export const SLICES = 50;

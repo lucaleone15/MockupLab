@@ -29,7 +29,7 @@ const shot = (name: string) => `${BASE}showcase/${name}`;
 const REPO = 'https://github.com/lucaleone15/MockupLab';
 
 /** Track heights (vh): the longer the chapter's motion, the longer the scroll. */
-const HEIGHT: Record<StoryChapter, number> = { open: 230, drop: 220, devices: 240, studio: 260, motion: 240, social: 240, clients: 220, modes: 300 };
+const HEIGHT: Record<StoryChapter, number> = { open: 230, drop: 220, devices: 240, print: 260, studio: 260, motion: 240, social: 240, clients: 220, modes: 300 };
 /** White sections; the others are deep black. */
 const LIGHT = new Set<StoryChapter>(['studio', 'modes']);
 /** What phones and reduced motion show under each chapter. */
@@ -37,6 +37,7 @@ const STILL: Record<StoryChapter, string> = {
   open: 'hero-still.webp',
   drop: 'studio-ui.jpg',
   devices: 'devices-phones.webp',
+  print: 'devices-print.webp',
   studio: 'studio-podium.webp',
   motion: 'motion-still.webp',
   social: 'social-post.webp',
@@ -51,6 +52,13 @@ const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style: CSSProperties;
     { key: 'home.label.device', style: { left: '57%', top: '64%' }, from: 0.4, to: 0.72 },
     { key: 'home.label.podium', style: { left: '30%', top: '86%' }, from: 0.44, to: 0.72 },
   ],
+  print: [
+    { key: 'home.label.posters', style: { left: '20%', top: '54%' }, from: 0.55, to: 0.76 },
+    { key: 'home.label.magazines', style: { left: '57%', top: '74%' }, from: 0.57, to: 0.76 },
+    { key: 'home.label.flyers', style: { left: '30%', top: '84%' }, from: 0.59, to: 0.76 },
+    { key: 'home.label.cards', style: { left: '62%', top: '86%' }, from: 0.61, to: 0.76 },
+    { key: 'home.label.swatches', style: { left: '72%', top: '70%' }, from: 0.63, to: 0.76 },
+  ],
   social: [{ key: 'home.label.account', style: { left: '63%', top: '72%' }, from: 0.5, to: 0.75 }],
   motion: [{ key: 'home.label.video', style: { left: '70%', top: '86%' }, from: 0.4, to: 0.75 }],
 };
@@ -58,6 +66,7 @@ const TITLE: Record<StoryChapter, I18nKey> = {
   open: 'home.title',
   drop: 'home.drop.title',
   devices: 'home.devices.title',
+  print: 'home.print.title',
   studio: 'home.studio.title',
   motion: 'home.motion.title',
   social: 'home.social.title',
@@ -68,6 +77,7 @@ const LEAD: Record<StoryChapter, I18nKey> = {
   open: 'home.lead',
   drop: 'home.drop.lead',
   devices: 'home.devices.lead',
+  print: 'home.print.lead',
   studio: 'home.studio.lead',
   motion: 'home.motion.lead',
   social: 'home.social.lead',

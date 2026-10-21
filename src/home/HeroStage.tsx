@@ -17,7 +17,7 @@ import type { StoryChapter } from './useStoryProgress';
  * never touched. It draws only while on screen.
  */
 
-type Key = 'laptop' | 'phone' | 'phoneB' | 'phoneC' | 'tablet';
+type Key = 'laptop' | 'phone' | 'phoneB' | 'phoneC' | 'tablet' | 'poster' | 'magazine' | 'book' | 'flyer' | 'cards' | 'fan';
 interface Pose {
   x: number;
   y?: number;
@@ -86,6 +86,18 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
       turn: mix(0.35, -0.35, p),
     };
   },
+  // the printed goods land one by one on the floor, then the camera looks down on the flat lay
+  print: (p) => {
+    const down = ease(ramp(p, 0.5, 0.82));
+    const at = (i: number, x: number, z: number, yaw: number): Pose => {
+      const a = ease(ramp(p, 0.12 + i * 0.06, 0.28 + i * 0.06));
+      return { x, y: (1 - a) * 26, z, yaw, s: a };
+    };
+    return {
+      actors: { poster: at(0, -27, -26, 0.12), magazine: at(1, 10, -8, 0), book: at(2, -15, 7, 0.45), flyer: at(3, -2, 18, -0.22), cards: at(4, 21, 17, 0.3), fan: at(5, 31, -3, -0.35) },
+      camera: [mix(18, 4, down), mix(46, 180, down), mix(165, 160, down), 2, mix(22, 20, down), -2],
+    };
+  },
   studio: (p) => {
     const x = Math.sin(Math.PI * ramp(p, 0.15, 0.95));
     return { actors: { phone: { x: 0, y: 5 + 6 * x, z: 6, yaw: -0.35, s: 1.2 } }, camera: [28, 22, 90, 0, 13, 0], explode: x };
@@ -116,12 +128,18 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
 };
 
 const SAMPLE = (n: string) => `samples/sample-${n}.png`;
-const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string }[] = [
+const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string; params?: Record<string, ParamValue> }[] = [
   { key: 'laptop', model: 'laptop-14', screen: () => SAMPLE('web') },
   { key: 'phone', model: 'phone-pro', screen: (c) => (c === 'social' ? SAMPLE('poster') : SAMPLE('app')) },
   { key: 'phoneB', model: 'phone-pro', finish: 1, screen: () => SAMPLE('poster') },
   { key: 'phoneC', model: 'phone', finish: 1, screen: () => SAMPLE('label') },
   { key: 'tablet', model: 'tablet-pro-11', screen: () => SAMPLE('poster') },
+  { key: 'poster', model: 'poster', screen: () => SAMPLE('poster'), params: { format: 'a3', frame: 'black', mat: false, mount: 'lean', fit: false } },
+  { key: 'magazine', model: 'magazine', screen: () => SAMPLE('spread'), params: { state: 'open', fit: false } },
+  { key: 'book', model: 'book', screen: () => SAMPLE('label'), params: { fit: false } },
+  { key: 'flyer', model: 'flyer', screen: () => SAMPLE('poster'), params: { format: 'a5', layout: 'single', fit: false } },
+  { key: 'cards', model: 'business-card', screen: () => SAMPLE('card-front'), params: { layout: 'stack', fit: false } },
+  { key: 'fan', model: 'swatch-fan', screen: () => SAMPLE('poster') },
 ];
 const BRAND = { ...DEFAULT_BRAND, name: 'Solstice festival' };
 const damp = THREE.MathUtils.damp;
@@ -313,7 +331,7 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
               model={a.model}
               finish={a.finish}
               screen={a.key === 'phone' && dark ? null : a.screen(chapter)}
-              params={a.key === 'laptop' ? laptopParams : a.key === 'phone' ? phoneParams : none}
+              params={a.key === 'laptop' ? laptopParams : a.key === 'phone' ? phoneParams : (a.params ?? none)}
               brightness={a.key === 'laptop' ? disc.glow : a.key === 'phone' && dark ? 0.05 : 1}
             />
           </group>
