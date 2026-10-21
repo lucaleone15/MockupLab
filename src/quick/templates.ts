@@ -1,41 +1,30 @@
-import type { CameraPresetId } from '@/store/project';
+import type { I18nString } from '@/i18n';
 
 /*
- * Ready-made mock-ups for the Quick gallery: a complete scene (one of the
- * scene presets) seen from an angle, tagged for the filters.
+ * Quick mode's studio photos: the design on its device in a plain studio of
+ * the picked colour, seen six ways.
  */
 
-export type QuickTag = 'light' | 'dark' | 'wood' | 'marble' | 'color' | 'lifestyle';
-export const QUICK_TAGS: QuickTag[] = ['light', 'dark', 'wood', 'marble', 'color', 'lifestyle'];
+export type ShotId = 'front' | 'threeQuarter' | 'podium' | 'top' | 'pair' | 'close';
 
-export interface QuickTemplate {
-  id: string;
-  /** Scene preset id (src/scene/scenePresets.ts). */
-  preset: string;
-  /** Angle; undefined keeps the preset's own. */
-  camera?: CameraPresetId;
-  tags: QuickTag[];
-}
+export const SHOTS: { id: ShotId; label: I18nString }[] = [
+  { id: 'front', label: { fr: 'Face', en: 'Front' } },
+  { id: 'threeQuarter', label: { fr: 'Trois-quarts', en: 'Three-quarter' } },
+  { id: 'podium', label: { fr: 'Sur podium', en: 'On a podium' } },
+  { id: 'top', label: { fr: 'Vu de dessus', en: 'From above' } },
+  { id: 'pair', label: { fr: 'Deux appareils', en: 'Two devices' } },
+  { id: 'close', label: { fr: 'Gros plan', en: 'Close-up' } },
+];
 
-const t = (preset: string, tags: QuickTag[], camera?: CameraPresetId): QuickTemplate => ({ id: camera ? `${preset}@${camera}` : preset, preset, camera, tags });
-
-export const TEMPLATES: QuickTemplate[] = [
-  t('table-oak-white', ['wood', 'lifestyle', 'light']),
-  t('studio-light', ['light']),
-  t('studio-dark', ['dark']),
-  t('aurora', ['color', 'dark']),
-  t('table-concrete-blue', ['lifestyle', 'light']),
-  t('flatlay-linen', ['light']),
-  t('table-marble-sand', ['marble', 'lifestyle', 'light']),
-  t('podium-terrazzo', ['light', 'color']),
-  t('table-walnut-sage', ['wood', 'lifestyle']),
-  t('noir', ['dark']),
-  t('table-travertine-terracotta', ['lifestyle', 'color']),
-  t('flatlay-marble', ['marble', 'light']),
-  t('podium-arch', ['light']),
-  t('neon', ['color', 'dark']),
-  t('table-black-marble', ['marble', 'dark', 'lifestyle']),
-  t('studio-light', ['light'], 'front'),
-  t('studio-dark', ['dark'], 'low'),
-  t('aurora', ['color', 'dark'], 'front'),
+/** Studio colours: pale tints first, then deep ones. */
+export const QUICK_COLORS: { hex: string; name: I18nString }[] = [
+  { hex: '#f4f2ee', name: { fr: 'Blanc cassé', en: 'Off-white' } },
+  { hex: '#e9e4f7', name: { fr: 'Lilas', en: 'Lilac' } },
+  { hex: '#dfe8f3', name: { fr: 'Bleu ciel', en: 'Sky blue' } },
+  { hex: '#e3ece2', name: { fr: 'Sauge', en: 'Sage' } },
+  { hex: '#f3e3d8', name: { fr: 'Pêche', en: 'Peach' } },
+  { hex: '#f6dfe2', name: { fr: 'Rose poudré', en: 'Powder pink' } },
+  { hex: '#1f2a44', name: { fr: 'Bleu nuit', en: 'Midnight blue' } },
+  { hex: '#2b2b2e', name: { fr: 'Graphite', en: 'Graphite' } },
+  { hex: '#0b0b0d', name: { fr: 'Noir', en: 'Black' } },
 ];

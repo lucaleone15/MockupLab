@@ -24,7 +24,7 @@ for (const scheme of ['light', 'dark']) {
   await shot('more-menu');
   await page.keyboard.press('Escape');
   await page.evaluate(() => (location.hash = '#/rapide'));
-  await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 8, null, { timeout: 120000 }).catch(() => {});
+  await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 6, null, { timeout: 120000 }).catch(() => {});
   await shot('quick');
   await page.evaluate(() => (location.hash = '#/projet'));
   await page.evaluate(async () => {

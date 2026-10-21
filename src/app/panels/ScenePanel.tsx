@@ -336,6 +336,9 @@ export function CameraSection() {
         <Field label={t('camera.shift')} value={`${Math.round((cam.shift ?? 0) * 100)} %`}>
           <Slider label={t('camera.shift')} min={-0.35} max={0.35} step={0.005} value={cam.shift ?? 0} onChange={(shift) => setCamera({ shift })} />
         </Field>
+        <Field label={t('camera.zoom')} value={`× ${(cam.zoom ?? 1).toFixed(1)}`}>
+          <Slider label={t('camera.zoom')} min={1} max={2.5} step={0.05} value={cam.zoom ?? 1} onChange={(zoom) => setCamera({ zoom })} />
+        </Field>
         <Field label={t('camera.focal')} value={`${Math.round(cam.focal)} mm`}>
           <Slider label={t('camera.focal')} min={F_MIN} max={F_MAX} step={0.001} value={Math.log(cam.focal)} onChange={(v) => setCamera({ focal: Math.round(Math.exp(v)) })} />
         </Field>

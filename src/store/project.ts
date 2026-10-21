@@ -189,6 +189,8 @@ export interface CameraSettings {
   focus: number;
   /** Horizontal lens shift, fraction of the frame width (positive: subject moves right). */
   shift: number;
+  /** How close the framing is: 1 = the whole subject, more = a close-up (older projects have none). */
+  zoom?: number;
 }
 
 export interface Ground {
@@ -323,7 +325,7 @@ export const DEFAULT_DECOR: Decor = {
 };
 export const DEFAULT_GROUND: Ground = { shadow: 'soft', shadowOpacity: 0.55, reflection: false, reflectivity: 0.35 };
 export const DEFAULT_VIDEO: VideoSettings = { animation: 'reveal', duration: 6, fps: 30, resolution: '1080', format: 'mp4', quality: 'cinema' };
-export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0 };
+export const DEFAULT_CAMERA: CameraSettings = { preset: 'threeQuarter', focal: 52, dof: false, aperture: 0.6, focus: 0, shift: 0, zoom: 1 };
 
 export function initialProject(): Project {
   const item = { ...makeItem(getModel('phone-pro')), sample: true };

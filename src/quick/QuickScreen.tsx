@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Check, Download, ImagePlus, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Download, ImagePlus, SlidersHorizontal } from 'lucide-react';
 import { useT, type I18nKey, type I18nString } from '@/i18n';
 import { RATIOS, SOCIAL, ratioValue } from '@/export/settings';
 import { pickImages } from '@/lib/importImage';
@@ -8,7 +8,7 @@ import { useAssets } from '@/store/assets';
 import { useProject, type RatioPreset } from '@/store/project';
 import { Button, Chip, GroupTitle, Spinner, cx } from '@/ui/primitives';
 import { SUPPORTS } from './detect';
-import { QUICK_TAGS } from './templates';
+import { QUICK_COLORS } from './templates';
 import { labelOf, quick, useQuick, type QuickTile } from './store';
 import { ModeRole } from '@/shell/ModeRole';
 
@@ -62,6 +62,80 @@ function Tile({ tile }: { tile: QuickTile }) {
   );
 }
 
+/** The studio's colour: nine tints, or any colour. */
+function ColorPicker() {
+  const { t, tr } = useT();
+  const color = useQuick((s) => s.color);
+  const preset = QUICK_COLORS.some((c) => c.hex === color);
+  // the picker fires while dragging: the photos are redone once the colour settles
+  const [picked, setPicked] = useState<string | null>(null);
+  const timer = useRef(0);
+  const pick = (hex: string) => {
+    setPicked(hex);
+    clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setPicked(null);
+      quick.setColor(hex);
+    }, 350);
+  };
+  const ring = 'shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--accent)]';
+  return (
+    <div className="flex flex-col gap-2.5">
+      <GroupTitle>{t('quick.color')}</GroupTitle>
+      <div role="radiogroup" aria-label={t('quick.color')} data-testid="quick-color" className="flex flex-wrap gap-2">
+        {QUICK_COLORS.map((c) => (
+          <button
+            key={c.hex}
+            type="button"
+            role="radio"
+            aria-checked={c.hex === color}
+            aria-label={tr(c.name)}
+            title={tr(c.name)}
+            onClick={() => quick.setColor(c.hex)}
+            className={cx('size-7 rounded-full transition-shadow', c.hex === color ? ring : 'shadow-[0_0_0_1px_var(--line-strong)_inset] hover:shadow-[0_0_0_1px_var(--line-strong)_inset,0_0_0_3px_var(--line)]')}
+            style={{ background: c.hex }}
+          />
+        ))}
+        <label
+          title={t('quick.colorOther')}
+          className={cx('relative size-7 cursor-pointer overflow-hidden rounded-full', !preset ? ring : 'shadow-[0_0_0_1px_var(--line-strong)_inset]')}
+          style={{ background: !preset ? (picked ?? color) : 'conic-gradient(#ff5f5f, #ffd25f, #6fe08a, #5fd4ff, #6f7bff, #e36fff, #ff5f5f)' }}
+        >
+          <input type="color" aria-label={t('quick.colorOther')} value={picked ?? color} onChange={(e) => pick(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+/** The device the design is shown on: detected, and changed on demand. */
+function DevicePicker() {
+  const { t } = useT();
+  const { support, confident, assetId, byHand } = useQuick();
+  const [open, setOpen] = useState(false);
+  const name = t(`support.${support}` as I18nKey);
+  return (
+    <div className="flex flex-col gap-2.5" data-testid="quick-device">
+      <GroupTitle aside={!confident ? <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span> : undefined}>{t('quick.device')}</GroupTitle>
+      <div className="flex items-center justify-between gap-2 text-[13px]">
+        <span className="truncate">{assetId && !byHand ? t('quick.detected', { name }) : name}</span>
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="shrink-0 rounded-md text-[12.5px] font-medium text-accent hover:underline">
+          {t('quick.change')}
+        </button>
+      </div>
+      {open && (
+        <div className="flex flex-wrap gap-1.5 animate-[fade-in_150ms_ease-out]" data-testid="quick-support">
+          {SUPPORTS.map((sp) => (
+            <Chip key={sp} active={sp === support} onClick={() => quick.setSupport(sp)}>
+              {t(`support.${sp}` as I18nKey)}
+            </Chip>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function QuickScreen() {
   const { t, tr } = useT();
   const s = useQuick();
@@ -71,7 +145,6 @@ export function QuickScreen() {
     quick.start();
     return () => quick.stop();
   }, []);
-  const shown = s.filter === 'all' ? s.tiles : s.tiles.filter((x) => x.tags.includes(s.filter as never));
   return (
     <div className="flex min-h-0 flex-1 gap-2 p-2" data-testid="quick-screen">
       <aside className="glass flex w-[280px] shrink-0 flex-col gap-6 overflow-y-auto rounded-[14px] p-5">
@@ -95,16 +168,8 @@ export function QuickScreen() {
           </button>
           {asset ? <span className="truncate text-[12.5px] text-fg-muted">{asset.name}</span> : <span className="text-[12.5px] leading-snug text-fg-muted">{t('quick.sampleNote')}</span>}
         </div>
-        <div className="flex flex-col gap-2.5">
-          <GroupTitle aside={!s.confident ? <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span> : undefined}>{t('quick.support')}</GroupTitle>
-          <div className="flex flex-wrap gap-1.5" data-testid="quick-support">
-            {SUPPORTS.map((sp) => (
-              <Chip key={sp} active={sp === s.support} onClick={() => quick.setSupport(sp)}>
-                {t(`support.${sp}` as I18nKey)}
-              </Chip>
-            ))}
-          </div>
-        </div>
+        <ColorPicker />
+        <DevicePicker />
         <div className="flex flex-col gap-2.5">
           <GroupTitle>{t('quick.format')}</GroupTitle>
           <div className="flex flex-wrap gap-1.5">
@@ -124,23 +189,11 @@ export function QuickScreen() {
         </div>
       </aside>
       <main className="glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px]">
-        <div className="flex flex-wrap items-center gap-1.5 px-5 pb-3 pt-5" data-testid="quick-filter">
-          <h1 className="font-display mr-3 text-[22px] font-bold">{t('screen.quick')}</h1>
-          <Chip active={s.filter === 'all'} onClick={() => quick.setFilter('all')}>
-            {t('quick.tag.all')}
-          </Chip>
-          {QUICK_TAGS.map((tag) => (
-            <Chip key={tag} active={s.filter === tag} onClick={() => quick.setFilter(tag)}>
-              {t(`quick.tag.${tag}` as I18nKey)}
-            </Chip>
-          ))}
-          <Button className="ml-auto" onClick={() => void quick.more()}>
-            <Sparkles size={14} />
-            {t('quick.more')}
-          </Button>
+        <div className="px-5 pb-3 pt-5">
+          <h1 className="font-display text-[22px] font-bold">{t('screen.quick')}</h1>
         </div>
-        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-4 gap-y-5 overflow-y-auto overscroll-contain px-5 pb-6">
-          {shown.map((tile) => (
+        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-4 gap-y-5 overflow-y-auto overscroll-contain px-5 pb-6">
+          {s.tiles.map((tile) => (
             <Tile key={tile.id} tile={tile} />
           ))}
         </div>

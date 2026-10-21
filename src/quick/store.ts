@@ -6,61 +6,53 @@ import { expandPdfs, isPdf } from '@/lib/pdf';
 import { sampleAsset } from '@/lib/samples';
 import { ZipWriter } from '@/lib/zip';
 import { getModel } from '@/models/registry';
-import { CAMERA_PRESETS } from '@/scene/camera';
-import { SCENE_PRESETS, applyScenePreset } from '@/scene/scenePresets';
-import { snapshot } from '@/store/persistence';
-import { makeItem, useProject, type Project, type SceneItem } from '@/store/project';
+import { applyStudioLook } from '@/scene/studioLooks';
+import { makeItem, useProject, type SceneItem } from '@/store/project';
 import { useAssets } from '@/store/assets';
 import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
-import { AXES, applyLook, generateLooks, type Look } from '@/variants/looks';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { detectSupport, modelForSupport, type Support } from './detect';
-import { TEMPLATES, type QuickTag, type QuickTemplate } from './templates';
+import { QUICK_COLORS, SHOTS, type ShotId } from './templates';
 
 /*
  * Quick mode: the user's design (or a sample) on the device that suits it,
- * rendered in every ready-made scene. Thumbnails are rendered one at a time
- * in the variants sandbox, so the user's project is never touched.
+ * in a plain photo studio of the picked colour, seen six ways. Thumbnails are
+ * rendered one at a time in the variants sandbox, so the user's project is
+ * never touched.
  */
 
-/** A gallery entry: a ready-made template, or an extra look from "More ideas". */
-export type QuickTile = { id: string; label: I18nString | string; tags: QuickTag[]; template?: QuickTemplate; look?: Look };
+export type QuickTile = { id: ShotId; label: I18nString };
 
 interface QuickState {
   assetId: string | null;
   support: Support;
   confident: boolean;
-  filter: QuickTag | 'all';
+  /** The studio's colour. */
+  color: string;
   tiles: QuickTile[];
   thumbs: Record<string, string>;
-  /** What each thumbnail shows (support|design|ratio), to never keep a stale one. */
+  /** What each thumbnail shows (support|design|ratio|colour), to never keep a stale one. */
   thumbKeys: Record<string, string>;
   selected: string[];
   busy: string | null;
+  /** The support was picked by hand (not detected). */
+  byHand: boolean;
 }
 
 const ITEM_ID = 'quick-item';
-const ANGLE: Partial<Record<string, I18nString>> = {
-  front: { fr: 'face', en: 'front' },
-  low: { fr: 'contre-plongée', en: 'low angle' },
-};
-const initialTiles = (): QuickTile[] =>
-  TEMPLATES.map((tpl) => {
-    const preset = SCENE_PRESETS.find((p) => p.id === tpl.preset)!;
-    const angle = tpl.camera && ANGLE[tpl.camera];
-    const label = angle ? { fr: `${preset.name.fr} · ${angle.fr}`, en: `${preset.name.en} · ${angle.en}` } : preset.name;
-    return { id: tpl.id, label, tags: tpl.tags, template: tpl };
-  });
+/** Devices that can lie flat on the floor (a framed poster cannot). */
+const LIES_FLAT: Support[] = ['phone', 'tablet', 'print', 'watch', 'browser'];
+const liesFlat = () => LIES_FLAT.includes(get().support) && modelOfCurrent() !== 'poster';
 
-export const useQuick = create<QuickState>(() => ({ assetId: null, support: 'phone', confident: true, filter: 'all', tiles: initialTiles(), thumbs: {}, thumbKeys: {}, selected: [], busy: null }));
+export const useQuick = create<QuickState>(() => ({ assetId: null, support: 'phone', confident: true, color: QUICK_COLORS[0].hex, tiles: SHOTS, thumbs: {}, thumbKeys: {}, selected: [], busy: null, byHand: false }));
 const set = useQuick.setState;
 const get = useQuick.getState;
 
 let run = 0;
 onCancelSandboxes(() => run++);
 
-const currentKey = () => `${get().support}|${get().assetId ?? 'sample'}|${useProject.getState().export.ratio}`;
+const currentKey = () => `${get().support}|${get().assetId ?? 'sample'}|${useProject.getState().export.ratio}|${get().color}`;
 
 /** The model the current support is shown on, for the current image. */
 function modelOfCurrent() {
@@ -87,31 +79,35 @@ async function stagedItem(): Promise<SceneItem> {
   return item;
 }
 
-/** Puts a tile's scene in the (sandboxed or real) project. */
+/** Puts a shot in the (sandboxed or real) project. */
 async function stage(tile: QuickTile) {
   const item = await stagedItem();
-  useProject.setState({ items: [item], selectedId: item.id, overlays: [] });
-  if (tile.look) {
-    applyLook(tile.look);
-    return;
+  // two of the same device, side by side
+  const items = tile.id === 'pair' ? [item, { ...item, id: `${ITEM_ID}-2` }] : [item];
+  useProject.setState({ items, selectedId: item.id, overlays: [] });
+  applyStudioLook(tile.id === 'podium' ? 'podium' : 'studio', get().color);
+  const p = useProject.getState();
+  // flat things lie on the floor; a laptop or a screen is seen from high up instead
+  const flat = liesFlat();
+  if (tile.id === 'front') p.setCamera({ preset: 'front' });
+  if (tile.id === 'top') {
+    if (flat) p.setPose('flat');
+    p.setCamera({ preset: flat ? 'top' : 'high' });
+    // seen from above, a soft shadow would ring the device with grey
+    p.setGround({ shadow: 'contact', shadowOpacity: 0.12 });
   }
-  const tpl = tile.template!;
-  applyScenePreset(SCENE_PRESETS.find((p) => p.id === tpl.preset)!);
-  if (tpl.camera) {
-    useProject.getState().setCamera({ preset: tpl.camera });
-    useProject.getState().setPose(CAMERA_PRESETS[tpl.camera as keyof typeof CAMERA_PRESETS]?.flat ? 'flat' : 'standing');
+  // a longer lens, closer, with a soft background (a tall device lies down, so the close-up runs along it)
+  if (tile.id === 'close') {
+    if (flat) p.setPose('flat');
+    p.setCamera({ preset: flat ? 'high' : 'threeQuarter', zoom: flat ? 1.5 : 1.8, focal: 85, dof: true, aperture: 0.45 });
   }
+  if (tile.id === 'pair') p.arrange('auto');
 }
 
-const visible = () => {
-  const { tiles, filter } = get();
-  return filter === 'all' ? tiles : tiles.filter((x) => x.tags.includes(filter));
-};
-
-/** Renders the visible thumbnails still missing, in order; a newer call cancels this one. */
+/** Renders the thumbnails still missing, in order; a newer call cancels this one. */
 async function renderMissing() {
   const token = ++run;
-  const todo = () => visible().filter((x) => !get().thumbs[x.id]);
+  const todo = () => get().tiles.filter((x) => !get().thumbs[x.id]);
   if (!todo().length || useUi.getState().screen !== 'quick') return;
   await inSandbox(async () => {
     for (let next = todo()[0]; next && token === run && useUi.getState().screen === 'quick'; next = todo()[0]) {
@@ -120,7 +116,7 @@ async function renderMissing() {
       await settleScene();
       if (token !== run) break;
       const url = await renderThumb();
-      // the support, design or format changed while it rendered: drop it, it will be redone
+      // the support, design, format or colour changed while it rendered: drop it, it will be redone
       if (token !== run || key !== currentKey()) {
         URL.revokeObjectURL(url);
         break;
@@ -136,7 +132,7 @@ function dropThumbs() {
   set({ thumbs: {}, thumbKeys: {} });
 }
 
-export const labelOf = (tile: QuickTile) => (typeof tile.label === 'string' ? tile.label : tile.label[useLang.getState().lang]);
+export const labelOf = (tile: QuickTile) => tile.label[useLang.getState().lang];
 
 export const quick = {
   state: get,
@@ -157,17 +153,19 @@ export const quick = {
     useAssets.getState().add(asset);
     const { support, confident } = detectSupport(asset.width, asset.height, pdf, file.name);
     dropThumbs();
-    set({ assetId: asset.id, support, confident, selected: [] });
+    set({ assetId: asset.id, support, confident, selected: [], byHand: false });
     void renderMissing();
   },
   setSupport(support: Support) {
     if (support === get().support) return;
     dropThumbs();
-    set({ support, confident: true });
+    set({ support, confident: true, byHand: true });
     void renderMissing();
   },
-  setFilter(filter: QuickState['filter']) {
-    set({ filter });
+  setColor(color: string) {
+    if (color === get().color) return;
+    dropThumbs();
+    set({ color });
     void renderMissing();
   },
   /** Re-renders everything (the output format changed). */
@@ -177,13 +175,6 @@ export const quick = {
   },
   toggle(id: string) {
     set((s) => ({ selected: s.selected.includes(id) ? s.selected.filter((x) => x !== id) : [...s.selected, id] }));
-  },
-  /** Six more looks generated around the current device. */
-  async more() {
-    const base: Project = { ...snapshot(), items: [await (async () => ({ ...makeItem(getModel(modelOfCurrent())), id: ITEM_ID }))()] };
-    const looks = generateLooks(6, AXES, Math.floor(Math.random() * 1e9), base);
-    set((s) => ({ tiles: [...s.tiles, ...looks.map((look) => ({ id: look.id, label: look.label, tags: [] as QuickTag[], look }))], filter: 'all' }));
-    void renderMissing();
   },
   /** Renders tiles at the export settings: one file, or a ZIP. */
   async download(ids: string[]) {
@@ -224,10 +215,9 @@ export const quick = {
     run++;
     await whenIdle();
     await stage(tile);
-    const real = useProject.getState().items[0];
-    // a real id, so later devices and undo behave as usual
-    const fresh = { ...real, id: Math.random().toString(36).slice(2, 10) };
-    useProject.setState({ items: [fresh], selectedId: fresh.id });
+    // real ids, so later devices and undo behave as usual
+    const items = useProject.getState().items.map((it) => ({ ...it, id: Math.random().toString(36).slice(2, 10) }));
+    useProject.setState({ items, selectedId: items[0].id });
     open();
     useUi.getState().resetView();
   },

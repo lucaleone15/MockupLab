@@ -1,4 +1,4 @@
-// scripts/check-quick.mjs — Quick mode: support detection, live gallery, download, customize, more ideas.
+// scripts/check-quick.mjs — Quick mode: support detection, a background colour, six studio photos, download, customize.
 import { openApp, check, done, viaFileDialog } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 // 1. detection table (spec § 5)
@@ -39,37 +39,66 @@ const cardModel = await page.evaluate(() => [window.__mockuplab.quick.modelForSu
 check(cardModel[0] === 'business-card' && cardModel[1] === 'poster', `a card-shaped print goes on a business card, a tall one on a poster (${cardModel})`);
 const pdf = await page.evaluate(() => window.__mockuplab.quick.detectSupport(1000, 1000, true));
 check(pdf.support === 'print', 'PDF → print');
-// 2. the gallery renders with a sample, without an image of ours
+// 2. six studio photos in a colour, with a sample, without an image of ours
 const before = await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((it) => it.modelId)));
 await page.evaluate(() => (location.hash = '#/rapide'));
 await page.waitForSelector('[data-testid=quick-screen]');
 const tiles = page.getByTestId('quick-tile');
-await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 12, null, { timeout: 120000 }).catch(() => {});
-check((await page.locator('[data-testid=quick-tile] img').count()) >= 12, `≥ 12 ready-made mock-ups rendered (${await page.locator('[data-testid=quick-tile] img').count()})`);
+const swatches = page.getByTestId('quick-color').getByRole('radio');
+check((await swatches.count()) === 9, `nine studio colours (${await swatches.count()})`);
+check(await page.getByLabel('Autre couleur').isVisible().catch(() => false), 'a free colour: “Autre couleur”');
+const labels = (await tiles.locator('span.truncate').allTextContents()).map((x) => x.trim());
+check(JSON.stringify(labels) === JSON.stringify(['Face', 'Trois-quarts', 'Sur podium', 'Vu de dessus', 'Deux appareils', 'Gros plan']), `six studio shots (${labels.join(', ')})`);
+check((await page.getByTestId('quick-filter').count()) === 0 && (await page.getByRole('button', { name: /Plus d’idées/ }).count()) === 0, 'no ambience filters, no “more ideas”');
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length === 6, null, { timeout: 120000 }).catch(() => {});
+check((await page.locator('[data-testid=quick-tile] img').count()) === 6, `all six rendered (${await page.locator('[data-testid=quick-tile] img').count()})`);
 // leaving during a render keeps the user's project intact
-await page.getByTestId('quick-filter').getByRole('button', { name: 'Sombre' }).click();
+await swatches.nth(1).click();
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(800);
 check((await page.evaluate(() => JSON.stringify(window.__mockuplab.project.getState().items.map((it) => it.modelId)))) === before, 'leaving Quick mid-render leaves the project as it was');
 await page.evaluate(() => (location.hash = '#/rapide'));
 await page.waitForSelector('[data-testid=quick-screen]');
-await page.getByTestId('quick-filter').getByRole('button', { name: 'Tous' }).click();
-// 3. our own design: a website screenshot → laptop
+// what each shot stages (the real project is used: customize opens it in the Studio)
+const staged = (id) =>
+  page.evaluate(async (id) => {
+    const api = window.__mockuplab;
+    await api.quick.customize(id, () => {});
+    const p = api.project.getState();
+    const b = p.background;
+    return { decor: p.decor.kind, finish: p.decor.podiumFinish, arch: p.decor.arch, items: p.items.length, camera: p.camera.preset, zoom: p.camera.zoom ?? 1, stops: b.kind === 'gradient' ? b.stops.map((s) => s.color.toLowerCase()) : [b.color] };
+  }, id);
+const front = await staged('front');
+check(front.decor === 'sweep' && front.camera === 'front' && front.items === 1, `Face: one device on a studio sweep, from the front (${JSON.stringify(front)})`);
+const podium = await staged('podium');
+check(podium.decor === 'podium' && podium.finish === 'paint' && !podium.arch, `Sur podium: a painted podium, no arch (${JSON.stringify(podium)})`);
+const top = await staged('top');
+check(top.camera === 'top', `Vu de dessus: a phone lies flat, seen from above (${top.camera})`);
+const pair = await staged('pair');
+check(pair.items === 2, `Deux appareils: two devices (${pair.items})`);
+const close = await staged('close');
+check(close.zoom > 1.2, `Gros plan: the camera comes closer (zoom ${close.zoom})`);
+// a colour drives every photo's background
+await page.getByRole('radio', { name: 'Bleu nuit' }).click();
+await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length === 6, null, { timeout: 120000 }).catch(() => {});
+const keys = await page.evaluate(() => Object.values(window.__mockuplab.quick.state().thumbKeys));
+check(keys.length === 6 && keys.every((k) => k.endsWith('#1f2a44')), `every thumbnail shows the picked colour (${keys.length})`);
+const night = await staged('front');
+check(night.stops.at(-1) === '#1f2a44', `“Bleu nuit” paints the studio (${night.stops.join(' → ')})`);
+await page.evaluate(() => window.__mockuplab.quick.start());
+// 3. our own design: a website screenshot → laptop, detected
 const chooser = await viaFileDialog(page, () => page.getByTestId('quick-pick').click());
 await chooser.setFiles('public/samples/sample-web.png');
 await page.waitForTimeout(500);
-check((await page.getByTestId('quick-support').getByRole('button', { pressed: true }).textContent()).trim() === 'Ordinateur', 'website screenshot detected as Ordinateur');
+check(/Ordinateur.*détecté/.test(await page.getByTestId('quick-device').textContent()), `website screenshot detected as Ordinateur (${await page.getByTestId('quick-device').textContent()})`);
+await page.getByTestId('quick-device').getByRole('button', { name: 'Changer' }).click();
+check((await page.getByTestId('quick-support').getByRole('button', { pressed: true }).textContent()).trim() === 'Ordinateur', '“Changer” lists the supports, Ordinateur chosen');
 await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 3, null, { timeout: 60000 }).catch(() => {});
 // 4. download one
 await tiles.first().hover();
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 240000 }), tiles.first().getByRole('button', { name: /Télécharger/ }).click()]);
 check(/\.(png|jpg|webp)$/.test(dl.suggestedFilename()), `tile downloads an image (${dl.suggestedFilename()})`);
-// 5. more ideas
-const n0 = await tiles.count();
-await page.getByRole('button', { name: /Plus d’idées/ }).click();
-await page.waitForTimeout(300);
-check((await tiles.count()) === n0 + 6, `more ideas adds 6 tiles (${n0} → ${await tiles.count()})`);
-// 6. customize → studio with the laptop and our image
+// 5. customize → studio with the laptop and our image
 await tiles.nth(1).hover();
 await tiles.nth(1).getByRole('button', { name: /Affiner dans le Studio/ }).click();
 await page.waitForTimeout(1500);

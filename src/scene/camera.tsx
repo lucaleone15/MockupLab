@@ -269,6 +269,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
   const frameKey = [
     resetToken,
     settings.preset,
+    settings.zoom ?? 1,
     // the size counts too (a bigger TV, an opened magazine, a poster adapted to a landscape image are framed again),
     // except what continuous sliders change — a laptop's lid, a brochure's fold — so tuning them keeps the user's view
     items
@@ -295,7 +296,7 @@ export function CameraRig({ floorY }: { floorY: number }) {
       settings.preset === 'custom' && controls.current
         ? camera.position.clone().sub(controls.current.target)
         : composedDirection(presetDirection(settings.preset, leadItem(items, item)), settings.preset, items);
-    const f = frame(items, dir, camera.fov, ratioValue(ratio), floorY);
+    const f = frame(items, dir, camera.fov, ratioValue(ratio), floorY, (items.length > 1 ? 0.78 : 0.82) * (settings.zoom ?? 1));
     camera.position.copy(f.position);
     cameraState.target.copy(f.target);
     cameraState.subject = f.subject;
