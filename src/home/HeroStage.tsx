@@ -104,7 +104,7 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
   },
   studio: (p) => {
     const x = Math.sin(Math.PI * ramp(p, 0.15, 0.95));
-    return { actors: { phone: { x: 0, y: 5 + 6 * x, z: 6, yaw: -0.35, s: 1.2 } }, camera: [28, 22, 90, 0, 13, 0], explode: x };
+    return { actors: { phone: { x: 0, y: 5 + 6 * x, z: 6, yaw: -0.35, s: 1.2 } }, camera: [30, 24, 108, 0, 9, 0], explode: x };
   },
   motion: (p) => {
     const a = mix(-0.9, 0.9, p);
@@ -217,6 +217,25 @@ function Capture({ t, landed }: { t: RefObject<number>; landed: boolean }) {
   );
 }
 
+/** A soft radial glow as a texture (disposed with its owner). */
+function useGlow(inner: string, outer: string) {
+  const texture = useMemo(() => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const g = c.getContext('2d')!;
+    const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    r.addColorStop(0, inner);
+    r.addColorStop(1, outer);
+    g.fillStyle = r;
+    g.fillRect(0, 0, 256, 256);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [inner, outer]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  return texture;
+}
+
 /** « studio »: the set comes apart in layers (backdrop, podium, softbox) and back. */
 function StudioSet({ explode }: { explode: RefObject<number> }) {
   const wall = useRef<THREE.Mesh>(null);
@@ -224,17 +243,26 @@ function StudioSet({ explode }: { explode: RefObject<number> }) {
   const softbox = useRef<THREE.Group>(null);
   const materials = useMemo(
     () => ({
-      wall: new THREE.MeshStandardMaterial({ color: '#e7e2f3', roughness: 0.95 }),
+      wall: new THREE.MeshStandardMaterial({ color: '#d8d3e6', roughness: 0.95 }),
       podium: new THREE.MeshPhysicalMaterial({ color: '#f1efec', roughness: 0.6, clearcoat: 0.2 }),
-      light: new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 1.6 }),
-      frame: new THREE.MeshStandardMaterial({ color: '#2a2b30', roughness: 0.5 }),
+      light: new THREE.MeshBasicMaterial({ color: '#fffaf2', toneMapped: false }),
+      frame: new THREE.MeshStandardMaterial({ color: '#1f2025', roughness: 0.5 }),
     }),
     [],
   );
   useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials]);
+  // the backdrop and the softbox stand in the air: kept out of the contact shadows (layer 1, seen by the camera only)
+  const camera = useThree((s) => s.camera);
+  // the softbox's glow: a soft, warm halo around the diffuser, added to what is behind
+  const halo = useGlow('rgba(255,246,230,0.55)', 'rgba(255,246,230,0)');
+  useEffect(() => {
+    camera.layers.enable(1);
+    wall.current?.layers.set(1);
+    softbox.current?.traverse((o) => o.layers.set(1));
+  }, [camera]);
   useFrame(() => {
     const x = Math.max(0, explode.current ?? 0);
-    wall.current?.position.set(0, 40, -30 - 34 * x);
+    wall.current?.position.set(0, 20, -30 - 34 * x);
     podium.current?.position.set(0, 2.5 - 8 * x, 6);
     if (softbox.current) {
       softbox.current.position.set(-26 - 8 * x, 16 + 6 * x, 2);
@@ -244,18 +272,23 @@ function StudioSet({ explode }: { explode: RefObject<number> }) {
   return (
     <>
       <mesh ref={wall} material={materials.wall} receiveShadow>
-        <planeGeometry args={[260, 140]} />
+        {/* far larger than any view of it: no edge ever shows */}
+        <planeGeometry args={[1600, 900]} />
       </mesh>
       <mesh ref={podium} material={materials.podium} castShadow receiveShadow>
         <cylinderGeometry args={[15, 15, 5, 96]} />
       </mesh>
       <group ref={softbox}>
-        {/* a softbox: a lit diffuser in a thin dark rim, its back facing away */}
+        {/* a softbox: a glowing diffuser in a thin dark rim, a halo around it */}
         <mesh material={materials.frame}>
-          <boxGeometry args={[16.6, 16.6, 4]} />
+          <boxGeometry args={[16.8, 16.8, 2.4]} />
         </mesh>
-        <mesh material={materials.light} position={[0, 0, 2.05]}>
+        <mesh material={materials.light} position={[0, 0, 1.25]}>
           <planeGeometry args={[16, 16]} />
+        </mesh>
+        <mesh position={[0, 0, 1.3]}>
+          <planeGeometry args={[30, 30]} />
+          <meshBasicMaterial map={halo} transparent depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
         </mesh>
       </group>
     </>
