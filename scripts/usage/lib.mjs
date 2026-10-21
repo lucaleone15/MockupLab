@@ -44,7 +44,7 @@ export async function journey(name, goal, run, opts = {}) {
     async choose(name, { exact = true, timeout = 8000 } = {}) {
       const deadline = Date.now() + timeout;
       while (Date.now() < deadline) {
-        for (const role of ['button', 'radio', 'tab', 'option', 'switch', 'checkbox', 'menuitem', 'link']) {
+        for (const role of ['button', 'radio', 'tab', 'option', 'switch', 'checkbox', 'menuitem', 'menuitemradio', 'link']) {
           const l = page.getByRole(role, { name, exact });
           const n = await l.count();
           for (let i = 0; i < n; i++) if (await l.nth(i).isVisible()) return l.nth(i).click();

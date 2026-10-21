@@ -1,4 +1,4 @@
-// scripts/check-social.mjs — social formats (exact pixel sizes), Reel/TikTok video preset, perfect loop.
+// scripts/check-social.mjs — social formats (exact pixel sizes), a vertical video from the format, perfect loop.
 import { openApp, check, done } from './lib/app.mjs';
 const { browser, page, errors } = await openApp({ hash: '#/studio' });
 const exportSize = () => page.evaluate(async () => {
@@ -26,13 +26,18 @@ check((await page.getByRole('button', { name: 'Post Insta' }).count()) > 0 && (a
 await page.evaluate(() => { history.pushState(null, '', '/studio'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(300);
 
-// Reel / TikTok video preset, and a perfect loop for a cinematic shot
+// a vertical video comes from the Story · Reel format; the Export window has no « Reel » preset any more
+await page.getByTestId('format-menu').click();
+await page.getByRole('menuitemradio', { name: /^Story · Reel/ }).click();
+await page.keyboard.press('Escape');
 await page.getByTestId('top-export').click();
 await page.getByTestId('export-tab-video').click();
-await page.getByRole('button', { name: 'Reel / TikTok' }).click();
 await page.waitForTimeout(200);
-const v = await page.evaluate(() => { const e = window.__mockuplab.project.getState().export; return { ratio: e.ratio, ...e.video }; });
-check(v.ratio === 'story' && v.resolution === '1080' && v.fps === 30 && v.duration === 10 && v.format === 'mp4', `Reel / TikTok preset: ${JSON.stringify(v)}`);
+check((await page.getByRole('button', { name: 'Reel / TikTok' }).count()) === 0, 'no « Reel / TikTok » preset in the video tab');
+await page.getByTestId('export-sheet').getByRole('radio', { name: '1080p', exact: true }).click();
+const out = await page.getByTestId('video-output').innerText();
+check(/^1080 × 1920/.test(out), `the vertical format gives a 1080 × 1920 video (${out})`);
+for (const g of ['Le mouvement', 'La durée', 'Le fichier']) check(await page.getByRole('heading', { name: g }).isVisible(), `the video tab reads in groups: « ${g} »`);
 for (const d of ['6 s', '10 s', '15 s']) check(await page.getByRole('radio', { name: d, exact: true }).isVisible().catch(() => false), `duration ${d} offered`);
 
 await page.getByRole('switch', { name: 'Boucle parfaite' }).click();
