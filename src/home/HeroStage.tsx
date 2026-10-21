@@ -8,6 +8,7 @@ import { bundledAsset } from '@/lib/samples';
 import { StudioEnvironment } from '@/scene/StudioEnvironment';
 import { DEFAULT_BRAND, DEFAULT_SCREEN, DEFAULT_SURFACE, type SurfaceBinding } from '@/store/project';
 import type { StoryChapter } from './useStoryProgress';
+import { anchors } from './labelAnchors';
 
 /*
  * The home page's 3D story, scrubbed by the scroll. Each chapter is a function
@@ -91,10 +92,12 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
     const down = ease(ramp(p, 0.5, 0.82));
     const at = (i: number, x: number, z: number, yaw: number): Pose => {
       const a = ease(ramp(p, 0.12 + i * 0.06, 0.28 + i * 0.06));
-      return { x, y: (1 - a) * 26, z, yaw, s: a };
+      // they settle from just above their place: falling from high, they crossed their neighbours on screen
+      return { x, y: (1 - a) * 6, z, yaw, s: a };
     };
     return {
-      actors: { poster: at(0, -27, -26, 0.12), magazine: at(1, 10, -8, 0), book: at(2, -15, 7, 0.45), flyer: at(3, -2, 18, -0.22), cards: at(4, 21, 17, 0.3), fan: at(5, 31, -3, -0.35) },
+      // laid out from their real footprints, with room between them (nothing on top of anything)
+      actors: { poster: at(0, -24, -30, 0.1), magazine: at(1, 16, -14, 0), book: at(2, -40, -6, 0.5), flyer: at(3, -14, 14, -0.15), cards: at(4, 6, 16, 0.25), fan: at(5, 31, 16, -0.3) },
       camera: [mix(18, 4, down), mix(46, 180, down), mix(165, 160, down), 2, mix(22, 20, down), -2],
     };
   },
@@ -142,6 +145,13 @@ const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapt
   { key: 'fan', model: 'swatch-fan', screen: () => SAMPLE('poster') },
 ];
 const BRAND = { ...DEFAULT_BRAND, name: 'Solstice festival' };
+/** How high above a device's base its label sits (cm). */
+const LABEL_LIFT: Partial<Record<Key, number>> = { poster: 44, magazine: 3, book: 26, flyer: 2, cards: 4, fan: 4, phone: 18 };
+/** Flat prints: the label sits past their far edge (cm behind the centre), on the dark floor rather than on the paper. */
+const LABEL_BACK: Partial<Record<Key, number>> = { magazine: 16, flyer: 13 };
+/** Front-row prints (something lies behind them): the label goes under their near edge instead. */
+const LABEL_FRONT: Partial<Record<Key, number>> = { cards: 6, fan: 11 };
+const projected = new THREE.Vector3();
 const damp = THREE.MathUtils.damp;
 
 /** One device, its screen showing a bundled image (none: an empty screen). */
@@ -315,6 +325,20 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
       setDisc(next);
     }
     w.__heroPose = { lidAngle: discRef.current.lid };
+    // the glass labels follow their device on screen
+    for (const [k, els] of anchors) {
+      const g = actors.current[k as Key];
+      if (!g || !els.size) continue;
+      g.getWorldPosition(projected);
+      projected.y += (LABEL_LIFT[k as Key] ?? 6) * g.scale.y;
+      const front = LABEL_FRONT[k as Key];
+      projected.z += (front ?? -(LABEL_BACK[k as Key] ?? 0)) * g.scale.z;
+      projected.project(state.camera);
+      const x = ((projected.x + 1) / 2) * state.size.width;
+      const y = ((1 - projected.y) / 2) * state.size.height;
+      const place = front ? 'translate(-50%, 18px)' : 'translate(-50%, -100%)';
+      for (const el of els) el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) ${place}`;
+    }
   });
 
   const phoneParams = useMemo(() => (chapter === 'social' ? { app: 'post', caption: 'Le nouveau site est en ligne', feed: disc.feed } : {}), [chapter, disc.feed]);
@@ -323,7 +347,8 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
   const dark = chapter === 'drop' && !disc.landed;
   return (
     <>
-      <directionalLight ref={key} position={[-40, 80, 60]} intensity={light ? 1.4 : 1.15} castShadow shadow-mapSize={[1024, 1024]} />
+      {/* no cast shadow: on big flat prints it shimmered as the camera moved; contact shadows ground the objects */}
+      <directionalLight ref={key} position={[-40, 80, 60]} intensity={light ? 1.4 : 1.15} />
       <group ref={group}>
         {ACTORS.map((a) => (
           <group key={a.key} ref={(g) => void (g && (actors.current[a.key] = g))} scale={0.0001}>

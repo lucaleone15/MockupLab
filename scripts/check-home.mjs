@@ -130,6 +130,15 @@ const pr1 = await stageShot(page);
 await at(page, 'print', 0.85);
 await page.screenshot({ path: 'out/home5/print-85.png' });
 check((await page.evaluate(() => window.__heroState)) === 'print' && (await diff(page, pr1, await stageShot(page))) > 0.02, 'the print chapter: the printed goods come in and the camera moves');
+// once the scroll stops, the flat lay holds still: no shimmering on the big prints (the magazine flickered)
+await page.waitForTimeout(1500);
+const still1 = await stageShot(page);
+await page.waitForTimeout(300);
+const still2 = await stageShot(page);
+await page.waitForTimeout(300);
+const still3 = await stageShot(page);
+const shimmer = Math.max(await diff(page, still1, still2), await diff(page, still2, still3));
+check(shimmer < 0.002, `the print flat lay holds still once the scroll stops (change ${(shimmer * 100).toFixed(2)} %)`);
 for (const [id, p] of [['studio', 0.5], ['motion', 0.6], ['social', 0.7], ['clients', 0.9]]) {
   await at(page, id, p);
   check((await page.evaluate(() => window.__heroState)) === id, `« ${id} »: the stage takes it`);

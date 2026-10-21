@@ -11,6 +11,7 @@ import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 import { SLICES, STORY, useStoryProgress, type StoryChapter } from './useStoryProgress';
 import { WordReveal } from './WordReveal';
+import { anchorTo } from './labelAnchors';
 
 /*
  * The home page, told like an Apple product page. Each chapter is a tall
@@ -45,7 +46,7 @@ const STILL: Record<StoryChapter, string> = {
   modes: 'studio-ui.jpg',
 };
 /** The glass labels pointing at the 3D: where they sit on the stage, and when they show. */
-const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style: CSSProperties; from: number; to: number }[]>> = {
+const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style?: CSSProperties; anchor?: string; from: number; to: number }[]>> = {
   studio: [
     { key: 'home.label.backdrop', style: { left: '66%', top: '44%' }, from: 0.32, to: 0.72 },
     { key: 'home.label.light', style: { left: '14%', top: '46%' }, from: 0.36, to: 0.72 },
@@ -53,13 +54,14 @@ const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style: CSSProperties;
     { key: 'home.label.podium', style: { left: '30%', top: '86%' }, from: 0.44, to: 0.72 },
   ],
   print: [
-    { key: 'home.label.posters', style: { left: '20%', top: '54%' }, from: 0.55, to: 0.76 },
-    { key: 'home.label.magazines', style: { left: '57%', top: '74%' }, from: 0.57, to: 0.76 },
-    { key: 'home.label.flyers', style: { left: '30%', top: '84%' }, from: 0.59, to: 0.76 },
-    { key: 'home.label.cards', style: { left: '62%', top: '86%' }, from: 0.61, to: 0.76 },
-    { key: 'home.label.swatches', style: { left: '72%', top: '70%' }, from: 0.63, to: 0.76 },
+    // pinned above their object (the stage moves them with the camera)
+    { key: 'home.label.posters', anchor: 'poster', from: 0.55, to: 0.76 },
+    { key: 'home.label.magazines', anchor: 'magazine', from: 0.57, to: 0.76 },
+    { key: 'home.label.flyers', anchor: 'flyer', from: 0.59, to: 0.76 },
+    { key: 'home.label.cards', anchor: 'cards', from: 0.61, to: 0.76 },
+    { key: 'home.label.swatches', anchor: 'fan', from: 0.63, to: 0.76 },
   ],
-  social: [{ key: 'home.label.account', style: { left: '63%', top: '72%' }, from: 0.5, to: 0.75 }],
+  social: [{ key: 'home.label.account', anchor: 'phone', from: 0.5, to: 0.75 }],
   motion: [{ key: 'home.label.video', style: { left: '70%', top: '86%' }, from: 0.4, to: 0.75 }],
 };
 const TITLE: Record<StoryChapter, I18nKey> = {
@@ -191,10 +193,13 @@ function Track({ id, current, progress }: { id: StoryChapter; current: StoryChap
             <span
               key={l.key}
               className={cx(
-                'absolute rounded-full px-3.5 py-1.5 text-[13px] font-medium backdrop-blur-xl transition-[opacity,transform] duration-300 ease-out',
+                'absolute whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium backdrop-blur-xl duration-300 ease-out',
+                // pinned labels move every frame with the camera: only their fade is a transition
+                l.anchor ? 'transition-opacity' : 'transition-[opacity,transform]',
                 light ? 'bg-white/70 text-[#1d1d1f] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.9),0_10px_30px_-10px_rgb(20_30_80/0.3)]' : 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.22),0_10px_30px_-10px_rgb(0_0_0/0.6)]',
               )}
-              style={{ ...l.style, opacity: progress >= l.from && progress <= l.to ? 1 : 0, transform: `translateY(${progress >= l.from ? 0 : 8}px)` }}
+              ref={l.anchor ? anchorTo(l.anchor) : undefined}
+              style={l.anchor ? { left: 0, top: 0, marginTop: -10, opacity: progress >= l.from && progress <= l.to ? 1 : 0 } : { ...l.style, opacity: progress >= l.from && progress <= l.to ? 1 : 0, transform: `translateY(${progress >= l.from ? 0 : 8}px)` }}
             >
               {t(l.key)}
             </span>
