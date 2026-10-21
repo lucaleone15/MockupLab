@@ -224,7 +224,6 @@ function ModesStory({ progress }: { progress: number }) {
                 <span className="flex items-center gap-2.5">
                   <span className={cx('h-6 w-1 rounded-full transition-colors duration-500', i === lit ? 'bg-[#2f6bff]' : 'bg-black/15')} />
                   <span className="font-display text-[30px] font-extrabold leading-none">{t(`screen.${m}` as I18nKey)}</span>
-                  {m === 'studio' && <span className="rounded-full bg-[#2f6bff]/12 px-2.5 py-0.5 text-[12px] font-semibold text-[#2f6bff]">{t('home.main')}</span>}
                 </span>
                 <span className="pl-[18px] text-[16px] leading-snug text-[#55565e]">{t(`mode.${m}.role` as I18nKey)}</span>
               </button>
@@ -319,7 +318,6 @@ function Modes() {
             <span className="flex flex-1 flex-col gap-1.5 px-6 pb-6 pt-5">
               <span className="flex items-center gap-2">
                 <span className={cx('font-display font-bold text-[#1d1d1f]', main ? 'text-[26px]' : 'text-[20px]')}>{t(`screen.${m}` as I18nKey)}</span>
-                {main && <span className="rounded-full bg-[#2f6bff]/12 px-2.5 py-0.5 text-[12px] font-semibold text-[#2f6bff]">{t('home.main')}</span>}
               </span>
               <span className={cx('leading-snug text-[#55565e]', main ? 'text-[15.5px]' : 'text-[14px]')}>{t(`mode.${m}.role` as I18nKey)}</span>
             </span>

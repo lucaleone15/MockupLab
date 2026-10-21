@@ -1,4 +1,4 @@
-// scripts/make-icons.mjs — the app icon (macOS, Windows, PWA, Apple touch): the « studio sweep » mark on a graphite tile.
+// scripts/make-icons.mjs — the app icon (macOS, Windows, PWA, Apple touch): a tilted phone with its screen lit, on a graphite tile.
 // macOS style: a rounded square of 824 px on a 1024 px canvas with room for the shadow.
 import { chromium } from 'playwright';
 
@@ -10,10 +10,14 @@ const tile = (size, { margin, radius, shadow }) => `
     overflow:hidden">
     <!-- soft studio light from the top left -->
     <div style="position:absolute;inset:0;background:radial-gradient(70% 55% at 25% 10%,rgba(255,255,255,.14),transparent 70%)"></div>
-    <!-- the mark: the paper sweep of a photo studio, a device standing on it -->
-    <svg viewBox="0 0 30 30" style="position:absolute;left:18%;top:18%;width:64%;height:64%">
-      <path d="M5 3.5V18a9 9 0 0 0 9 9h12.5" fill="none" stroke="#f5f5f7" stroke-width="2.6" stroke-linecap="round"/>
-      <rect x="14.5" y="11.5" width="7.2" height="13.5" rx="2.1" fill="#2f6bff"/>
+    <!-- the mark: a phone, tilted, its screen lit in the brand blue -->
+    <svg viewBox="0 0 40 40" style="position:absolute;left:12%;top:12%;width:76%;height:76%">
+      <defs><linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4b7bff"/><stop offset="1" stop-color="#2f6bff"/></linearGradient></defs>
+      <g transform="rotate(-8 20 20)">
+        <rect x="12" y="5" width="16" height="30" rx="4.5" fill="none" stroke="#f5f5f7" stroke-width="2.2"/>
+        <rect x="14.4" y="7.4" width="11.2" height="25.2" rx="2.6" fill="url(#screen)"/>
+        <rect x="17.5" y="8.7" width="5" height="1.6" rx=".8" fill="#111113"/>
+      </g>
     </svg>
   </div>
 </body>`;
