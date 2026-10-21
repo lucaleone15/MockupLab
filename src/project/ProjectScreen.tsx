@@ -280,7 +280,7 @@ export function ProjectScreen() {
     <div className="flex min-h-0 flex-1 p-2" data-testid="project-screen">
       <main className="glass scroll-thin flex min-w-0 flex-1 flex-col gap-10 overflow-y-auto overscroll-contain rounded-[14px] px-8 py-7">
         <Step n={1} title={t('project.step.images')}>
-          <div className="flex max-w-[860px] flex-col gap-3">
+          <div className="flex flex-col gap-3">
             {!s.files.length && <ModeRole screen="project" className="mb-1 text-[14px] text-fg" />}
             {s.files.length > 0 && (
               <ul className="flex flex-col gap-2">
@@ -303,7 +303,7 @@ export function ProjectScreen() {
         </Step>
         {s.files.length > 0 && (
           <Step n={2} title={t('project.step.style')}>
-            <div className="grid max-w-[860px] grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-4">
               {STYLES.map((id) => {
                 const url = s.thumbs.styles[id];
                 const active = s.style === id;
