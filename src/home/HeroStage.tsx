@@ -74,14 +74,15 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
   },
   devices: (p) => {
     const e = ease(ramp(p, 0.15, 0.8));
-    const from: Pose = { x: 0, z: 8, yaw: 0, s: 0.4 };
+    // they come out from behind the phone (starting from its place, they went through it)
+    const behind = (z: number): Pose => ({ x: 0, z, yaw: 0, s: 0.4 });
     return {
       actors: {
         phone: { x: 0, z: 10, yaw: 0 },
-        phoneB: pose(from, { x: -15, z: 5, yaw: 0.42 }, e),
-        phoneC: pose(from, { x: 15, z: 5, yaw: -0.42 }, e),
-        tablet: pose(from, { x: 33, z: -2, yaw: -0.55 }, e),
-        laptop: pose(from, { x: -35, z: -6, yaw: 0.55 }, e),
+        phoneB: pose(behind(-10), { x: -15, z: 5, yaw: 0.42 }, e),
+        phoneC: pose(behind(-10), { x: 15, z: 5, yaw: -0.42 }, e),
+        tablet: pose(behind(-22), { x: 33, z: -2, yaw: -0.55 }, e),
+        laptop: pose(behind(-30), { x: -35, z: -6, yaw: 0.55 }, e),
       },
       camera: [0, 20, mix(62, 104, e), 0, 10, 0],
       turn: mix(0.35, -0.35, p),
@@ -131,7 +132,7 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
 };
 
 const SAMPLE = (n: string) => `samples/sample-${n}.png`;
-const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string; params?: Record<string, ParamValue> }[] = [
+const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string; more?: Record<string, string>; params?: Record<string, ParamValue> }[] = [
   { key: 'laptop', model: 'laptop-14', screen: () => SAMPLE('web') },
   { key: 'phone', model: 'phone-pro', screen: (c) => (c === 'social' ? SAMPLE('poster') : SAMPLE('app')) },
   { key: 'phoneB', model: 'phone-pro', finish: 1, screen: () => SAMPLE('poster') },
@@ -139,9 +140,9 @@ const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapt
   { key: 'tablet', model: 'tablet-pro-11', screen: () => SAMPLE('poster') },
   { key: 'poster', model: 'poster', screen: () => SAMPLE('poster'), params: { format: 'a3', frame: 'black', mat: false, mount: 'lean', fit: false } },
   { key: 'magazine', model: 'magazine', screen: () => SAMPLE('spread'), params: { state: 'open', fit: false } },
-  { key: 'book', model: 'book', screen: () => SAMPLE('label'), params: { fit: false } },
+  { key: 'book', model: 'book', screen: () => SAMPLE('label'), more: { spine: SAMPLE('pattern') }, params: { fit: false } },
   { key: 'flyer', model: 'flyer', screen: () => SAMPLE('poster'), params: { format: 'a5', layout: 'single', fit: false } },
-  { key: 'cards', model: 'business-card', screen: () => SAMPLE('card-front'), params: { layout: 'stack', fit: false } },
+  { key: 'cards', model: 'business-card', screen: () => SAMPLE('card-front'), more: { back: SAMPLE('card-back') }, params: { layout: 'stack', fit: false } },
   { key: 'fan', model: 'swatch-fan', screen: () => SAMPLE('poster') },
 ];
 const BRAND = { ...DEFAULT_BRAND, name: 'Solstice festival' };
@@ -155,7 +156,7 @@ const projected = new THREE.Vector3();
 const damp = THREE.MathUtils.damp;
 
 /** One device, its screen showing a bundled image (none: an empty screen). */
-function Device({ model: id, finish, screen, params, brightness }: { model: string; finish?: number; screen: string | null; params: Record<string, ParamValue>; brightness: number }) {
+function Device({ model: id, finish, screen, more, params, brightness }: { model: string; finish?: number; screen: string | null; more?: Record<string, string>; params: Record<string, ParamValue>; brightness: number }) {
   const model = getModel(id);
   const [surfaces, setSurfaces] = useState<Record<string, SurfaceBinding> | null>(null);
   useEffect(() => {
@@ -164,13 +165,14 @@ function Device({ model: id, finish, screen, params, brightness }: { model: stri
       setSurfaces(Object.fromEntries(model.surfaces.map((s) => [s.id, { ...DEFAULT_SURFACE }])));
       return;
     }
-    void bundledAsset(screen).then((assetId) => {
-      if (alive) setSurfaces(Object.fromEntries(model.surfaces.map((s, i) => [s.id, { ...DEFAULT_SURFACE, assetId: i === 0 ? assetId : null }])));
+    // the first face shows `screen`, the others their own image when given (a card's back, a book's spine)
+    void Promise.all(model.surfaces.map((s, i) => (i === 0 ? bundledAsset(screen) : more?.[s.id] ? bundledAsset(more[s.id]) : Promise.resolve(null)))).then((ids) => {
+      if (alive) setSurfaces(Object.fromEntries(model.surfaces.map((s, i) => [s.id, { ...DEFAULT_SURFACE, assetId: ids[i] }])));
     });
     return () => {
       alive = false;
     };
-  }, [model, screen]);
+  }, [model, screen, more]);
   const all = useMemo(() => ({ ...defaultParams(model), ...params }), [model, params]);
   const look = useMemo(() => ({ ...DEFAULT_SCREEN, brightness: DEFAULT_SCREEN.brightness * brightness }), [brightness]);
   if (!surfaces) return null;
@@ -355,6 +357,7 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
             <Device
               model={a.model}
               finish={a.finish}
+              more={a.more}
               screen={a.key === 'phone' && dark ? null : a.screen(chapter)}
               params={a.key === 'laptop' ? laptopParams : a.key === 'phone' ? phoneParams : (a.params ?? none)}
               brightness={a.key === 'laptop' ? disc.glow : a.key === 'phone' && dark ? 0.05 : 1}
@@ -395,7 +398,8 @@ export default function HeroStage({ className, chapter, progress, light, eventSo
         frameloop={visible && !empty ? 'always' : 'never'}
         // measured without scroll listeners: the stage is sticky, its size only changes with the window
         resize={{ scroll: false }}
-        camera={{ position: [0, 26, 96], fov: 30, near: 1, far: 2000 }}
+        // the camera never comes closer than ~40 cm: a far near plane keeps the depth precise (no showing through)
+        camera={{ position: [0, 26, 96], fov: 30, near: 8, far: 2000 }}
         gl={{ antialias: true, alpha: true }}
         eventSource={eventSource?.current ?? undefined}
         eventPrefix="client"

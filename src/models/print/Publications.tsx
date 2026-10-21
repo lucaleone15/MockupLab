@@ -259,7 +259,8 @@ function Book({ surfaces, params }: DeviceProps) {
     <group position={[0, BH / 2, 0]}>
       {/* boards: front (printed face on top) and back */}
       <mesh geometry={g.board} material={cloth} position={[0, 0, inner / 2 + BOARD / 2]} castShadow receiveShadow />
-      <mesh position={[0, 0, inner / 2 + BOARD + 0.002]} material={cover}>
+      {/* 0.3 mm off the board: closer, seen from afar, the cloth showed through the print */}
+      <mesh position={[0, 0, inner / 2 + BOARD + 0.03]} material={cover}>
         <planeGeometry args={[BW - 0.1, BH - 0.1]} />
       </mesh>
       <mesh geometry={g.board} material={cloth} position={[0, 0, -inner / 2 - BOARD / 2]} castShadow receiveShadow />
@@ -271,7 +272,7 @@ function Book({ surfaces, params }: DeviceProps) {
       <mesh position={[-BW / 2 - 0.02, 0, 0]} material={cloth} castShadow>
         <boxGeometry args={[0.32, BH, BD]} />
       </mesh>
-      <mesh position={[-BW / 2 - 0.185, 0, 0]} rotation={[0, -Math.PI / 2, 0]} material={spine}>
+      <mesh position={[-BW / 2 - 0.21, 0, 0]} rotation={[0, -Math.PI / 2, 0]} material={spine}>
         <planeGeometry args={[BD - 0.05, BH - 0.1]} />
       </mesh>
     </group>
