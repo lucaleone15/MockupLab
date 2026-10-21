@@ -419,6 +419,8 @@ export const en: Record<keyof typeof fr, string> = {
   'home.label.device': 'Your design, in 4K',
   'home.label.account': 'Your account, your caption',
   'home.label.video': 'MP4 or GIF, up to 4K',
+  'home.dot.modes': 'Modes',
+  'home.modes.lead': 'From the finest tuning to a client\'s whole pack.',
   'home.openStudio': 'Open the Studio',
   'home.otherModes': 'or pick another mode',
   'home.main': 'Main mode',

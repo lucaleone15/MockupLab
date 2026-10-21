@@ -29,9 +29,9 @@ const shot = (name: string) => `${BASE}showcase/${name}`;
 const REPO = 'https://github.com/lucaleone15/MockupLab';
 
 /** Track heights (vh): the longer the chapter's motion, the longer the scroll. */
-const HEIGHT: Record<StoryChapter, number> = { open: 230, drop: 220, devices: 240, studio: 260, motion: 240, social: 240, clients: 220 };
+const HEIGHT: Record<StoryChapter, number> = { open: 230, drop: 220, devices: 240, studio: 260, motion: 240, social: 240, clients: 220, modes: 300 };
 /** White sections; the others are deep black. */
-const LIGHT = new Set<StoryChapter>(['studio']);
+const LIGHT = new Set<StoryChapter>(['studio', 'modes']);
 /** What phones and reduced motion show under each chapter. */
 const STILL: Record<StoryChapter, string> = {
   open: 'hero-still.webp',
@@ -41,6 +41,7 @@ const STILL: Record<StoryChapter, string> = {
   motion: 'motion-still.webp',
   social: 'social-post.webp',
   clients: 'clients-pack.webp',
+  modes: 'studio-ui.jpg',
 };
 /** The glass labels pointing at the 3D: where they sit on the stage, and when they show. */
 const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style: CSSProperties; from: number; to: number }[]>> = {
@@ -61,6 +62,7 @@ const TITLE: Record<StoryChapter, I18nKey> = {
   motion: 'home.motion.title',
   social: 'home.social.title',
   clients: 'home.clients.title',
+  modes: 'home.modes',
 };
 const LEAD: Record<StoryChapter, I18nKey> = {
   open: 'home.lead',
@@ -70,8 +72,11 @@ const LEAD: Record<StoryChapter, I18nKey> = {
   motion: 'home.motion.lead',
   social: 'home.social.lead',
   clients: 'home.clients.lead',
+  modes: 'home.modes.lead',
 };
 const MODE_SHOTS: Record<Screen, string> = { home: '', studio: 'studio-marble.webp', quick: 'studio-podium.webp', project: 'clients-pack.webp' };
+/** The modes at work (the « modes » chapter). */
+const MODE_SCREENS: Record<Exclude<Screen, 'home'>, string> = { studio: 'studio-ui.jpg', quick: 'mode-quick.jpg', project: 'mode-project.jpg' };
 
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
 /** The empty project autosaved on a first visit is not worth listing. */
@@ -141,11 +146,14 @@ function Track({ id, current, progress }: { id: StoryChapter; current: StoryChap
   const opacity = here ? Math.min(id === 'open' ? 1 : clamp(progress / (pinnedFrom * 0.8)), clamp((1 - pinnedFrom + 0.02 - progress) / 0.08)) : 0;
   const reveal = here ? clamp((progress - 0.08) / 0.42) : passed ? 1 : 0;
   return (
-    <section data-chapter-id={id} data-testid={id === 'open' ? 'home-hero' : `home-${id}`} className="pointer-events-none relative" style={{ height: `${HEIGHT[id]}vh` }}>
+    <section id={id === 'modes' ? 'home-modes' : undefined} data-chapter-id={id} data-testid={id === 'open' ? 'home-hero' : `home-${id}`} className="pointer-events-none relative" style={{ height: `${HEIGHT[id]}vh` }}>
       {Array.from({ length: SLICES }, (_, i) => (
         <div key={i} data-slice={i} data-chapter={id} aria-hidden className="pointer-events-none absolute inset-x-0" style={{ top: `${(i * 100) / SLICES}%`, height: `${100 / SLICES}%` }} />
       ))}
       <div className={cx('pointer-events-none sticky top-0 flex h-[100dvh] flex-col items-center px-6 transition-opacity duration-200', light ? 'text-[#1d1d1f]' : 'text-white')} style={{ opacity }}>
+        {id === 'modes' ? (
+          <ModesStory progress={here ? progress : passed ? 1 : 0} />
+        ) : (
         <div className={id === 'open' ? 'pt-[17vh]' : 'pt-[11vh]'}>
           {id === 'open' ? (
             <Opening light={light} reveal={Math.max(reveal, 0.25)} />
@@ -166,6 +174,7 @@ function Track({ id, current, progress }: { id: StoryChapter; current: StoryChap
             </div>
           )}
         </div>
+        )}
         {/* glass labels pointing at the 3D */}
         {here &&
           LABELS[id]?.map((l) => (
@@ -182,6 +191,61 @@ function Track({ id, current, progress }: { id: StoryChapter; current: StoryChap
           ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * « Trois façons de créer », told one after the other: Studio, Rapide, Projet
+ * light up with the scroll, and the picture of the lit one slides in.
+ */
+function ModesStory({ progress }: { progress: number }) {
+  const { t } = useT();
+  const pinned = 50 / HEIGHT.modes;
+  const k = clamp((progress - pinned) / (1 - 2 * pinned));
+  const lit = Math.min(2, Math.floor(k * 3));
+  return (
+    <div className="flex h-full w-full max-w-[1160px] flex-col items-center gap-10 pt-[10vh]">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <h2 className="font-display text-balance text-[clamp(38px,5vw,72px)] font-extrabold leading-[1]">{t('home.modes')}</h2>
+        <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-[#1d1d1f]/70">{t('home.modes.lead')}</p>
+      </div>
+      <div className="grid w-full flex-1 grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)] items-start gap-12 pb-[8vh]">
+        <ol className="flex flex-col gap-2">
+          {(['studio', 'quick', 'project'] as const).map((m, i) => (
+            <li key={m}>
+              <button
+                type="button"
+                data-testid={`mode-card-${m}`}
+                data-lit={i === lit}
+                disabled={!AVAILABLE[m]}
+                onClick={() => navigate(m)}
+                className={cx('pointer-events-auto flex w-full flex-col gap-1.5 rounded-[18px] px-5 py-4 text-left transition-[opacity,background-color] duration-500 ease-out hover:bg-black/[0.04]', i === lit ? 'opacity-100' : 'opacity-35')}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className={cx('h-6 w-1 rounded-full transition-colors duration-500', i === lit ? 'bg-[#2f6bff]' : 'bg-black/15')} />
+                  <span className="font-display text-[30px] font-extrabold leading-none">{t(`screen.${m}` as I18nKey)}</span>
+                  {m === 'studio' && <span className="rounded-full bg-[#2f6bff]/12 px-2.5 py-0.5 text-[12px] font-semibold text-[#2f6bff]">{t('home.main')}</span>}
+                </span>
+                <span className="pl-[18px] text-[16px] leading-snug text-[#55565e]">{t(`mode.${m}.role` as I18nKey)}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+        <div className="relative aspect-[16/10] w-full">
+          {(['studio', 'quick', 'project'] as const).map((m, i) => (
+            <img
+              key={m}
+              data-testid="mode-picture"
+              src={shot(MODE_SCREENS[m])}
+              alt={t(`screen.${m}` as I18nKey)}
+              className="absolute inset-0 h-full w-full rounded-[22px] object-cover shadow-[0_1px_2px_rgb(20_30_70/0.08),0_40px_90px_-30px_rgb(20_30_70/0.45)] transition-[opacity,transform] duration-700 ease-out"
+              style={{ opacity: i === lit ? 1 : 0, transform: `translateY(${i === lit ? 0 : i < lit ? -24 : 24}px) scale(${i === lit ? 1 : 0.98})` }}
+              draggable={false}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -213,7 +277,12 @@ function PlainStory() {
         const light = LIGHT.has(id);
         return (
           <section key={id} data-chapter-id={id} data-testid={id === 'open' ? 'home-hero' : `home-${id}`} className={cx('flex flex-col items-center gap-8 px-6 py-20 text-center', light ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-black text-white')}>
-            {id === 'open' ? (
+            {id === 'modes' ? (
+              <div id="home-modes" className="flex w-full max-w-[1240px] flex-col gap-8">
+                <h2 className="font-display text-balance text-[clamp(34px,8vw,56px)] font-extrabold leading-[1.02]">{t('home.modes')}</h2>
+                <Modes />
+              </div>
+            ) : id === 'open' ? (
               <Opening light={light} reveal={1} />
             ) : (
               <>
@@ -221,7 +290,7 @@ function PlainStory() {
                 <WordReveal text={t(LEAD[id])} reveal={1} light={light} className="max-w-[560px] text-pretty text-[17px] leading-[1.55]" />
               </>
             )}
-            <img src={shot(STILL[id])} alt="" loading="lazy" className="max-h-[52vh] w-full max-w-[880px] rounded-[22px] object-cover" draggable={false} />
+            {id !== 'modes' && <img src={shot(STILL[id])} alt="" loading="lazy" className="max-h-[52vh] w-full max-w-[880px] rounded-[22px] object-cover" draggable={false} />}
           </section>
         );
       })}
@@ -316,16 +385,8 @@ export function Home() {
         <PlainStory />
       )}
 
-      {/* the three ways in, on white */}
-      <section id="home-modes" data-testid="home-modes" data-theme="light" className="scroll-mt-6 bg-[#f5f5f7] px-6 py-28 text-[#1d1d1f] lg:px-10">
-        <div className="mx-auto flex max-w-[1240px] flex-col gap-10">
-          <h2 className="font-display text-center text-[clamp(32px,4vw,56px)] font-extrabold leading-[1.02]">{t('home.modes')}</h2>
-          <Modes />
-        </div>
-      </section>
-
       {/* the end, on black */}
-      <section data-testid="home-end" className="flex flex-col items-center gap-6 bg-black px-6 pb-32 pt-28 text-center text-white">
+      <section data-testid="home-end" className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-black px-6 py-28 text-center text-white">
         <h2 className="font-display text-balance text-[clamp(40px,6vw,88px)] font-extrabold leading-[0.98]">{t('home.end.title')}</h2>
         <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-white/70">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-3">

@@ -99,6 +99,8 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
     const turn = ease(ramp(p, 0.1, 0.4));
     return { actors: { phone: { x: 0, z: 10, yaw: mix(-1.1, 0, turn), s: 1.12 } }, camera: [0, 12, 68, 0, 8.5, 10], feed: ease(ramp(p, 0.45, 0.85)) };
   },
+  // the modes are told with pictures of the app: the stage stays empty, on white
+  modes: () => ({ actors: {}, camera: [2, 18, 80, 2, 10, 0] }),
   clients: (p) => {
     const e = ease(ramp(p, 0.15, 0.8));
     return {
@@ -327,6 +329,14 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
 export default function HeroStage({ className, chapter, progress, light, eventSource }: { className?: string; chapter: StoryChapter; progress: number; light: boolean; eventSource?: RefObject<HTMLElement | null> }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
+  // a chapter without devices (the modes): the stage clears them, then stops drawing
+  const [empty, setEmpty] = useState(false);
+  const emptyChapter = Object.keys(FRAMES[chapter](0.5).actors).length === 0;
+  useEffect(() => {
+    if (!emptyChapter) return setEmpty(false);
+    const id = setTimeout(() => setEmpty(true), 1500);
+    return () => clearTimeout(id);
+  }, [emptyChapter]);
   useEffect(() => {
     const el = wrap.current;
     if (!el) return;
@@ -339,7 +349,7 @@ export default function HeroStage({ className, chapter, progress, light, eventSo
       <Canvas
         shadows
         dpr={[1, 2]}
-        frameloop={visible ? 'always' : 'never'}
+        frameloop={visible && !empty ? 'always' : 'never'}
         // measured without scroll listeners: the stage is sticky, its size only changes with the window
         resize={{ scroll: false }}
         camera={{ position: [0, 26, 96], fov: 30, near: 1, far: 2000 }}

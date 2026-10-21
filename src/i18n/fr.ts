@@ -417,6 +417,8 @@ export const fr = {
   'home.label.device': 'Ton design, en 4K',
   'home.label.account': 'Ton compte, ta légende',
   'home.label.video': 'MP4 ou GIF, jusqu’en 4K',
+  'home.dot.modes': 'Modes',
+  'home.modes.lead': 'Du réglage le plus fin au pack complet d\'un client.',
   'home.openStudio': 'Ouvrir le Studio',
   'home.otherModes': 'ou choisis un autre mode',
   'home.main': 'Mode principal',

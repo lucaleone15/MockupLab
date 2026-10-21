@@ -148,3 +148,35 @@ if (want('studio-ui')) {
   console.log('saved studio-ui.jpg');
   await browser.close();
 }
+
+// the three modes at work (home page, « modes » chapter): Rapide with a design, Projet with a client's visuals
+if (want('modes')) {
+  const { browser, page } = await openApp({ hash: '#/rapide', colorScheme: 'light', viewport: { width: 1600, height: 1000 } });
+  const sample = (n) => page.evaluate(async (n) => {
+    const b = await (await fetch('/samples/' + n)).blob();
+    return new File([b], n, { type: 'image/png' });
+  }, n);
+  await page.evaluate(async () => {
+    const b = await (await fetch('/samples/sample-app.png')).blob();
+    await window.__mockuplab.quick.setImage(new File([b], 'sample-app.png', { type: 'image/png' }));
+  });
+  await page.waitForTimeout(9000);
+  await page.screenshot({ path: 'public/showcase/mode-quick.jpg', type: 'jpeg', quality: 86 });
+  console.log('saved mode-quick.jpg');
+  await page.evaluate(() => {
+    history.pushState(null, '', '/projet');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await page.waitForTimeout(600);
+  for (const n of ['sample-web.png', 'sample-app.png', 'sample-poster.png']) {
+    await page.evaluate(async (n) => {
+      const b = await (await fetch('/samples/' + n)).blob();
+      await window.__mockuplab.pack.add([new File([b], n, { type: 'image/png' })]);
+    }, n);
+  }
+  await page.waitForTimeout(9000);
+  await page.screenshot({ path: 'public/showcase/mode-project.jpg', type: 'jpeg', quality: 86 });
+  console.log('saved mode-project.jpg');
+  void sample;
+  await browser.close();
+}

@@ -4,7 +4,7 @@
 import { mkdirSync } from 'node:fs';
 import { openApp, check, done } from './lib/app.mjs';
 mkdirSync('out/home5', { recursive: true });
-const CHAPTERS = ['open', 'drop', 'devices', 'studio', 'motion', 'social', 'clients'];
+const CHAPTERS = ['open', 'drop', 'devices', 'studio', 'motion', 'social', 'clients', 'modes'];
 const scroller = '[data-testid=home]';
 // records every scroll listener the page registers
 const spy = () => {
@@ -100,7 +100,7 @@ await page.getByTestId('hero-3d').waitFor({ timeout: 15000 });
 await page.waitForTimeout(2500);
 check((await page.evaluate(() => window.__scrollListeners.length)) === 0, `no scroll listener on the page (${await page.evaluate(() => window.__scrollListeners.join(', '))})`);
 const tracks = await page.evaluate((ids) => ids.map((id) => document.querySelector(`[data-chapter-id=${id}]`)?.offsetHeight ?? 0), CHAPTERS);
-check(tracks.every((h) => h >= 900 * 1.5), `seven pinned chapters, each ≥ 150 vh (${tracks.map((h) => Math.round(h / 9))})`);
+check(tracks.every((h) => h >= 900 * 1.5), `eight pinned chapters, each ≥ 150 vh (${tracks.map((h) => Math.round(h / 9))})`);
 await page.screenshot({ path: 'out/home5/open-0.png' });
 await at(page, 'open', 0.1);
 const lid1 = await page.evaluate(() => window.__heroPose?.lidAngle);
@@ -139,7 +139,7 @@ check(lum(studioBg) > 200 && lum(openBg) < 20, `black and white sections (open $
 
 // 4. dots, copy, fonts
 const dots = page.getByRole('navigation', { name: /Chapitres/ }).getByRole('button');
-check((await dots.count()) === 7, `seven labelled dots (${await dots.count()})`);
+check((await dots.count()) === 8, `eight labelled dots (${await dots.count()})`);
 await page.getByRole('button', { name: 'Réseaux' }).click();
 await page.waitForTimeout(1800);
 check((await page.evaluate(() => window.__heroState)) === 'social' && (await page.getByRole('button', { name: 'Réseaux' }).getAttribute('aria-current')) === 'step', 'a dot takes you to its chapter and is marked');
@@ -154,6 +154,22 @@ const fonts = await page.evaluate(() => {
 check(/^"?Archivo/.test(fonts.h) && fonts.stretch === '125%' && /Geist/.test(fonts.p), 'titles in Archivo Expanded, text in Geist');
 
 // 5. after the story: the modes and the end; off screen the 3D stops
+// the three modes, told one after the other: the lit one and its picture follow the scroll
+const lit = async () => page.evaluate(() => ({ mode: document.querySelector('[data-testid^="mode-card-"][data-lit="true"]')?.dataset.testid.slice(10), pic: [...document.querySelectorAll('[data-testid=mode-picture]')].find((i) => getComputedStyle(i).opacity === '1')?.getAttribute('src') }));
+const seenModes = [];
+for (const p of [0.27, 0.5, 0.73]) {
+  await at(page, 'modes', p);
+  seenModes.push(await lit());
+}
+await page.screenshot({ path: 'out/home5/modes-73.png' });
+check(seenModes.map((x) => x.mode).join() === 'studio,quick,project' && new Set(seenModes.map((x) => x.pic)).size === 3, `the modes light up one after the other, each with its picture (${JSON.stringify(seenModes)})`);
+check((await bgOf()) === 'rgb(245, 245, 247)', 'the modes on white');
+await page.getByTestId('mode-card-quick').click();
+await page.waitForTimeout(400);
+check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'quick', 'a mode opens its screen');
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(800);
 const order = await page.locator('[data-testid^="mode-card-"]').evaluateAll((els) => els.map((e) => e.dataset.testid.slice(10)));
 check(order.join() === 'studio,quick,project', `mode cards in order (${order})`);
 check((await page.getByTestId('home-end').getByRole('button', { name: 'Ouvrir le Studio' }).count()) === 1, 'the end has « Ouvrir le Studio »');
