@@ -89,6 +89,9 @@ check(!(await page.getByTestId('mode-role').first().isVisible().catch(() => fals
 // the sample brand says it is a sample, and can be cleared in one click
 await page.evaluate(() => { history.pushState(null, '', '/projet'); dispatchEvent(new PopStateEvent('popstate')); });
 await page.waitForTimeout(500);
+// the brand kit is folded away in Project mode
+await page.getByRole('button', { name: /Kit de marque/ }).click();
+await page.waitForTimeout(400);
 check(await page.getByText('Marque d’exemple').first().isVisible().catch(() => false), 'the sample brand is labelled as a sample');
 await page.getByRole('button', { name: 'Partir de zéro' }).click();
 await page.waitForTimeout(200);

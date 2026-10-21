@@ -17,19 +17,20 @@ await journey('freelance-pack', 'Site + appli + affiche + carte d’un client �
       if (!new RegExp(want).test(got)) u.friction('surprenant', `« ${file} » détecté comme ${got} (attendu : ${want.replace('|', ' ou ')})`);
     }
   });
-  await u.step('Choisir un style', () => u.choose(/Marbre · mur sable/, { exact: false }));
+  await u.step('Choisir un style', () => u.choose(/Podium/, { exact: false }));
   await u.step('Mettre les couleurs de la marque au pack', async () => {
     if (!(await p.getByText(/Couleurs du pack/).first().isVisible().catch(() => false))) {
-      u.friction('bloquant', 'impossible de choisir les couleurs de fond du pack : la palette de marque n’habille que la planche, les 6 styles ont des couleurs figées');
+      u.friction('bloquant', 'impossible de choisir les couleurs de fond du pack');
       return;
     }
-    // the client's brand: start from scratch, two colours
+    // the client's brand, in the folded brand kit: start from scratch, two colours
+    await u.choose(/Kit de marque/, { exact: false });
     if (await p.getByRole('button', { name: 'Partir de zéro' }).isVisible().catch(() => false)) await u.choose('Partir de zéro');
-    await p.getByLabel('Couleur 1').fill('#0a7e8c');
+    await p.getByLabel('Couleur 1', { exact: true }).fill('#0a7e8c');
     await u.choose('Ajouter une couleur');
-    await p.getByLabel('Couleur 2').fill('#f2c14e');
-    await u.choose('Ma marque');
-    await u.choose('Varier d’une scène à l’autre');
+    await p.getByLabel('Couleur 2', { exact: true }).fill('#f2c14e');
+    await u.choose('Prendre ma marque');
+    await u.choose('Une par visuel');
   });
   await u.step('Voir le pack et la planche', () => p.getByText('Planche de présentation').first().waitFor({ timeout: 60000 }), { slowMs: 15000 });
   await u.step('Attendre les aperçus du pack', () => p.waitForFunction(() => !document.querySelector('[class*="animate-[spin"]'), null, { timeout: 120000 }), { slowMs: 20000 });

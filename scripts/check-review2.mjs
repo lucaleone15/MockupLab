@@ -22,7 +22,8 @@ await page.waitForTimeout(800);
 await page.getByRole('button', { name: '1:1', exact: true }).click();
 await page.waitForTimeout(3000);
 check((await api(() => window.__mockuplab.project.getState().export.ratio)) === '1:1', 'format changed during a render is kept');
-// I4: thumbnails always match the current support
+// I4: thumbnails always match the current support (the supports are behind « Changer »)
+await page.getByTestId('quick-device').getByRole('button', { name: 'Changer' }).click();
 await page.getByTestId('quick-support').getByRole('button', { name: 'Ordinateur' }).click();
 await page.waitForTimeout(300);
 await page.getByTestId('quick-support').getByRole('button', { name: 'Tablette' }).click();
