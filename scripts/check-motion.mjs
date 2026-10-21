@@ -52,7 +52,16 @@ await page.getByTestId('home-end').scrollIntoViewIfNeeded();
 await page.waitForTimeout(1200);
 check((await end.getAttribute('data-shown')) !== null && (await end.evaluate((el) => getComputedStyle(el).opacity)) === '1', 'it eases in once reached');
 
-// 5. reduced motion: no screen transition
+// 5. the keyboard switches modes at once (no animation on keyboard actions)
+await page.evaluate(() => (location.hash = '#/studio'));
+await page.waitForTimeout(500);
+const k0 = await vt();
+await page.getByTestId('mode-switch').getByRole('radio', { name: 'Studio' }).focus();
+await page.keyboard.press('ArrowRight');
+await page.waitForTimeout(300);
+check((await vt()) === k0 && (await screen()) === 'quick', `arrow keys change mode without a transition (${(await vt()) - k0})`);
+
+// 6. reduced motion: no screen transition
 await page.emulateMedia({ reducedMotion: 'reduce' });
 await page.evaluate(() => (location.hash = '#/rapide'));
 await page.waitForTimeout(300);

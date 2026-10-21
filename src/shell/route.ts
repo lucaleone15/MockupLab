@@ -39,19 +39,19 @@ export function screenFromLocation(pathname: string, hash: string): Screen {
   return screenFromSegment(rest.replace(/\/$/, '')) ?? 'home';
 }
 
-/** Shows a screen; the change cross-fades (View Transitions) unless motion is reduced. */
-function apply(screen: Screen) {
+/** Shows a screen; the change cross-fades (View Transitions) unless it is instant or motion is reduced. */
+function apply(screen: Screen, instant = false) {
   const ui = useUi.getState();
   if (ui.screen === screen) return;
-  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return ui.setScreen(screen);
+  if (instant || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return ui.setScreen(screen);
   // a newer change skips this one: its rejected promise is expected
   document.startViewTransition(() => flushSync(() => useUi.getState().setScreen(screen))).ready.catch(() => undefined);
 }
 
-/** Opens a screen (pushes a history entry). */
-export function navigate(screen: Screen) {
+/** Opens a screen (pushes a history entry); `instant` for keyboard actions, which never animate. */
+export function navigate(screen: Screen, { instant = false } = {}) {
   const target = AVAILABLE[screen] ? screen : 'home';
-  apply(target);
+  apply(target, instant);
   if (location.pathname !== urlOf(target) || location.hash) history.pushState(null, '', urlOf(target));
 }
 

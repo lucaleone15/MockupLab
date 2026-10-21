@@ -16,7 +16,7 @@ export function ModeSwitch() {
     const open = MODE_ORDER.filter((m) => AVAILABLE[m]);
     const i = Math.max(0, open.indexOf(screen));
     const target = open[(i + step + open.length) % open.length];
-    navigate(target);
+    navigate(target, { instant: true });
     (e.currentTarget.querySelector(`[data-mode="${target}"]`) as HTMLElement | null)?.focus();
   };
   return (
