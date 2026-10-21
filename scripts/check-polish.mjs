@@ -35,8 +35,8 @@ check((await page.locator('[data-testid=showcase-strip]').count()) === 0, 'no st
 const cta = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
 check(!!cta && cta.y + cta.height <= 900, '“Open the Studio” visible without scrolling');
 check(await page.evaluate(() => /icons\/(favicon|icon)/.test(document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '')), 'favicon is the app icon');
-// the « studio sweep » mark (2026-10-21): drawn in SVG, the same drawing as the app icon; the name in one piece
-check(await page.evaluate(() => !!document.querySelector('[data-testid=logo] svg path') && !document.querySelector('[data-testid=logo] img')), 'logo mark is the sweep, drawn in SVG');
+// the phone mark (2026-10-21): drawn in SVG, the same drawing as the app icon; the name in one piece
+check(await page.evaluate(() => document.querySelectorAll('[data-testid=logo] svg rect').length === 2 && !document.querySelector('[data-testid=logo] img')), 'logo mark is the phone, drawn in SVG');
 const names = await page.evaluate(() => [...document.querySelectorAll('[data-testid=logo] span')].map((s) => s.innerText.trim()));
 check(names.join() === 'MockupLab', `logo name in one piece, one font and weight (${names.join(' | ')})`);
 let mono = await monoOnScreen();
