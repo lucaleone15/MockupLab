@@ -82,7 +82,7 @@ E = await exp();
 check(E.n === 12 && E.count === 12, `every export is kept (${E.n})`);
 await page.waitForFunction(() => { const s = window.__mockuplab.library.state(); return s.list.find((p) => p.id === s.currentId)?.hasThumb; }, null, { timeout: 15000 }).catch(() => {});
 check(await page.evaluate(() => { const s = window.__mockuplab.library.state(); return !!s.thumbs[s.currentId]; }), 'the project has a thumbnail');
-// 7. recents on the home page: open, rename, duplicate, delete; all projects; recent exports in the sheet
+// 7. « Mes projets » from the home page: open, rename, duplicate, delete; recent exports in the sheet
 await page.getByTestId('export-sheet').isVisible().catch(() => {});
 await page.getByTestId('top-export').click();
 await page.waitForFunction(() => document.querySelectorAll('[data-testid=recent-export]').length === 12, null, { timeout: 5000 }).catch(() => {});
@@ -92,8 +92,11 @@ check(/extra-10\.png$/.test(again.suggestedFilename()), `a kept export downloads
 await page.keyboard.press('Escape');
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(500);
+// saved projects are in the « Mes projets » window (no recents row on the home page any more)
+await page.getByRole('button', { name: 'Mes projets' }).click();
+await page.waitForTimeout(300);
 const cards = page.getByTestId('project-card');
-check((await cards.count()) === 1, `one recent project card (${await cards.count()})`);
+check((await cards.count()) === 1, `one project card (${await cards.count()})`);
 await cards.first().getByRole('button', { name: /Options/ }).click();
 await page.getByRole('menuitem', { name: /Dupliquer/ }).click();
 await page.waitForTimeout(500);

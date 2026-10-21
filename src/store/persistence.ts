@@ -332,7 +332,12 @@ export function startAutosave() {
     schedule();
   };
   useProject.subscribe(onChange);
-  useAssets.subscribe(onChange);
+  // an image added or dropped matters only if the project uses it (the home page's 3D loads its own samples)
+  useAssets.subscribe((state, prev) => {
+    const changed = [...Object.keys(state.assets), ...Object.keys(prev.assets)].filter((id) => state.assets[id] !== prev.assets[id]);
+    const used = referencedAssets(useProject.getState());
+    if (changed.some((id) => used.has(id))) onChange();
+  });
 }
 
 /* ------------------------------------------------------------ files */

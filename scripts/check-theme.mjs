@@ -4,7 +4,8 @@ const { browser, page, errors } = await openApp({ colorScheme: 'light' });
 const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
 const bg = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
 check((await theme()) === 'light', 'auto + system light → light');
-check((await bg()) === '#f5f5f7', `light --bg is #f5f5f7 (got ${await bg()})`);
+// the glass round: a light, cool field behind the frosted panels
+check((await bg()) === '#e6e8ee', `light --bg is #e6e8ee (got ${await bg()})`);
 await page.emulateMedia({ colorScheme: 'dark' });
 await page.waitForTimeout(200);
 check((await theme()) === 'dark', 'auto follows a system switch to dark without reload');

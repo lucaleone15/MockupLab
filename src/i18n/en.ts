@@ -422,7 +422,6 @@ export const en: Record<keyof typeof fr, string> = {
   'social.ui.comments': 'View all 24 comments',
   'social.ui.sound': 'original sound',
   'home.resume': 'Resume “{name}”',
-  'home.resumeMode': '{mode}, autosaved',
   'home.open': 'Open',
   'page.devices': 'Devices',
   'page.settings': 'Settings',

@@ -420,7 +420,6 @@ export const fr = {
   'social.ui.comments': 'Voir les 24 commentaires',
   'social.ui.sound': 'son original',
   'home.resume': 'Reprendre « {name} »',
-  'home.resumeMode': '{mode}, enregistré automatiquement',
   'home.open': 'Ouvrir',
   'page.devices': 'Appareils',
   'page.settings': 'Réglages',

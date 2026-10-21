@@ -6,7 +6,12 @@ const s = await journey('debutant', 'Une capture d’appli → un post Insta 4:5
   await u.step('Accueil', () => p.getByRole('heading', { level: 1 }).waitFor());
   await u.step('Ouvrir le Studio', () => u.choose('Ouvrir le Studio'));
   await u.step('Importer sa capture', () => u.upload(p.getByRole('button', { name: 'parcourir' }), 'public/samples/sample-app.png'));
-  await u.step('Choisir le format Insta 4:5', () => u.choose('4:5'));
+  // the proportions are in the « Format » menu of the bottom bar
+  await u.step('Choisir le format Insta 4:5', async () => {
+    await u.choose(/^Format/, { exact: false });
+    await u.choose(/^4:5/, { exact: false });
+    await u.page.keyboard.press('Escape');
+  });
   await u.step('Exporter', async () => {
     await p.getByRole('button', { name: 'Exporter' }).first().click({ timeout: 8000 });
     const [d] = await Promise.all([p.waitForEvent('download', { timeout: 60000 }), p.getByRole('button', { name: 'Télécharger', exact: true }).click({ timeout: 8000 })]);

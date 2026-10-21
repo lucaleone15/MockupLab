@@ -56,6 +56,9 @@ await page.waitForTimeout(500);
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
 await page.waitForTimeout(800);
+// saved projects are in the « Mes projets » window (no recents row on the home page any more)
+await page.getByRole('button', { name: 'Mes projets' }).click();
+await page.waitForTimeout(300);
 const card = page.getByTestId('project-card').filter({ hasText: 'Mon projet' });
 await card.getByRole('button', { name: /Options|Plus/ }).first().click();
 await page.getByRole('menuitem', { name: 'Renommer' }).click();

@@ -94,6 +94,8 @@ await done(browser, errors);
   await page.goto('http://localhost:5173/');
   await page.waitForFunction(() => window.__mockuplab);
   await page.waitForTimeout(800);
+  await page.getByRole('button', { name: 'Mes projets' }).click();
+  await page.waitForTimeout(300);
   await page.getByTestId('project-card').filter({ hasText: 'Site Solstice' }).getByRole('button', { name: /Ouvrir/ }).click();
   const proj = page.getByTestId('project-page');
   check(await proj.isVisible(), 'a project card opens the project page');
