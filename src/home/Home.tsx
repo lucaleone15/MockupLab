@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Code, Download, FolderOpen } from 'lucide-react';
 import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
@@ -106,6 +106,31 @@ function useMedia(query: string) {
 }
 
 /** The one main button of the page: blue, a pill, no arrow. */
+/** Eases in once it is reached by scrolling. */
+function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        setShown(true);
+        io.disconnect();
+      },
+      { threshold: 0.25 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} data-shown={shown || undefined} className={cx('reveal', className)} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
 function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   const { t } = useT();
   return (
@@ -304,7 +329,11 @@ function PlainStory() {
                 <WordReveal text={t(LEAD[id])} reveal={1} light={light} className="max-w-[560px] text-pretty text-[17px] leading-[1.55]" />
               </>
             )}
-            {id !== 'modes' && <img src={shot(STILL[id])} alt="" loading="lazy" className="max-h-[52vh] w-full max-w-[880px] rounded-[22px] object-cover" draggable={false} />}
+            {id !== 'modes' && (
+              <Reveal className="w-full max-w-[880px]">
+                <img src={shot(STILL[id])} alt="" loading="lazy" className="max-h-[52vh] w-full rounded-[22px] object-cover" draggable={false} />
+              </Reveal>
+            )}
           </section>
         );
       })}
@@ -400,9 +429,13 @@ export function Home() {
 
       {/* the end, on black */}
       <section data-testid="home-end" className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-black px-6 py-28 text-center text-white">
-        <h2 className="font-display text-balance text-[clamp(40px,6vw,88px)] font-extrabold leading-[0.98]">{t('home.end.title')}</h2>
-        <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-white/70">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+        <Reveal>
+          <h2 className="font-display text-balance text-[clamp(40px,6vw,88px)] font-extrabold leading-[0.98]">{t('home.end.title')}</h2>
+        </Reveal>
+        <Reveal delay={90}>
+          <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-white/70">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
+        </Reveal>
+        <Reveal delay={180} className="mt-3 flex flex-wrap items-center justify-center gap-3">
           <OpenStudio size="md" />
           {!desktop && (
             <a href={`${REPO}/releases/latest`} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-[15px] font-medium text-white transition-colors hover:bg-white/15">
@@ -414,7 +447,7 @@ export function Home() {
             <Code size={16} />
             {t('home.end.source')}
           </a>
-        </div>
+        </Reveal>
       </section>
     </div>
   );

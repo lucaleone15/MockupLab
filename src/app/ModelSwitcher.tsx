@@ -30,7 +30,7 @@ export function ModelSwitcher() {
         <DropdownMenu.Content
           sideOffset={6}
           align="end"
-          className="z-50 max-h-[70vh] w-[260px] overflow-y-auto menu-surface rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]"
+          className="z-50 max-h-[70vh] w-[260px] overflow-y-auto menu-surface rounded-[14px] p-1.5 menu-pop"
         >
           {modelsByCategory().map(([cat, models]) => (
             <DropdownMenu.Group key={cat}>

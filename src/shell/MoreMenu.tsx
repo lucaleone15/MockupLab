@@ -28,7 +28,7 @@ export function MoreMenu({ tone }: { tone?: 'light' } = {}) {
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content sideOffset={8} align="end" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
+          <DropdownMenu.Content sideOffset={8} align="end" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 menu-pop">
             <DropdownMenu.Label className={label}>
               <Languages size={12} />
               {t('more.language')}

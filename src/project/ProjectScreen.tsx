@@ -65,13 +65,13 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
   );
 }
 
-function PackItem({ url, label, onOpen, onDownload, ratio, target }: { url?: string; label: string; onOpen?: () => void; onDownload?: () => void; ratio: number; target?: string }) {
+function PackItem({ url, label, onOpen, onDownload, ratio, target, index = 0 }: { url?: string; label: string; onOpen?: () => void; onDownload?: () => void; ratio: number; target?: string; index?: number }) {
   const { t } = useT();
   const busy = usePack((s) => s.busy);
   return (
-    <div data-testid="pack-item" className="group flex flex-col gap-1.5">
+    <div data-testid="pack-item" className="group flex flex-col gap-1.5 animate-[rise_380ms_var(--ease-out)_both]" style={{ animationDelay: `${index * 45}ms` }}>
       <div className="relative overflow-hidden rounded-[14px] bg-surface-2" style={{ aspectRatio: String(ratio) }}>
-        {url ? <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[fade-in_250ms_ease-out]" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
+        {url ? <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[img-in_420ms_var(--ease-out)]" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
         {onOpen && (
           <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
             {onDownload && (
@@ -310,7 +310,7 @@ export function ProjectScreen() {
                 return (
                   <button key={id} type="button" data-testid="project-style" aria-pressed={active} onClick={() => pack.setStyle(id)} className="flex flex-col gap-1.5 text-left">
                     <span className={cx('relative block overflow-hidden rounded-[12px] bg-surface-2 transition-shadow', active && 'shadow-[0_0_0_2.5px_var(--accent)]')} style={{ aspectRatio: String(ratio) }}>
-                      {url ? <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
+                      {url ? <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover animate-[img-in_420ms_var(--ease-out)]" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
                     </span>
                     <span className={cx('truncate text-[12.5px]', active ? 'font-medium text-fg' : 'text-fg-muted')}>{t(`project.style.${id}` as I18nKey)}</span>
                   </button>
@@ -326,10 +326,10 @@ export function ProjectScreen() {
               <div className="col-span-2 row-span-2">
                 <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} target="hero" onOpen={open('hero')} onDownload={() => void pack.downloadOne('hero')} />
               </div>
-              {s.files.map((f) => (
-                <PackItem key={f.id} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} target={f.id} onOpen={open(f.id)} onDownload={() => void pack.downloadOne(f.id)} />
+              {s.files.map((f, i) => (
+                <PackItem key={f.id} index={i + 1} url={s.thumbs.items[f.id]} label={f.name} ratio={ratio} target={f.id} onOpen={open(f.id)} onDownload={() => void pack.downloadOne(f.id)} />
               ))}
-              {s.board && <PackItem url={s.thumbs.board} label={t('project.board')} ratio={1.5} />}
+              {s.board && <PackItem index={s.files.length + 1} url={s.thumbs.board} label={t('project.board')} ratio={1.5} />}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <label className="flex cursor-pointer items-center gap-3 text-[13px]">

@@ -63,7 +63,7 @@ function Formats() {
         </button>
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content side="top" sideOffset={8} role="menu" aria-label={t('format.title')} className="menu-surface z-50 flex max-h-[min(70vh,560px)] w-[270px] flex-col gap-0.5 overflow-y-auto rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
+        <Popover.Content side="top" sideOffset={8} role="menu" aria-label={t('format.title')} className="menu-surface z-50 flex max-h-[min(70vh,560px)] w-[270px] flex-col gap-0.5 overflow-y-auto rounded-[14px] p-1.5 menu-pop">
           <div className="mx-2.5 mb-0.5 mt-1 text-[11.5px] font-medium text-fg-subtle">{t('format.ratios')}</div>
           {RATIOS.map((r) => item(r.id, r.label, r.hint))}
           <div className="mx-2.5 mb-0.5 mt-2 text-[11.5px] font-medium text-fg-subtle">{t('format.social')}</div>

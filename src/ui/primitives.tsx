@@ -72,7 +72,7 @@ export function Tooltip({ label, shortcut, side, children }: { label: string; sh
         <RTooltip.Content
           side={side}
           sideOffset={6}
-          className="menu-surface z-50 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[12px] font-medium text-fg animate-[fade-in_120ms_ease-out]"
+          className="menu-surface z-50 flex items-center gap-2 rounded-lg px-2.5 py-1 text-[12px] font-medium text-fg menu-pop"
         >
           {label}
           {shortcut && <Kbd inverted>{shortcut}</Kbd>}

@@ -48,7 +48,7 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[200px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
+          <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[200px] rounded-[14px] p-1.5 menu-pop">
             <DropdownMenu.Item
               className={row}
               onSelect={async () => {

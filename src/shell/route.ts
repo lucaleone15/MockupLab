@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useUi, type Screen } from '@/store/ui';
 
 /*
@@ -38,9 +39,13 @@ export function screenFromLocation(pathname: string, hash: string): Screen {
   return screenFromSegment(rest.replace(/\/$/, '')) ?? 'home';
 }
 
+/** Shows a screen; the change cross-fades (View Transitions) unless motion is reduced. */
 function apply(screen: Screen) {
   const ui = useUi.getState();
-  if (ui.screen !== screen) ui.setScreen(screen);
+  if (ui.screen === screen) return;
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return ui.setScreen(screen);
+  // a newer change skips this one: its rejected promise is expected
+  document.startViewTransition(() => flushSync(() => useUi.getState().setScreen(screen))).ready.catch(() => undefined);
 }
 
 /** Opens a screen (pushes a history entry). */

@@ -118,7 +118,7 @@ export function SceneItems({ onChange }: { onChange?: (itemId: string) => void }
                     </button>
                   </DropdownMenu.Trigger>
                   <DropdownMenu.Portal>
-                    <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[180px] rounded-[12px] p-1.5 animate-[fade-in_120ms_ease-out]" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu.Content sideOffset={6} align="end" className="menu-surface z-50 min-w-[180px] rounded-[12px] p-1.5 menu-pop" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu.Item className={MENU_ROW} onSelect={() => duplicateItem(it.id)}>
                         <Copy size={14} />
                         {t('comp.duplicate')}

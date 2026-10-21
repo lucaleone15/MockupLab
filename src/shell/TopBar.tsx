@@ -22,7 +22,7 @@ export function TopBar() {
   const canRedo = useStore(useProject.temporal, (s) => s.futureStates.length > 0);
   const editor = screen === 'studio';
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3" style={{ height: TOP_BAR }}>
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-30 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-3" style={{ height: TOP_BAR, viewTransitionName: 'top-bar' }}>
       <div data-testid="topbar-left" className="glass-float pointer-events-auto flex h-11 min-w-0 items-center gap-3 justify-self-start rounded-full pl-3.5 pr-1.5">
         <Logo />
         <span className="text-fg-subtle">/</span>

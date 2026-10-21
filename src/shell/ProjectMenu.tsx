@@ -40,7 +40,7 @@ export function ProjectMenu() {
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content sideOffset={6} align="start" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 animate-[fade-in_120ms_ease-out]">
+          <DropdownMenu.Content sideOffset={6} align="start" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 menu-pop">
             <DropdownMenu.Item
               className={item}
               onSelect={() => newProject()}

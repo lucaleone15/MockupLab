@@ -17,7 +17,7 @@ const FORMATS: { id: RatioPreset; label: string | I18nString }[] = [
   ...SOCIAL.filter((s) => s.id === 'ig-post' || s.id === 'story').map((s) => ({ id: s.id, label: s.label })),
 ];
 
-function Tile({ tile }: { tile: QuickTile }) {
+function Tile({ tile, index }: { tile: QuickTile; index: number }) {
   const { t } = useT();
   const url = useQuick((s) => s.thumbs[tile.id]);
   const selected = useQuick((s) => s.selected.includes(tile.id));
@@ -25,10 +25,10 @@ function Tile({ tile }: { tile: QuickTile }) {
   const ratio = ratioValue(useProject((s) => s.export.ratio));
   const label = labelOf(tile);
   return (
-    <div data-testid="quick-tile" className="group flex flex-col gap-1.5">
+    <div data-testid="quick-tile" className="group flex flex-col gap-1.5 animate-[rise_380ms_var(--ease-out)_both]" style={{ animationDelay: `${index * 45}ms` }}>
       <div className={cx('relative overflow-hidden rounded-[14px] bg-surface-2 transition-shadow', selected && 'shadow-[0_0_0_2.5px_var(--accent)]')} style={{ aspectRatio: String(ratio) }}>
         {url ? (
-          <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[fade-in_250ms_ease-out]" draggable={false} />
+          <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[img-in_420ms_var(--ease-out)]" draggable={false} />
         ) : (
           <span className="absolute inset-0 grid place-items-center text-fg-subtle">
             <Spinner />
@@ -193,8 +193,8 @@ export function QuickScreen() {
           <h1 className="font-display text-[22px] font-bold">{t('screen.quick')}</h1>
         </div>
         <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-4 gap-y-5 overflow-y-auto overscroll-contain px-5 pb-6">
-          {s.tiles.map((tile) => (
-            <Tile key={tile.id} tile={tile} />
+          {s.tiles.map((tile, i) => (
+            <Tile key={tile.id} tile={tile} index={i} />
           ))}
         </div>
         {s.selected.length > 0 && (
