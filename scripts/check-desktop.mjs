@@ -30,8 +30,9 @@ await app.close();
 app = await launch();
 win = await app.firstWindow();
 await win.waitForSelector('[data-testid=home]', { timeout: 20000 });
-await win.waitForSelector('[data-testid=project-card]', { timeout: 10000 }).catch(() => {});
-check((await win.getByTestId('project-card').filter({ hasText: 'Projet bureau' }).count()) === 1, 'project kept between launches');
+// the landing offers to resume the last named project
+await win.getByText(/Projet bureau/).first().waitFor({ timeout: 10000 }).catch(() => {});
+check((await win.getByText(/Projet bureau/).count()) >= 1, 'project kept between launches');
 await app.close();
 // an update found before the page subscribed is still offered
 const env2 = { ...env, MOCKUPLAB_FAKE_UPDATE: '9.9.9' };

@@ -3,24 +3,14 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
-import { copyFileSync, existsSync } from 'node:fs';
 
-// GitHub Pages serves the app from /<repo>/ — keep it overridable for forks.
+// Served from the site root (Netlify); BASE_PATH overrides it (e.g. a fork served from a sub-folder).
 export default defineConfig(({ command, isPreview, mode }) => ({
   // the desktop app serves the build from app://mockuplab/ (mode "desktop")
-  base: mode === 'desktop' ? '/' : command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/MockupLab/') : '/',
+  base: mode === 'desktop' ? '/' : command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/') : '/',
   // a new id per build: the app can tell which version runs (update checks, tests)
   define: { __BUILD_ID__: JSON.stringify(process.env.BUILD_ID ?? Date.now().toString(36)) },
   plugins: [
-    // GitHub Pages: unknown paths (…/studio, …/rapide) get 404.html, the app itself
-    {
-      name: 'spa-404',
-      apply: 'build',
-      closeBundle() {
-        const out = 'dist';
-        if (existsSync(`${out}/index.html`)) copyFileSync(`${out}/index.html`, `${out}/404.html`);
-      },
-    },
     react(),
     tailwindcss(),
     // installable app: the code is cached at install, textures and photos when first used;

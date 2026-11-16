@@ -3,11 +3,9 @@
 import { execSync, spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 import { check } from './lib/app.mjs';
-const URL = 'http://localhost:4173/MockupLab/';
+const URL = 'http://localhost:4173/';
 const build = (id) => execSync('npx vite build', { env: { ...process.env, BUILD_ID: id }, stdio: 'pipe' });
 build('first');
-const { readFileSync: read } = await import('node:fs');
-check(read('dist/404.html', 'utf8') === read('dist/index.html', 'utf8'), '404.html (GitHub Pages fallback for /studio, /rapide…) is the app');
 const preview = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
 const b = await chromium.launch();

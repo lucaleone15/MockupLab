@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { useUi, type Screen } from '@/store/ui';
+import { langFromPath, onLangChange, useLang, type Lang } from '@/i18n';
 
 /*
  * The screen lives in the address (…/studio, …/rapide) so the browser's back
@@ -9,6 +10,8 @@ import { useUi, type Screen } from '@/store/ui';
  */
 
 const BASE = import.meta.env.BASE_URL;
+// the desktop app has no language in its addresses
+const DESKTOP = import.meta.env.MODE === 'desktop';
 
 export const SCREEN_PATH: Record<Screen, string> = {
   home: '',
@@ -17,8 +20,9 @@ export const SCREEN_PATH: Record<Screen, string> = {
   studio: 'studio',
 };
 
-/** Address of a screen, e.g. /MockupLab/studio. */
-export const urlOf = (screen: Screen) => BASE + SCREEN_PATH[screen];
+/** Address of a screen in a language (default: the current one), e.g. /studio, /en/studio, /en/. */
+export const urlOf = (screen: Screen, lang: Lang = useLang.getState().lang) =>
+  BASE + (!DESKTOP && lang === 'en' ? 'en/' : '') + SCREEN_PATH[screen];
 
 /** Screens that can be opened in this version. */
 export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: true, project: true, studio: true };
@@ -35,7 +39,8 @@ function screenFromSegment(segment: string): Screen | null {
 export function screenFromLocation(pathname: string, hash: string): Screen {
   // older links: …/#/studio
   if (hash.startsWith('#/')) return screenFromSegment(hash.slice(2).replace(/\/$/, '')) ?? 'home';
-  const rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname.replace(/^\//, '');
+  let rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname.replace(/^\//, '');
+  if (!DESKTOP) rest = rest.replace(/^en(\/|$)/, '');
   return screenFromSegment(rest.replace(/\/$/, '')) ?? 'home';
 }
 
@@ -59,15 +64,24 @@ export function navigate(screen: Screen, { instant = false } = {}) {
 export function useRouteSync() {
   useEffect(() => {
     const sync = () => {
+      // the address decides the language (history moves can cross languages)
+      const lang = langFromPath(location.pathname);
+      if (lang && lang !== useLang.getState().lang) {
+        document.documentElement.lang = lang;
+        useLang.setState({ lang });
+      }
       const screen = screenFromLocation(location.pathname, location.hash);
       // old #/ links and unknown addresses: show the clean address
       if (location.pathname !== urlOf(screen) || location.hash) history.replaceState(null, '', urlOf(screen));
       apply(screen);
     };
     sync();
+    // a language change moves the address to that language (same screen)
+    const offLang = DESKTOP ? () => false : onLangChange((lang) => history.replaceState(null, '', urlOf(useUi.getState().screen, lang)));
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => {
+      offLang();
       window.removeEventListener('popstate', sync);
       window.removeEventListener('hashchange', sync);
     };

@@ -1,9 +1,9 @@
-// The production build served under /MockupLab/ (as on GitHub Pages): loads, finds every asset,
+// The production build served from the root (as on Netlify): loads, finds every asset,
 // renders a table set and exports, with no failed request.
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 mkdirSync('out/prod', { recursive: true });
-const url = process.argv[2] ?? 'http://localhost:4173/MockupLab/';
+const url = process.argv[2] ?? 'http://localhost:4173/';
 const b = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu'] });
 const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
 await p.addInitScript(() => localStorage.setItem('mockuplab:lang', 'fr'));

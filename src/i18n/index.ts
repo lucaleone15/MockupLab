@@ -11,7 +11,22 @@ export type I18nString = Record<Lang, string>;
 const dicts: Record<Lang, Dict> = { fr, en };
 const STORAGE_KEY = 'mockuplab:lang';
 
+const DESKTOP = import.meta.env.MODE === 'desktop';
+
+/**
+ * The language an address asks for: …/en/… is English, any other web address French. The desktop app has no
+ * language in its addresses (null: it keeps the saved choice or the system language).
+ */
+export function langFromPath(pathname: string): Lang | null {
+  if (DESKTOP) return null;
+  const base = import.meta.env.BASE_URL;
+  const rest = pathname.startsWith(base) ? pathname.slice(base.length) : pathname.replace(/^\//, '');
+  return rest === 'en' || rest.startsWith('en/') ? 'en' : 'fr';
+}
+
 function initialLang(): Lang {
+  const fromPath = langFromPath(location.pathname);
+  if (fromPath) return fromPath;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'fr' || saved === 'en') return saved;
@@ -20,6 +35,13 @@ function initialLang(): Lang {
   }
   return navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en';
 }
+
+/** Called after every language change (the router moves the address to the new language). */
+const langListeners = new Set<(lang: Lang) => void>();
+export const onLangChange = (listener: (lang: Lang) => void) => {
+  langListeners.add(listener);
+  return () => langListeners.delete(listener);
+};
 
 interface LangState {
   lang: Lang;
@@ -36,6 +58,7 @@ export const useLang = create<LangState>((set) => ({
     }
     document.documentElement.lang = lang;
     set({ lang });
+    for (const listener of langListeners) listener(lang);
   },
 }));
 
