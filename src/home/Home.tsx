@@ -149,7 +149,7 @@ function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
       type="button"
       onClick={() => navigate('studio')}
       className={cx(
-        'pointer-events-auto rounded-full bg-[#2f6bff] font-semibold text-white transition-[background-color,transform] duration-150 ease-out hover:bg-[#245ff2] active:scale-[0.97]',
+        'pointer-events-auto rounded-full bg-brand-solid font-semibold text-white transition-[background-color,transform] duration-150 ease-out hover:bg-brand-solid-hover active:scale-[0.97]',
         size === 'lg' ? 'h-12 px-7 text-[16px]' : 'h-11 px-6 text-[15px]',
       )}
     >
@@ -169,7 +169,7 @@ function Opening({ light, reveal }: { light: boolean; reveal: number }) {
       <WordReveal text={t(desktop ? 'home.leadDesktop' : 'home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
         <OpenStudio />
-        <a href="#home-modes" className="pointer-events-auto text-[15px] font-medium text-[#2f6bff] underline-offset-4 hover:underline">
+        <a href="#home-modes" className="pointer-events-auto text-[15px] font-medium text-brand underline-offset-4 hover:underline">
           {t('home.otherModes')}
         </a>
       </div>
@@ -275,7 +275,7 @@ function ModesStory({ progress }: { progress: number }) {
                 className={cx('pointer-events-auto flex w-full flex-col gap-1.5 rounded-[18px] px-5 py-4 text-left transition-[opacity,background-color] duration-500 ease-out hover:bg-black/[0.04]', i === lit ? 'opacity-100' : 'opacity-35')}
               >
                 <span className="flex items-center gap-2.5">
-                  <span className={cx('h-6 w-1 rounded-full transition-colors duration-500', i === lit ? 'bg-[#2f6bff]' : 'bg-black/15')} />
+                  <span className={cx('h-6 w-1 rounded-full transition-colors duration-500', i === lit ? 'bg-brand-solid' : 'bg-black/15')} />
                   <span className="font-display text-[24px] font-extrabold leading-none md:text-[30px]">{t(`screen.${m}` as I18nKey)}</span>
                 </span>
                 <span className="pl-[18px] text-[15px] leading-snug text-[#55565e] md:text-[16px]">{t(`mode.${m}.role` as I18nKey)}</span>
@@ -312,7 +312,7 @@ function Dots({ chapter, light, onPick }: { chapter: StoryChapter; light: boolea
         return (
           <button key={id} type="button" aria-label={label} aria-current={on ? 'step' : undefined} onClick={() => onPick(id)} className="group flex h-7 items-center gap-2.5 rounded-full pl-3 pr-1 text-[12.5px] font-medium">
             <span className={cx('transition-opacity duration-200 ease-out', light ? 'text-[#1d1d1f]' : 'text-white', on ? 'opacity-90' : 'opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70')}>{label}</span>
-            <span className={cx('block h-2 rounded-full transition-[width,background-color] duration-300 ease-out', on ? 'w-5 bg-[#2f6bff]' : light ? 'w-2 bg-black/25' : 'w-2 bg-white/30')} />
+            <span className={cx('block h-2 rounded-full transition-[width,background-color] duration-300 ease-out', on ? 'w-5 bg-brand-solid' : light ? 'w-2 bg-black/25' : 'w-2 bg-white/30')} />
           </button>
         );
       })}

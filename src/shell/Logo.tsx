@@ -1,14 +1,13 @@
 import { useT } from '@/i18n';
 import { navigate, urlOf } from './route';
 
-/** The mark: a phone, tilted, its screen lit in the brand blue (the app's icon, drawn plain). */
+/** The mark: an upright phone in the brand blue, a lighter copy behind it for depth (« 3D »), its island in white. */
 export function LogoMark({ size = 26, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className={className}>
-      <g transform="rotate(-8 20 20)">
-        <rect x="12" y="5" width="16" height="30" rx="4.5" fill="none" stroke="currentColor" strokeWidth={2.6} />
-        <rect x="14.6" y="7.6" width="10.8" height="24.8" rx="2.4" fill="#2f6bff" />
-      </g>
+      <rect x="14" y="4" width="17" height="32" rx="5.2" fill="#2f6bff" opacity={0.35} />
+      <rect x="10" y="4" width="17" height="32" rx="5.2" fill="#2f6bff" />
+      <rect x="15.3" y="7.4" width="6.4" height="2" rx="1" fill="#fff" />
     </svg>
   );
 }

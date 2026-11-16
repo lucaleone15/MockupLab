@@ -35,8 +35,12 @@ check((await page.locator('[data-testid=showcase-strip]').count()) === 0, 'no st
 const cta = await page.getByTestId('home-hero').getByRole('button', { name: 'Ouvrir le Studio', exact: true }).boundingBox();
 check(!!cta && cta.y + cta.height <= 900, '“Open the Studio” visible without scrolling');
 check(await page.evaluate(() => /icons\/(favicon|icon)/.test(document.querySelector('link[rel=icon]')?.getAttribute('href') ?? '')), 'favicon is the app icon');
-// the phone mark (2026-10-21): drawn in SVG, the same drawing as the app icon; the name in one piece
-check(await page.evaluate(() => document.querySelectorAll('[data-testid=logo] svg rect').length === 2 && !document.querySelector('[data-testid=logo] img')), 'logo mark is the phone, drawn in SVG');
+// the mark (2026-11-16, option A): an upright blue phone, a lighter copy behind for depth, a white island —
+// drawn in SVG, the same drawing as the app icon
+check(await page.evaluate(() => {
+  const rects = [...document.querySelectorAll('[data-testid=logo] svg rect')];
+  return rects.length === 3 && rects[0].getAttribute('opacity') !== null && rects[1].getAttribute('fill') === '#2f6bff' && !document.querySelector('[data-testid=logo] img');
+}), 'logo mark is the blue phone with its depth, drawn in SVG');
 const names = await page.evaluate(() => [...document.querySelectorAll('[data-testid=logo] span')].map((s) => s.innerText.trim()));
 check(names.join() === 'MockupLab', `logo name in one piece, one font and weight (${names.join(' | ')})`);
 let mono = await monoOnScreen();

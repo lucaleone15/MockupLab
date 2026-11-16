@@ -32,11 +32,11 @@
   --fg: #16171b;
   --fg-muted: #5c5d66;
   --fg-subtle: #5f606a;
-  --accent: #0071e3;
-  --accent-hover: #0077ed;
-  --accent-soft: rgb(0 113 227 / 0.1);
+  --accent: #2f6bff;
+  --accent-hover: #2a62f0;
+  --accent-soft: rgb(47 107 255 / 0.1);
   --accent-fg: #ffffff;
-  --brand: #0071e3;
+  --brand: #2f6bff;
   /* glass: a lit inner edge, brighter on top */
   --glass-edge: inset 0 0 0 1px rgb(255 255 255 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.95);
   --glass-blur: blur(40px) saturate(2);
@@ -131,6 +131,9 @@
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
   --font-display: 'Archivo Variable', ui-sans-serif, system-ui, sans-serif;
   --color-brand: var(--brand);
+  /* filled brand surfaces (buttons, marks): the same blue in both themes, white text on it passes AA */
+  --color-brand-solid: #2f6bff;
+  --color-brand-solid-hover: #2a62f0;
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   /* motion (Emil Kowalski): strong ease-out for what enters or answers, ease-in-out for what moves on screen */
