@@ -31,7 +31,7 @@ try {
   server.kill();
 }
 
-const out = quiet(`${NETLIFY} deploy --dir dist --site ${SITE} --message "${commit}" --json${prod ? ' --prod' : ''}`);
+const out = quiet(`${NETLIFY} deploy --no-build --dir dist --site ${SITE} --message "${commit}" --json${prod ? ' --prod' : ''}`);
 const deployed = JSON.parse(out.slice(out.indexOf('{')));
 const address = prod ? 'https://mockuplab3d.netlify.app/' : `${deployed.deploy_url}/`;
 console.log(`✓ ${prod ? 'Live' : 'Preview'}: ${address}`);
