@@ -207,16 +207,17 @@ const still = await page.evaluate((ids) => ids.map((id) => {
 check(still.every((s) => s.h <= 1.4 && s.img), `reduced motion: plain chapters with a still each (${still.map((s) => s.h.toFixed(1))})`);
 await page.emulateMedia({ reducedMotion: 'no-preference' });
 
-// 7. phone: one column, a still per chapter, no sideways scroll, no warning over the page
+// 7. phone: the 3D story plays there too (no stills), nothing sticks out sideways, no warning over the page
 await page.setViewportSize({ width: 390, height: 844 });
 await page.goto('http://localhost:5173/');
 await page.waitForFunction(() => window.__mockuplab);
-await page.waitForTimeout(800);
-const mobile = await page.evaluate((ids) => ({
+await page.waitForTimeout(2500);
+const mobile = await page.evaluate(() => ({
   wide: document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1,
-  stills: ids.map((id) => !!document.querySelector(`[data-chapter-id=${id}] img`)?.offsetParent),
-}), CHAPTERS);
-check(!mobile.wide && mobile.stills.every(Boolean) && (await page.getByRole('dialog').count()) === 0, `phone: no sideways scroll, a still per chapter (${mobile.stills})`);
+  stage: !!document.querySelector('[data-testid=story-stage] canvas'),
+  dots: getComputedStyle(document.querySelector('nav[aria-label]')).display,
+}));
+check(!mobile.wide && mobile.stage && mobile.dots === 'none' && (await page.getByRole('dialog').count()) === 0, `phone: the 3D story plays, no sideways scroll, no chapter dots (${JSON.stringify(mobile)})`);
 await page.screenshot({ path: 'out/home5/mobile.png' });
 
 // 8. the logo: the « studio sweep » mark drawn in SVG, the name in one colour

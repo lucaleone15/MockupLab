@@ -232,6 +232,8 @@ function Track({ id, current, progress }: { id: StoryChapter; current: StoryChap
                 'absolute whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium backdrop-blur-xl duration-300 ease-out',
                 // pinned labels move every frame with the camera: only their fade is a transition
                 l.anchor ? 'transition-opacity' : 'transition-[opacity,transform]',
+                // labels placed for a wide screen would leave a phone's: only those that follow a device stay
+                !l.anchor && 'max-sm:hidden',
                 light ? 'bg-white/70 text-[#1d1d1f] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.9),0_10px_30px_-10px_rgb(20_30_80/0.3)]' : 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.22),0_10px_30px_-10px_rgb(0_0_0/0.6)]',
               )}
               ref={l.anchor ? anchorTo(l.anchor) : undefined}
@@ -260,7 +262,7 @@ function ModesStory({ progress }: { progress: number }) {
         <h2 className="font-display text-balance text-[clamp(38px,5vw,72px)] font-extrabold leading-[1]">{t('home.modes')}</h2>
         <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-[#1d1d1f]/70">{t('home.modes.lead')}</p>
       </div>
-      <div className="grid w-full flex-1 grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)] items-start gap-12 pb-[8vh]">
+      <div className="grid w-full flex-1 grid-cols-1 items-start gap-6 pb-[8vh] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.5fr)] md:gap-12">
         <ol className="flex flex-col gap-2">
           {(['studio', 'quick', 'project'] as const).map((m, i) => (
             <li key={m}>
@@ -274,14 +276,14 @@ function ModesStory({ progress }: { progress: number }) {
               >
                 <span className="flex items-center gap-2.5">
                   <span className={cx('h-6 w-1 rounded-full transition-colors duration-500', i === lit ? 'bg-[#2f6bff]' : 'bg-black/15')} />
-                  <span className="font-display text-[30px] font-extrabold leading-none">{t(`screen.${m}` as I18nKey)}</span>
+                  <span className="font-display text-[24px] font-extrabold leading-none md:text-[30px]">{t(`screen.${m}` as I18nKey)}</span>
                 </span>
-                <span className="pl-[18px] text-[16px] leading-snug text-[#55565e]">{t(`mode.${m}.role` as I18nKey)}</span>
+                <span className="pl-[18px] text-[15px] leading-snug text-[#55565e] md:text-[16px]">{t(`mode.${m}.role` as I18nKey)}</span>
               </button>
             </li>
           ))}
         </ol>
-        <div className="relative aspect-[16/10] w-full">
+        <div className="relative aspect-[16/10] w-full max-md:order-first">
           {(['studio', 'quick', 'project'] as const).map((m, i) => (
             <img
               key={m}
@@ -303,7 +305,7 @@ function ModesStory({ progress }: { progress: number }) {
 function Dots({ chapter, light, onPick }: { chapter: StoryChapter; light: boolean; onPick: (id: StoryChapter) => void }) {
   const { t } = useT();
   return (
-    <nav aria-label={t('home.chapters')} className="absolute right-6 top-1/2 z-10 flex -translate-y-1/2 flex-col items-end gap-1">
+    <nav aria-label={t('home.chapters')} className="absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 flex-col items-end gap-1 sm:flex">
       {STORY.map((id) => {
         const on = id === chapter;
         const label = t(`home.dot.${id}` as I18nKey);
@@ -399,9 +401,17 @@ export function Home() {
   const { t } = useT();
   const desktop = !!window.mockuplabDesktop;
   const root = useRef<HTMLDivElement>(null);
-  const wide = useMedia('(min-width: 1024px)');
   const still = useMedia('(prefers-reduced-motion: reduce)');
-  const animated = wide && !still && webgl;
+  // the 3D starts once the page is shown and idle: the words and the first paint never wait for it
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const go = () => setMounted(true);
+    const ric = typeof requestIdleCallback === 'function';
+    const id = ric ? requestIdleCallback(go, { timeout: 1500 }) : setTimeout(go, 300);
+    return () => (ric ? cancelIdleCallback(id as number) : clearTimeout(id));
+  }, []);
+  // the 3D story plays on every screen size; still motion gets plain chapters with pictures
+  const animated = !still && webgl;
   const { chapter, progress } = useStoryProgress(root, animated);
   const light = animated && LIGHT.has(chapter);
   const hasProjects = useLibrary((s) => s.list.some(worth));
@@ -435,9 +445,12 @@ export function Home() {
       {animated ? (
         <div className="relative">
           <div data-testid="story-stage" className="sticky top-0 h-[100dvh] transition-[background-color] duration-700 ease-in-out" style={{ backgroundColor: light ? '#f5f5f7' : '#000000' }}>
-            <Suspense fallback={null}>
-              <HeroStage className="absolute inset-0" chapter={chapter} progress={progress} light={light} eventSource={root} />
-            </Suspense>
+            {/* the 3D comes in once the page is live (the static HTML and its hydration have no canvas) */}
+            {mounted && (
+              <Suspense fallback={null}>
+                <HeroStage className="absolute inset-0" chapter={chapter} progress={progress} light={light} eventSource={root} />
+              </Suspense>
+            )}
             <Dots chapter={chapter} light={light} onPick={pick} />
           </div>
           <div className="pointer-events-none relative -mt-[100dvh]">

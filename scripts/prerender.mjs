@@ -2,8 +2,8 @@
 // (title, description, canonical, hreflang, Open Graph, JSON-LD), so search engines and AI crawlers that run no
 // JavaScript read the page, and phones paint it before the app starts. React then replaces it.
 //   dist/index.html    → / (French)        dist/en/index.html → /en/ (English)
-// The snapshot is the phone layout (every chapter with its picture). Big screens with motion get the animated
-// story from React instead, so they keep the splash until then; so do the editor addresses (/studio…).
+// The snapshot is the scroll story as a phone first sees it (the same markup fits every size; the 3D comes in
+// when the app starts). The editor addresses (/studio…) keep the splash instead.
 import { chromium } from 'playwright';
 import { preview } from 'vite';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -20,22 +20,21 @@ const server = await preview({ preview: { port: 4199, strictPort: false }, logLe
 const origin = server.resolvedUrls.local[0].replace(/\/$/, '');
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu'] });
 
-/** The landing's markup and FAQ, as a phone sees it once every picture has come in. */
+/** The landing's markup, from React's server renderer (prerender.html), and its FAQ. */
 async function snapshot(path) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, colorScheme: 'dark' });
   const page = await context.newPage();
   await page.addInitScript(() => localStorage.clear());
-  await page.goto(origin + path);
-  await page.getByTestId('home-faq').waitFor();
-  await page.evaluate(() => document.fonts.ready);
-  return page.evaluate(() => {
-    // what fades in on scroll is shown in the static page (crawlers and the first paint see everything)
-    for (const el of document.querySelectorAll('.reveal')) el.setAttribute('data-shown', '');
-    const faq = [...document.querySelectorAll('[data-testid=home-faq] details')].map((d) => ({
+  await page.goto(`${origin}/prerender.html?path=${encodeURIComponent(path)}`);
+  await page.waitForFunction(() => window.__prerender);
+  return page.evaluate(async () => {
+    const html = await window.__prerender;
+    const doc = new DOMParser().parseFromString(`<div id="r">${html}</div>`, 'text/html');
+    const faq = [...doc.querySelectorAll('[data-testid=home-faq] details')].map((d) => ({
       q: d.querySelector('summary').textContent.replace(/\+$/, '').trim(),
       a: d.querySelector('p').textContent.trim(),
     }));
-    return { html: document.getElementById('root').innerHTML, faq };
+    return { html, faq };
   });
 }
 
@@ -92,7 +91,8 @@ function headFor(lang, faq) {
     `<meta name="author" content="${AUTHOR.name}">`,
     `<script type="application/ld+json">${json(ld)}</script>`,
     // the static landing is for phones, crawlers and still motion; editor addresses keep the splash
-    `<style>[data-splash]{display:none}html.app-route [data-prerendered]{display:none}html.app-route [data-splash]{display:grid}@media (min-width:1024px) and (prefers-reduced-motion:no-preference){[data-prerendered]{display:none}[data-splash]{display:grid}}</style>`,
+    // (!important: the splash carries an inline display)
+    `<style>[data-splash]{display:none!important}html.app-route #root[data-prerendered]{display:none}html.app-route [data-splash]{display:grid!important;position:fixed;inset:0}</style>`,
     `<script>if(!/^\\/(en\\/?)?$/.test(location.pathname))document.documentElement.classList.add('app-route')</script>`,
   ].join('\n    ');
 }
@@ -117,7 +117,8 @@ for (const lang of ['fr', 'en']) {
     // first picture and the fonts — the entry script still imports it right after
     .replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
     .replace('</head>', `  ${headFor(lang, faq)}\n  </head>`)
-    .replace(/<div id="root">[\s\S]*<\/div>\s*<\/body>/, `<div id="root"><div data-prerendered style="height:100%">${html}</div>${splash}</div>\n  </body>`);
+    // #root holds the landing exactly as React renders it (hydrated, not repainted); the splash sits beside it
+    .replace(/<div id="root">[\s\S]*<\/div>\s*<\/body>/, `${splash}<div id="root" data-prerendered>${html}</div>\n  </body>`);
   const out = lang === 'en' ? 'dist/en/index.html' : 'dist/index.html';
   mkdirSync('dist/en', { recursive: true });
   writeFileSync(out, page);
@@ -126,6 +127,12 @@ for (const lang of ['fr', 'en']) {
 
 await browser.close();
 await new Promise((r) => server.httpServer.close(r));
+
+// the build-time page and its code are not part of the site
+const { rmSync } = await import('node:fs');
+const entry = readFileSync('dist/prerender.html', 'utf8').match(/assets\/prerender-[\w-]+\.js/)?.[0];
+rmSync('dist/prerender.html');
+if (entry) rmSync(`dist/${entry}`);
 
 // the service worker was generated before these pages: give it their real content (offline visitors get them)
 const rev = (f) => createHash('md5').update(readFileSync(f)).digest('hex');

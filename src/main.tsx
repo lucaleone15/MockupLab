@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App';
 import { useLang } from './i18n';
@@ -7,14 +7,25 @@ import { screenFromLocation } from './shell/route';
 
 document.documentElement.lang = useLang.getState().lang;
 
-const render = () =>
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
 // The landing shows at once; the editor first restores imported 3D models and the autosaved project.
 const landing = screenFromLocation(location.pathname, location.hash) === 'home';
+const container = document.getElementById('root')!;
+/** The built site ships the landing as HTML (scripts/prerender.mjs): React takes it over on the landing (no
+ * repaint), and replaces it elsewhere. */
+const render = () => {
+  const app = (
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+  if (container.hasAttribute('data-prerendered') && landing) hydrateRoot(container, app);
+  else {
+    container.textContent = '';
+    createRoot(container).render(app);
+  }
+  container.removeAttribute('data-prerendered');
+  document.querySelector('[data-splash]')?.remove();
+};
 if (landing) render();
 void import('./models/glb/userModels')
   .then((m) => m.loadUserModels())

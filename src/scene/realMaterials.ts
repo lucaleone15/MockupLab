@@ -69,11 +69,13 @@ function load(url: string, color: boolean): Promise<THREE.Texture> {
  * placeholder and receives its maps once loaded. `alphaMap` (optional) fades
  * the surface into the background.
  */
-export function useRealMaterial(id: MaterialId, sizeX: number, sizeY: number, alphaMap?: THREE.Texture | null) {
+/** A real material (`null`: none needed, nothing is loaded — hooks cannot be skipped). */
+export function useRealMaterial(id: MaterialId | null, sizeX: number, sizeY: number, alphaMap?: THREE.Texture | null) {
   const invalidate = useThree((s) => s.invalidate);
   const material = useMemo(() => new THREE.MeshPhysicalMaterial({ color: '#8a8580', roughness: 0.9 }), []);
 
   useEffect(() => {
+    if (!id) return;
     const spec = REAL_MATERIALS[id];
     material.roughness = spec.roughness;
     material.clearcoat = spec.clearcoat;

@@ -57,5 +57,7 @@ if (!process.argv.includes('--no-lighthouse')) {
   console.log(`Lighthouse mobile (median of 3): score ${median('score')}, FCP ${Math.round(median('fcp'))} ms`);
   check(median('lcp') < 2500, `LCP ${Math.round(median('lcp'))} ms < 2500 ms`);
   check(median('cls') < 0.1, `CLS ${median('cls').toFixed(3)} < 0.1`);
-  check(median('tbt') < 300, `TBT ${Math.round(median('tbt'))} ms < 300 ms`);
+  // the 3D story plays on phones too (Luca's choice, 2026-11-16): its frames keep a 4×-throttled CPU busy, so
+  // blocking time is bounded at 1 s instead of 300 ms; phones set to reduce motion get the light story
+  check(median('tbt') < 1000, `TBT ${Math.round(median('tbt'))} ms < 1000 ms (3D story playing)`);
 }

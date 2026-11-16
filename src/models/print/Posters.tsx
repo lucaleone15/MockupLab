@@ -34,7 +34,8 @@ function posterDims(params: Record<string, ParamValue>, aspects?: ImageAspects) 
 const glass = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transparent: true, opacity: 0.035, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0, depthWrite: false });
 
 function Frame({ fw, fh, bar, depth, color }: { fw: number; fh: number; bar: number; depth: number; color: string }) {
-  const oak = useRealMaterial('oak', fw, fh);
+  // the oak textures load only for an oak frame
+  const oak = useRealMaterial(color === 'oak' ? 'oak' : null, fw, fh);
   const paint = useMemo(() => new THREE.MeshPhysicalMaterial({ color, roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.4 }), [color]);
   const material = color === 'oak' ? oak : paint;
   const bars: [number, number, number, number][] = [

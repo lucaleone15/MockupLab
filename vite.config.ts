@@ -37,6 +37,7 @@ export default defineConfig(({ command, isPreview, mode }) => ({
       },
       workbox: {
         globPatterns: ['**/*.{js,mjs,css,html,svg,woff2}', 'icons/*.png'],
+        globIgnores: ['prerender.html', 'assets/prerender-*.js', 'assets/server.browser-*.js'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
         // English addresses get the English page (prerendered after the build; prerender.mjs adds it to the
@@ -66,6 +67,8 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     target: 'es2022',
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
+      // prerender.html: build-time only (scripts/prerender.mjs renders the landing with it, then deletes it)
+      input: mode === 'desktop' ? undefined : { main: 'index.html', prerender: 'prerender.html' },
       output: {
         // stable vendor chunks: an app update does not invalidate the cached 3D engine
         manualChunks(id: string) {

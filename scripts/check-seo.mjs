@@ -48,7 +48,8 @@ for (const [lang, file, dict, url] of [
   check(faq?.mainEntity?.length === 6 && faq.mainEntity.every((q) => q.name && q.acceptedAnswer?.text), `${file}: FAQPage with 6 answered questions`);
   check(faq?.mainEntity?.[0]?.name === dict['home.faq.q1'], `${file}: FAQ JSON-LD matches the visible FAQ`);
   check(!/role="dialog"|role="alertdialog"/.test(body), `${file}: no dialog (guide, project name…) frozen in the HTML`);
-  check(/data-prerendered/.test(body), `${file}: landing marked as prerendered`);
+  check(/<div id="root" data-prerendered>/.test(body), `${file}: landing marked as prerendered`);
+  check(/\[data-splash\]\{display:none!important\}/.test(html), `${file}: the splash stays hidden on the landing`);
 }
 
 const robots = read('robots.txt');

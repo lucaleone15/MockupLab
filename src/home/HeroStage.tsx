@@ -341,9 +341,11 @@ function Story({ chapter, progress, light }: { chapter: StoryChapter; progress: 
     }
     const [px, py, pz, lx, ly, lz] = f.camera;
     // the words take the top of the screen, as on Apple's pages: the picture moves down and steps back a little
-    const back = THREE.MathUtils.clamp(1.75 / (state.size.width / state.size.height), 1.15, 2.1);
+    // (a phone held upright steps back further: the scene keeps its width)
+    const back = THREE.MathUtils.clamp(1.75 / (state.size.width / state.size.height), 1.15, 3.6);
     const { width: sw, height: sh } = state.size;
-    const shiftY = -sh * 0.17;
+    // upright phones have more room under the words: the picture sits lower
+    const shiftY = -sh * (sw < sh ? 0.24 : 0.17);
     const v = (state.camera as THREE.PerspectiveCamera).view;
     if (!v?.enabled || v.offsetY !== shiftY || v.width !== sw || v.height !== sh) (state.camera as THREE.PerspectiveCamera).setViewOffset(sw, sh, 0, shiftY, sw, sh);
     const cam = state.camera;
@@ -427,7 +429,8 @@ export default function HeroStage({ className, chapter, progress, light, eventSo
     <div ref={wrap} data-testid="hero-3d" data-chapter={chapter} className={className}>
       <Canvas
         shadows
-        dpr={[1, 2]}
+        // phones: 1.5× at most (a 3× screen would triple the work for little gain)
+        dpr={[1, Math.min(2, window.innerWidth < 768 ? 1.5 : 2)]}
         frameloop={visible && !empty ? 'always' : 'never'}
         // measured without scroll listeners: the stage is sticky, its size only changes with the window
         resize={{ scroll: false }}
