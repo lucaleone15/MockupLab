@@ -471,3 +471,28 @@ code {
     backdrop-filter: none;
   }
 }
+
+/*
+ * The landing's sets: each section lit from above like a softbox (white studio or night studio), with a fine
+ * photographic grain over it. The grain is a tiny SVG noise tile, blended in overlay.
+ */
+.studio-light {
+  background: radial-gradient(70% 60% at 50% 0%, #ffffff 0%, #eceef3 55%, #dfe2ea 100%);
+}
+.studio-night {
+  background: radial-gradient(60% 55% at 50% 0%, #20253a 0%, #0b0c12 60%, #050507 100%);
+}
+.studio-grain {
+  /* its element is positioned already (relative, sticky…): the grain lies over it */
+  isolation: isolate;
+}
+.studio-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+}

@@ -326,7 +326,7 @@ function PlainStory() {
       {STORY.map((id) => {
         const light = LIGHT.has(id);
         return (
-          <section key={id} data-chapter-id={id} data-testid={id === 'open' ? 'home-hero' : `home-${id}`} className={cx('flex flex-col items-center gap-8 px-6 py-20 text-center', light ? 'bg-[#f5f5f7] text-[#1d1d1f]' : 'bg-black text-white')}>
+          <section key={id} data-chapter-id={id} data-testid={id === 'open' ? 'home-hero' : `home-${id}`} className={cx('studio-grain relative flex flex-col items-center gap-8 px-6 py-20 text-center', light ? 'studio-light text-[#1d1d1f]' : 'studio-night text-white')}>
             {id === 'modes' ? (
               <div id="home-modes" className="flex w-full max-w-[1240px] flex-col gap-8">
                 <h2 className="font-display text-balance text-[clamp(34px,8vw,56px)] font-extrabold leading-[1.02]">{t('home.modes')}</h2>
@@ -441,7 +441,10 @@ export function Home() {
 
       {animated ? (
         <div className="relative">
-          <div data-testid="story-stage" className="sticky top-0 h-[100dvh] transition-[background-color] duration-700 ease-in-out" style={{ backgroundColor: light ? '#f5f5f7' : '#000000' }}>
+          <div data-testid="story-stage" className="studio-grain sticky top-0 h-[100dvh] bg-black">
+            {/* the set, lit from above: the white studio fades in over the night one */}
+            <div aria-hidden className="studio-night absolute inset-0" />
+            <div aria-hidden className="studio-light absolute inset-0 transition-opacity duration-700 ease-in-out" style={{ opacity: light ? 1 : 0 }} />
             {/* the 3D comes in once the page is live (the static HTML and its hydration have no canvas) */}
             {mounted && (
               <Suspense fallback={null}>
@@ -461,7 +464,7 @@ export function Home() {
       )}
 
       {/* the questions people ask before trying (also read by search engines) */}
-      <section data-testid="home-faq" className="flex flex-col items-center gap-10 bg-[#f5f5f7] px-6 py-24 text-[#1d1d1f]">
+      <section data-testid="home-faq" className="studio-grain studio-light relative flex flex-col items-center gap-10 px-6 py-24 text-[#1d1d1f]">
         <h2 className="font-display text-balance text-center text-[clamp(30px,6vw,48px)] font-extrabold leading-[1.04]">{t('home.faq.title')}</h2>
         <div className="flex w-full max-w-[760px] flex-col">
           {FAQ.map((n) => (
@@ -476,7 +479,7 @@ export function Home() {
         </div>
       </section>
       {/* the end, on black */}
-      <section data-testid="home-end" className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-black px-6 py-28 text-center text-white">
+      <section data-testid="home-end" className="studio-grain studio-night relative flex min-h-[100dvh] flex-col items-center justify-center gap-6 px-6 py-28 text-center text-white">
         <Reveal>
           <h2 className="font-display text-balance text-[clamp(40px,6vw,88px)] font-extrabold leading-[0.98]">{t('home.end.title')}</h2>
         </Reveal>
