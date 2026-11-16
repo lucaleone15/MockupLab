@@ -37,7 +37,8 @@ import { useUi } from '@/store/ui';
 import { Tooltip, cx } from '@/ui/primitives';
 
 /** MIME type used when a model card is dragged onto the scene. */
-export const MODEL_DRAG_TYPE = 'application/x-mockuplab-model';
+export { MODEL_DRAG_TYPE } from './dragTypes';
+import { MODEL_DRAG_TYPE } from './dragTypes';
 
 export const CATEGORY_KEYS: Partial<Record<DeviceCategory, I18nKey>> = {
   phone: 'library.phones',

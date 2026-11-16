@@ -1,34 +1,36 @@
-import { useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { Tooltip } from 'radix-ui';
-import { useT, type I18nKey } from '@/i18n';
-import { QuickScreen } from '@/quick/QuickScreen';
-import { ProjectScreen } from '@/project/ProjectScreen';
-import { HiddenStage } from '@/shell/HiddenStage';
-import { ErrorBoundary, hasWebGL2 } from './ErrorBoundary';
+import { useT } from '@/i18n';
+import { hasWebGL2 } from './ErrorBoundary';
 import { Logo } from '@/shell/Logo';
 import { useGlobalInput } from './shortcuts';
 import { useRouteSync } from '@/shell/route';
-import { HelpDialog } from './HelpDialog';
-import { Tour } from '@/shell/Tour';
 import { AppDialogs } from '@/ui/dialogs';
-import { NameDialog } from '@/library/NameDialog';
-import { ProjectPage } from '@/library/ProjectPage';
 import { Toaster } from './Toaster';
-import { TOP_BAR, TopBar } from '@/shell/TopBar';
 import { useSpecular } from '@/ui/useSpecular';
-import { sceneTone } from '@/lib/sceneTone';
-import { useProject } from '@/store/project';
-import { ExportSheet } from '@/shell/ExportSheet';
-import { AllProjectsSheet } from '@/library/AllProjectsSheet';
 import { UpdateBanner } from '@/pwa/UpdateBanner';
-import { PreviewOverlay } from './Viewport';
 import { useUi } from '@/store/ui';
 import { Home } from '@/home/Home';
-import { StudioScreen } from '@/studio/StudioScreen';
-import { VariantsDialog } from '@/variants/VariantsDialog';
-import { BatchDialog } from '@/variants/BatchDialog';
 
 const webgl = hasWebGL2();
+
+// the landing shows first: the editor loads when a mode opens, the shared windows once the page is idle
+const Editor = lazy(() => import('./Editor'));
+const Overlays = lazy(() => import('./Overlays'));
+
+/** True once the page has shown and settled (or right away when the first screen is not the landing). */
+function useIdle(now: boolean) {
+  const [idle, setIdle] = useState(now);
+  useEffect(() => {
+    if (idle) return;
+    const go = () => setIdle(true);
+    // Safari has no requestIdleCallback
+    const ric = typeof requestIdleCallback === 'function';
+    const id = ric ? requestIdleCallback(go, { timeout: 2500 }) : setTimeout(go, 1200);
+    return () => (ric ? cancelIdleCallback(id as number) : clearTimeout(id));
+  }, [idle]);
+  return idle;
+}
 
 function NoWebGL() {
   const { t } = useT();
@@ -69,41 +71,29 @@ export function App() {
   useGlobalInput();
   useSpecular();
   useRouteSync();
-  const { t } = useT();
   if (!webgl) return <NoWebGL />;
   const screen = useUi((s) => s.screen);
-  const tone = useProject((s) => sceneTone(s.background));
+  const idle = useIdle(screen !== 'home');
   return (
     <Tooltip.Provider delayDuration={350} skipDelayDuration={150}>
       <div className="flex h-full flex-col">
         {screen === 'home' ? (
           <Home />
         ) : (
-          <div className="relative flex min-h-0 flex-1 flex-col" data-scene={screen === 'studio' ? tone : undefined}>
-            <TopBar />
-            {/* the Studio's scene runs under the top bar; Rapide and Projet start below it */}
-            <div className="flex min-h-0 flex-1 flex-col" style={{ paddingTop: screen === 'studio' ? 0 : TOP_BAR }}>
-              <ErrorBoundary label={t(`screen.${screen}` as I18nKey)} key={screen}>
-                {screen === 'quick' ? <QuickScreen /> : screen === 'project' ? <ProjectScreen /> : <StudioScreen />}
-              </ErrorBoundary>
-            </div>
-          </div>
+          <Suspense fallback={null}>
+            <Editor screen={screen} />
+          </Suspense>
         )}
-        {(screen === 'quick' || screen === 'project') && <HiddenStage />}
       </div>
       <Toaster />
-      <HelpDialog />
-      <Tour />
       <AppDialogs />
-      <NameDialog />
-      <ProjectPage />
-      <VariantsDialog />
-      <PreviewOverlay />
+      {idle && (
+        <Suspense fallback={null}>
+          <Overlays />
+        </Suspense>
+      )}
       {/* the warning is about the editor: the home page reads fine on a phone */}
       {screen !== 'home' && <SmallScreenNotice />}
-      <BatchDialog />
-      <ExportSheet />
-      <AllProjectsSheet />
       <UpdateBanner />
     </Tooltip.Provider>
   );

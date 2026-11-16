@@ -45,6 +45,14 @@ const STILL: Record<StoryChapter, string> = {
   clients: 'clients-pack.webp',
   modes: 'studio-ui.jpg',
 };
+/** Pixel size of the stills that are not 2560×1440: the page keeps their room before they arrive. */
+const STILL_SIZE: Record<string, [number, number]> = { 'studio-ui.jpg': [1600, 1000], 'social-post.webp': [1440, 1800] };
+/** Each still also exists smaller for phones (…-1280.webp, …-720.webp for the portrait one). */
+const stillSrcSet = (name: string) => {
+  const [w] = STILL_SIZE[name] ?? [2560];
+  const small = name === 'social-post.webp' ? 720 : 1280;
+  return `${shot(name.replace(/\.\w+$/, `-${small}.webp`))} ${small}w, ${shot(name)} ${w}w`;
+};
 /** The glass labels pointing at the 3D: where they sit on the stage, and when they show. */
 const LABELS: Partial<Record<StoryChapter, { key: I18nKey; style?: CSSProperties; anchor?: string; from: number; to: number }[]>> = {
   studio: [
@@ -107,12 +115,12 @@ function useMedia(query: string) {
 
 /** The one main button of the page: blue, a pill, no arrow. */
 /** Eases in once it is reached by scrolling. */
-function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
+function Reveal({ children, delay = 0, className, instant = false }: { children: ReactNode; delay?: number; className?: string; instant?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(instant);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || instant) return;
     const io = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting) return;
@@ -123,7 +131,7 @@ function Reveal({ children, delay = 0, className }: { children: ReactNode; delay
     );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [instant]);
   return (
     <div ref={ref} data-shown={shown || undefined} className={cx('reveal', className)} style={{ transitionDelay: `${delay}ms` }}>
       {children}
@@ -330,8 +338,20 @@ function PlainStory() {
               </>
             )}
             {id !== 'modes' && (
-              <Reveal className="w-full max-w-[880px]">
-                <img src={shot(STILL[id])} alt="" loading="lazy" className="max-h-[52vh] w-full rounded-[22px] object-cover" draggable={false} />
+              // the opening's picture is the first thing a phone shows: no fade-in, fetched at once
+              <Reveal className="w-full max-w-[880px]" instant={id === 'open'}>
+                <img
+                  src={shot(STILL[id])}
+                  srcSet={stillSrcSet(STILL[id])}
+                  sizes="(max-width: 920px) 100vw, 880px"
+                  alt=""
+                  loading={id === 'open' || id === 'drop' ? 'eager' : 'lazy'}
+                  fetchPriority={id === 'open' ? 'high' : 'auto'}
+                  width={STILL_SIZE[STILL[id]]?.[0] ?? 2560}
+                  height={STILL_SIZE[STILL[id]]?.[1] ?? 1440}
+                  className="h-auto max-h-[52vh] w-full rounded-[22px] object-cover"
+                  draggable={false}
+                />
               </Reveal>
             )}
           </section>

@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
 import { importImages, pickImages } from '@/lib/importImage';
-import { picking } from '@/scene/interaction';
+import { picking } from '@/scene/picking';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 import { toast } from '@/store/toasts';
 import { t } from '@/i18n';
-import { MODEL_DRAG_TYPE } from './LibraryPanel';
-import { saveProjectFile } from './projectFiles';
+import { MODEL_DRAG_TYPE } from './dragTypes';
 
 export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl ';
@@ -71,7 +70,7 @@ function onKey(e: KeyboardEvent) {
     return;
   } else if (mod && key === 's') {
     e.preventDefault();
-    void saveProjectFile();
+    void import('./projectFiles').then((m) => m.saveProjectFile());
   } else if (mod && key === 'o') {
     e.preventDefault();
     pickImages();

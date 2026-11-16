@@ -3,26 +3,34 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App';
 import { useLang } from './i18n';
-import { restoreProject, startAutosave } from './store/persistence';
+import { screenFromLocation } from './shell/route';
 
 document.documentElement.lang = useLang.getState().lang;
 
-// Imported 3D models, then the autosaved project, before the first render; then keep saving.
-void import('./models/glb/userModels')
-  .then((m) => m.loadUserModels())
-  .catch(() => undefined)
-  .then(() => restoreProject())
-  .catch(() => undefined)
-  .finally(() => {
+const render = () =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
     </StrictMode>,
   );
-  startAutosave();
-  void import('./library/thumbs').then((m) => m.startThumbs());
-  void import('./pwa/update').then((m) => m.startUpdates());
-});
+// The landing shows at once; the editor first restores imported 3D models and the autosaved project.
+const landing = screenFromLocation(location.pathname, location.hash) === 'home';
+if (landing) render();
+void import('./models/glb/userModels')
+  .then((m) => m.loadUserModels())
+  .catch(() => undefined)
+  .then(() => import('./store/persistence'))
+  .then(async (p) => {
+    await p.restoreProject().catch(() => undefined);
+    return p;
+  })
+  .then((p) => p.startAutosave())
+  .catch(() => undefined)
+  .finally(() => {
+    if (!landing) render();
+    void import('./library/thumbs').then((m) => m.startThumbs());
+    void import('./pwa/update').then((m) => m.startUpdates());
+  });
 
 if (import.meta.env.DEV) {
   // Hooks for the visual test scripts (scripts/shoot.mjs).

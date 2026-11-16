@@ -11,6 +11,18 @@ export default defineConfig(({ command, isPreview, mode }) => ({
   // a new id per build: the app can tell which version runs (update checks, tests)
   define: { __BUILD_ID__: JSON.stringify(process.env.BUILD_ID ?? Date.now().toString(36)) },
   plugins: [
+    // the text fonts are fetched with the page, not after the styles: no reflow when they arrive
+    {
+      name: 'preload-fonts',
+      apply: 'build',
+      transformIndexHtml: {
+        order: 'post',
+        handler(_html, ctx) {
+          const fonts = Object.keys(ctx.bundle ?? {}).filter((f) => /assets\/(geist-latin-wght-normal|archivo-latin-wdth-normal)-[\w-]+\.woff2$/.test(f));
+          return fonts.map((f) => ({ tag: 'link', attrs: { rel: 'preload', as: 'font', type: 'font/woff2', href: (ctx.server ? '/' : (process.env.BASE_PATH ?? '/')) + f, crossorigin: '' }, injectTo: 'head' as const }));
+        },
+      },
+    },
     react(),
     tailwindcss(),
     // installable app: the code is cached at install, textures and photos when first used;
