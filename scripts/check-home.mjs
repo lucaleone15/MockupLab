@@ -144,13 +144,13 @@ for (const [id, p] of [['studio', 0.5], ['motion', 0.6], ['social', 0.7], ['clie
   check((await page.evaluate(() => window.__heroState)) === id, `« ${id} »: the stage takes it`);
   await page.screenshot({ path: `out/home5/${id}-${p * 100}.png` });
 }
-const bgOf = () => page.evaluate(() => getComputedStyle(document.querySelector('[data-testid=story-stage]')).backgroundColor);
+// the set: the white studio layer fades in over the night one (its opacity says which shows)
+const bgOf = () => page.evaluate(() => Number(getComputedStyle(document.querySelector('[data-testid=story-stage] .studio-light')).opacity));
 await at(page, 'studio', 0.5);
 const studioBg = await bgOf();
 await at(page, 'open', 0.5);
 const openBg = await bgOf();
-const lum = (c) => (c.match(/\d+/g) ?? [0, 0, 0]).slice(0, 3).reduce((a, b) => a + Number(b), 0) / 3;
-check(lum(studioBg) > 200 && lum(openBg) < 20, `black and white sections (open ${openBg}, studio ${studioBg})`);
+check(studioBg > 0.95 && openBg < 0.05, `night and white sets (white layer: open ${openBg}, studio ${studioBg})`);
 
 // 4. dots, copy, fonts
 const dots = page.getByRole('navigation', { name: /Chapitres/ }).getByRole('button');
@@ -178,7 +178,7 @@ for (const p of [0.27, 0.5, 0.73]) {
 }
 await page.screenshot({ path: 'out/home5/modes-73.png' });
 check(seenModes.map((x) => x.mode).join() === 'studio,quick,project' && new Set(seenModes.map((x) => x.pic)).size === 3, `the modes light up one after the other, each with its picture (${JSON.stringify(seenModes)})`);
-check((await bgOf()) === 'rgb(245, 245, 247)', 'the modes on white');
+check((await bgOf()) > 0.95, 'the modes in the white studio');
 await page.getByTestId('mode-card-quick').click();
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'quick', 'a mode opens its screen');
