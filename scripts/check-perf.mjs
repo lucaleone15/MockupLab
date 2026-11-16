@@ -1,4 +1,6 @@
 // scripts/check-perf.mjs — the landing loads only what it shows, and is fast on a phone.
+// Lighthouse runs with applied (devtools) mobile throttling: its default simulation mis-reads a prerendered
+// page (it observed 141 ms and simulated 5.5 s for the same paint).
 // Needs the production build served at the URL (default: `npx vite preview --port 4173` → http://localhost:4173/).
 // Usage: node scripts/check-perf.mjs [url] [--no-lighthouse]
 import { chromium } from 'playwright';
@@ -42,16 +44,18 @@ for (const [label, re] of [
 check(bytes / 1024 < MAX_KB, `landing transfers ${Math.round(bytes / 1024)} KB (< ${MAX_KB} KB)`);
 
 if (!process.argv.includes('--no-lighthouse')) {
-  execSync(
-    `npx -y lighthouse@12 ${url} --only-categories=performance --form-factor=mobile --output=json --output-path=out/perf/after.json --chrome-flags="--headless=new" --quiet`,
-    { stdio: 'inherit' },
-  );
-  const { audits: a, categories } = JSON.parse(readFileSync('out/perf/after.json', 'utf8'));
-  const lcp = a['largest-contentful-paint'].numericValue;
-  const cls = a['cumulative-layout-shift'].numericValue;
-  const tbt = a['total-blocking-time'].numericValue;
-  console.log(`Lighthouse mobile: score ${categories.performance.score}, FCP ${a['first-contentful-paint'].displayValue}`);
-  check(lcp < 2500, `LCP ${Math.round(lcp)} ms < 2500 ms`);
-  check(cls < 0.1, `CLS ${cls.toFixed(3)} < 0.1`);
-  check(tbt < 300, `TBT ${Math.round(tbt)} ms < 300 ms`);
+  // three runs, the median of each metric (a single run varies a lot, the first one is cold)
+  const runs = [1, 2, 3].map((i) => {
+    execSync(
+      `npx -y lighthouse@12 ${url} --only-categories=performance --form-factor=mobile --throttling-method=devtools --output=json --output-path=out/perf/after-${i}.json --chrome-flags="--headless=new" --quiet`,
+      { stdio: 'inherit' },
+    );
+    const { audits: a, categories } = JSON.parse(readFileSync(`out/perf/after-${i}.json`, 'utf8'));
+    return { score: categories.performance.score, fcp: a['first-contentful-paint'].numericValue, lcp: a['largest-contentful-paint'].numericValue, cls: a['cumulative-layout-shift'].numericValue, tbt: a['total-blocking-time'].numericValue };
+  });
+  const median = (k) => runs.map((r) => r[k]).sort((x, y) => x - y)[1];
+  console.log(`Lighthouse mobile (median of 3): score ${median('score')}, FCP ${Math.round(median('fcp'))} ms`);
+  check(median('lcp') < 2500, `LCP ${Math.round(median('lcp'))} ms < 2500 ms`);
+  check(median('cls') < 0.1, `CLS ${median('cls').toFixed(3)} < 0.1`);
+  check(median('tbt') < 300, `TBT ${Math.round(median('tbt'))} ms < 300 ms`);
 }

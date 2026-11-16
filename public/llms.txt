@@ -1,0 +1,26 @@
+# MockupLab
+
+> MockupLab is a free, open-source 3D mockup generator that runs entirely in the web browser (and as a desktop app for macOS and Windows). You drop a screenshot or a design, it appears on photorealistic 3D devices or print items, and you export images or videos. Nothing is uploaded: images and projects stay on the user's device. No account is needed.
+
+- Website (French): https://mockuplab3d.netlify.app/
+- Website (English): https://mockuplab3d.netlify.app/en/
+- Source code (MIT licence): https://github.com/lucaleone15/MockupLab
+- Desktop app for Mac and Windows: https://github.com/lucaleone15/MockupLab/releases/latest
+- Author: Luca Leone, media engineering (https://luca-leone.ch)
+
+## What it does
+
+- Devices: phones, tablets, laptops, desktop displays, a watch and a browser window, in real-time 3D.
+- Print: posters, flyers, business cards, magazines, books, badges and roll-up banners, each at its real size.
+- Scene: free composition (several devices arranged automatically or by hand), a background in the brand's colour, a podium or a real table (wood, marble, travertine), studio lighting, camera angle.
+- Social media: a visual shown inside a post, a story or a Reel on a phone.
+- Motion: rotations, camera moves and a dive into the screen, exported as MP4 or GIF.
+- Export: PNG, JPG or WebP up to 4K, transparent background available.
+- Three ways to work: Studio (the full 3D scene), Rapide/Quick (ready-made mockups from one image), Projet/Project (a matching pack for a client, with a presentation board).
+
+## Good to know
+
+- Price: free, no watermark, no paid tier.
+- Privacy: everything is computed locally with WebGL; the site has no backend that receives images.
+- Renders can be used for personal, client and commercial work.
+- Alternatives it is often compared with: Rotato, Mockuuups, Shots, Smartmockups.
