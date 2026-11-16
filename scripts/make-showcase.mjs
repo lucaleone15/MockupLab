@@ -2,6 +2,7 @@
 // designs, on classy backgrounds with studio light (dev server on :5173). Output: public/showcase/*
 // Usage: node scripts/make-showcase.mjs [name…]   (no name: everything)
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { openApp } from './lib/app.mjs';
 mkdirSync('public/showcase', { recursive: true });
 const only = process.argv.slice(2);
@@ -57,25 +58,19 @@ if (want('devices-phones')) {
   await still('devices-phones.webp');
 }
 if (want('devices-print')) {
-  // a flat lay of prints, seen from above on white marble
-  await scene({ models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble' });
+  // a flat lay of prints, seen from above, on a plain cool white (no busy material)
+  await scene({ models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'none' }, background: { kind: 'solid', color: '#eceff5' } });
   await still('devices-print.webp');
 }
-if (want('devices-desk')) {
-  await scene({ models: ['desktop-24', 'laptop-14', 'tablet-pro-11', 'phone-pro'], preset: 'studio-light' });
-  await still('devices-desk.webp');
-}
 if (want('studio-marble')) {
-  await scene({ models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'table-black-marble' });
+  // the Studio card: the pair in the light studio, a soft cool tint
+  await scene({ models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e7eaf2' } });
   await still('studio-marble.webp');
 }
 if (want('studio-podium')) {
-  await scene({ models: ['phone-pro'], preset: 'podium-terrazzo', background: { kind: 'solid', color: '#e7e2f3' } });
+  // a plain painted podium, same tint as the wall: the phone is the subject
+  await scene({ models: ['phone-pro'], preset: 'podium-arch', background: { kind: 'solid', color: '#e7eaf2' }, decor: { kind: 'podium', podiumFinish: 'paint', color: '#dde1ea', shape: 'cylinder', arch: false } });
   await still('studio-podium.webp');
-}
-if (want('studio-travertine')) {
-  await scene({ models: ['tablet-pro-11', 'phone-pro'], preset: 'table-travertine-terracotta' });
-  await still('studio-travertine.webp');
 }
 if (want('social-post')) {
   // the social phone: the sample design as an Insta post, on a podium
@@ -122,12 +117,14 @@ if (want('clients-pack')) {
       await window.__mockuplab.pack.add([new File([b], n, { type: 'image/png' })]);
     }, n);
   }
-  await page.evaluate((s) => window.__mockuplab.pack.setStyle(s), 'table-walnut-sage');
+  await page.evaluate((s) => window.__mockuplab.pack.setStyle(s), 'studio');
   const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 300000 }), page.evaluate(() => window.__mockuplab.pack.downloadOne('hero'))]);
   await dl.saveAs('public/showcase/clients-pack.webp');
   console.log('saved clients-pack.webp');
 }
 await browser.close();
+// phone-sized copies of the landing's stills (…-1280.webp, …-720.webp for the portrait one)
+execSync('python3 scripts/showcase-sizes.py', { stdio: 'inherit' });
 
 // the Studio at work (home page): a laptop and a phone side by side in the photo studio, the Décor page open
 if (want('studio-ui')) {
