@@ -20,7 +20,7 @@ live) come first. Nothing in the UI or the visuals competes with the user's desi
 - **The mark**: an upright phone in the brand blue, a lighter copy of it behind (35–42 % opacity) for depth —
   the « 3D » — and a white island. Never tilted, never outlined, never in another colour than the brand blue
   (on a coloured background, put it on the graphite tile).
-- **The wordmark**: « MockupLab », one word, Archivo Expanded 700, the same colour as the text around it
+- **The wordmark**: « MockupLab », one word, Gabarito 700, the same colour as the text around it
   (`#16171b` on light, white on dark). Mark and wordmark side by side, gap ≈ 0.35× the mark's height.
 - **Clear space**: half the mark's width on every side. **Minimum size**: 16 px for the mark alone, 24 px
   with the wordmark.
@@ -44,11 +44,11 @@ Shadows are tinted night-blue (`rgb(22 32 72 / …)`), never plain grey.
 
 ## Type
 
-- **Titles**: Archivo, width 125 % (Expanded), weight 800 on the landing, 700 in the app. Tight leading
-  (0.96–1.04), `text-balance`.
-- **Text**: Geist (variable). App: 13 px base, 15–17 px on the landing; leading 1.45–1.6.
-- Fonts inside renders (brand kits, captions) are the user's: Instrument Serif and imported fonts live there
-  only, never in the interface.
+- **Titles**: Gabarito (variable), always weight 700, letter-spacing -0.025em (class `font-display`). Tight leading
+  (0.96–1.04), `text-balance`. Size makes the hierarchy, not weight.
+- **Text**: Plus Jakarta Sans (variable). App: 13 px base, 15–17 px on the landing; leading 1.45–1.6.
+- Fonts inside renders (brand kits, device screens, the client board: Geist, Archivo, Instrument Serif and imported
+  fonts) belong to the content, never to the interface.
 
 ## Shape, depth, motion
 

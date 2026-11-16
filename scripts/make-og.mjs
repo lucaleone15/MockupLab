@@ -4,8 +4,8 @@ import { chromium } from 'playwright';
 import { mkdirSync, readFileSync, statSync } from 'node:fs';
 
 const b64 = (f) => readFileSync(f).toString('base64');
-const archivo = b64('node_modules/@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2');
-const geist = b64('node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2');
+const gabarito = b64('node_modules/@fontsource-variable/gabarito/files/gabarito-latin-wght-normal.woff2');
+const jakarta = b64('node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2');
 const hero = b64('public/showcase/hero-still.webp');
 const icon = b64('public/icons/icon-192.png');
 const TEXT = {
@@ -18,17 +18,17 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
 for (const [lang, t] of Object.entries(TEXT)) {
   await page.setContent(`<!doctype html><html><head><style>
-    @font-face { font-family: Archivo; src: url(data:font/woff2;base64,${archivo}) format('woff2'); font-stretch: 62% 125%; font-weight: 100 900; }
-    @font-face { font-family: Geist; src: url(data:font/woff2;base64,${geist}) format('woff2'); font-weight: 100 900; }
+    @font-face { font-family: Gabarito; src: url(data:font/woff2;base64,${gabarito}) format('woff2'); font-weight: 400 900; }
+    @font-face { font-family: Jakarta; src: url(data:font/woff2;base64,${jakarta}) format('woff2'); font-weight: 200 800; }
     html, body { margin: 0; width: 1200px; height: 630px; background: #000; overflow: hidden; }
     .shot { position: absolute; right: -250px; top: 0; height: 630px; -webkit-mask-image: radial-gradient(ellipse 60% 70% at 62% 50%, #000 55%, transparent 100%); }
     .fade { position: absolute; inset: 0; background: linear-gradient(90deg, #000 40%, rgba(0,0,0,0) 62%); }
     .text { position: absolute; left: 72px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; gap: 22px; color: #fff; }
-    .brand { display: flex; align-items: center; gap: 16px; font: 700 34px Geist; letter-spacing: -.01em; }
+    .brand { display: flex; align-items: center; gap: 16px; font: 700 36px Gabarito; letter-spacing: -.02em; }
     .brand img { width: 56px; height: 56px; }
-    h1 { margin: 0; font-family: Archivo; font-stretch: 125%; font-weight: 800; font-size: 60px; line-height: 1.0; letter-spacing: -.01em; }
-    p { margin: 0; font: 500 22px Geist; color: rgba(255,255,255,.62); }
-    .url { position: absolute; left: 72px; bottom: 44px; font: 500 20px Geist; color: #5b8cff; }
+    h1 { margin: 0; font-family: Gabarito; font-weight: 700; font-size: 68px; line-height: 1.0; letter-spacing: -.025em; }
+    p { margin: 0; font: 500 22px Jakarta; color: rgba(255,255,255,.62); }
+    .url { position: absolute; left: 72px; bottom: 44px; font: 500 20px Jakarta; color: #5b8cff; }
   </style></head><body>
     <img class="shot" src="data:image/webp;base64,${hero}">
     <div class="fade"></div>

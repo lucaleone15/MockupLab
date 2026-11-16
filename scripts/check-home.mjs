@@ -164,9 +164,9 @@ check(/gratuit/i.test(text) && /4K/.test(text) && /client/i.test(text) && /(post
 const fonts = await page.evaluate(() => {
   const h = document.querySelector('[data-testid=home] h1');
   const p = document.querySelector('[data-testid=home] p');
-  return { h: getComputedStyle(h).fontFamily, stretch: getComputedStyle(h).fontStretch, p: getComputedStyle(p).fontFamily };
+  return { h: getComputedStyle(h).fontFamily, weight: getComputedStyle(h).fontWeight, p: getComputedStyle(p).fontFamily };
 });
-check(/^"?Archivo/.test(fonts.h) && fonts.stretch === '125%' && /Geist/.test(fonts.p), 'titles in Archivo Expanded, text in Geist');
+check(/^"?Gabarito/.test(fonts.h) && fonts.weight === '700' && /Plus Jakarta Sans/.test(fonts.p), `titles in Gabarito 700, text in Plus Jakarta Sans (${JSON.stringify(fonts)})`);
 
 // 5. after the story: the modes and the end; off screen the 3D stops
 // the three modes, told one after the other: the lit one and its picture follow the scroll
