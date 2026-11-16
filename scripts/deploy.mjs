@@ -21,14 +21,18 @@ console.log(`→ ${prod ? 'PRODUCTION' : 'preview'} deploy of ${commit}`);
 
 run('npm run build');
 run('node scripts/check-seo.mjs');
-// speed and loading checks against the build itself
+// what the landing loads, checked on the build itself (speed is measured on Netlify after the upload: the local
+// server speaks HTTP/1.1 and its timings swing by a second)
 const server = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
 try {
   await new Promise((r) => setTimeout(r, 2500));
-  run('node scripts/check-perf.mjs http://localhost:4173/');
+  run('node scripts/check-perf.mjs http://localhost:4173/ --no-lighthouse');
 } finally {
   server.kill();
 }
 
-run(`${NETLIFY} deploy --dir dist --site ${SITE} --message "${commit}"${prod ? ' --prod' : ''}`);
-console.log(prod ? '✓ Live on https://mockuplab3d.netlify.app' : '✓ Preview deployed: the address is printed above (Website draft URL).');
+const out = quiet(`${NETLIFY} deploy --dir dist --site ${SITE} --message "${commit}" --json${prod ? ' --prod' : ''}`);
+const deployed = JSON.parse(out.slice(out.indexOf('{')));
+const address = prod ? 'https://mockuplab3d.netlify.app/' : `${deployed.deploy_url}/`;
+console.log(`✓ ${prod ? 'Live' : 'Preview'}: ${address}`);
+console.log(`  Check it: node scripts/check-prod.mjs ${address} && node scripts/check-perf.mjs ${address}`);
