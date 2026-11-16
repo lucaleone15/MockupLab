@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MockupLab a déménagé · MockupLab has moved</title>
+    <meta name="robots" content="noindex">
+    <link rel="canonical" href="https://mockuplab3d.netlify.app/">
+    <meta http-equiv="refresh" content="2; url=https://mockuplab3d.netlify.app/">
+    <script>
+      // same screen at the new address: /MockupLab/studio → /studio, old #/projet links → /projet
+      (function () {
+        var path = location.pathname.replace(/^\/MockupLab/, '') || '/';
+        if (location.hash.indexOf('#/') === 0) path = path.replace(/\/?$/, '/') + location.hash.slice(2);
+        location.replace('https://mockuplab3d.netlify.app' + path.replace(/\/\/+/g, '/') + location.search);
+      })();
+      // the old installed app: replace its worker with one that clears itself
+      if ('serviceWorker' in navigator) navigator.serviceWorker.register('/MockupLab/sw.js', { scope: '/MockupLab/' }).catch(function () {});
+    </script>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #000; color: #fff; font: 16px/1.5 system-ui, sans-serif; text-align: center; }
+      a { color: #5b8cff; }
+    </style>
+  </head>
+  <body>
+    <p>MockupLab a déménagé · MockupLab has moved<br><a href="https://mockuplab3d.netlify.app/">mockuplab3d.netlify.app</a></p>
+  </body>
+</html>

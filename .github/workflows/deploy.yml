@@ -1,8 +1,8 @@
-name: Deploy to GitHub Pages
+name: GitHub Pages redirect
 
+# MockupLab now lives at https://mockuplab3d.netlify.app (published with `npm run deploy`).
+# The old address only serves a redirect page: run this by hand when that page changes.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -19,18 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      # The site is served from https://<user>.github.io/<repo>/
-      - run: npm run build
-        env:
-          BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: scripts/pages-redirect
 
   deploy:
     needs: build
