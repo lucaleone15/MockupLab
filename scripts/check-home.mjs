@@ -254,6 +254,22 @@ for (const [path, by] of [['/', 'Conçu par'], ['/en/', 'Made by']]) {
   check(!wide, `${path}: no sideways scroll at 375 px`);
   await page.screenshot({ path: `out/home5/faq-credit-375${path === '/' ? '' : '-en'}.png`, fullPage: false });
 }
+// 11. a gallery of real renders floating around a title, between the story and the FAQ; still with reduced motion
+for (const [w, h] of [[1440, 900], [375, 812]]) {
+  await page.setViewportSize({ width: w, height: h });
+  await page.goto('http://localhost:5173/');
+  await page.waitForFunction(() => window.__mockuplab);
+  const gallery = page.getByTestId('home-gallery');
+  await gallery.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(900);
+  const g = await gallery.evaluate((el) => {
+    const imgs = [...el.querySelectorAll('img')];
+    const faq = document.querySelector('[data-testid=home-faq]');
+    return { imgs: imgs.length, loaded: imgs.filter((i) => i.complete && i.naturalWidth > 0).length, beforeFaq: !!(el.compareDocumentPosition(faq) & Node.DOCUMENT_POSITION_FOLLOWING), title: !!el.querySelector('h2'), wide: document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1 };
+  });
+  check(g.imgs >= (w < 640 ? 4 : 8) && g.title && g.beforeFaq && !g.wide, `${w}px: floating gallery of renders before the FAQ, nothing sideways (${JSON.stringify(g)})`);
+  await page.screenshot({ path: `out/home5/gallery-${w}.png` });
+}
 // 10. try it from the landing: a capture dropped in the hero opens the Studio with the mock-up made; an example too
 {
   await page.setViewportSize({ width: 1440, height: 900 });

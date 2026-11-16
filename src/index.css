@@ -503,3 +503,14 @@ code {
   opacity: 0.18;
   mix-blend-mode: overlay;
 }
+
+/* the landing's gallery: renders drifting slowly (stilled under reduced motion like every animation) */
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}

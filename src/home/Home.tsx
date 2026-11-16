@@ -443,6 +443,50 @@ function Modes() {
   );
 }
 
+/** Renders made with MockupLab, floating around a title (phones: a small tilted grid). */
+const GALLERY: { file: string; x: number; y: number; w: number; r: number; d: number }[] = [
+  { file: 'hero-still-1280.webp', x: 4, y: 8, w: 22, r: -6, d: 0 },
+  { file: 'devices-phones-1280.webp', x: 74, y: 4, w: 22, r: 5, d: 1.2 },
+  { file: 'studio-podium-1280.webp', x: 0, y: 46, w: 18, r: 4, d: 2.1 },
+  { file: 'social-post-720.webp', x: 82, y: 40, w: 13, r: -5, d: 0.6 },
+  { file: 'devices-print-1280.webp', x: 10, y: 78, w: 20, r: -3, d: 1.7 },
+  { file: 'motion-still-1280.webp', x: 70, y: 76, w: 21, r: 6, d: 0.3 },
+  { file: 'clients-pack-1280.webp', x: 36, y: 84, w: 19, r: 2, d: 2.6 },
+  { file: 'studio-marble.webp', x: 44, y: 0, w: 15, r: -4, d: 1.4 },
+];
+function Gallery() {
+  const { t } = useT();
+  const card = 'rounded-[14px] shadow-[0_30px_60px_-24px_rgb(0_0_0/0.8),0_0_0_1px_rgb(255_255_255/0.08)]';
+  return (
+    <section data-testid="home-gallery" className="studio-grain studio-night relative overflow-hidden px-6 py-24 text-white sm:min-h-[100dvh] sm:py-0">
+      {/* big screens: the renders drift gently around the words */}
+      <div aria-hidden className="absolute inset-0 hidden sm:block">
+        {GALLERY.map((g) => (
+          <img
+            key={g.file}
+            src={shot(g.file)}
+            alt=""
+            loading="lazy"
+            draggable={false}
+            className={cx('absolute animate-[drift_9s_ease-in-out_infinite]', card)}
+            style={{ left: `${g.x}%`, top: `${g.y}%`, width: `${g.w}%`, rotate: `${g.r}deg`, animationDelay: `-${g.d * 2}s` }}
+          />
+        ))}
+      </div>
+      <div className="relative z-[1] flex flex-col items-center gap-4 text-center sm:min-h-[100dvh] sm:justify-center">
+        <h2 className="font-display max-w-[640px] text-balance text-[clamp(34px,6vw,64px)] leading-[1]">{t('home.gallery.title')}</h2>
+        <p className="max-w-[440px] text-pretty text-[17px] leading-[1.55] text-white/70">{t('home.gallery.lead')}</p>
+      </div>
+      {/* phones: four of them, slightly tilted, in two columns */}
+      <div className="relative z-[1] mt-10 grid grid-cols-2 gap-4 sm:hidden">
+        {GALLERY.slice(0, 4).map((g, i) => (
+          <img key={g.file} src={shot(g.file)} alt="" loading="lazy" draggable={false} className={cx('w-full', card)} style={{ rotate: `${i % 2 ? 3 : -3}deg` }} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function Home() {
   const { t } = useT();
   const root = useRef<HTMLDivElement>(null);
@@ -511,6 +555,7 @@ export function Home() {
         <PlainStory />
       )}
 
+      <Gallery />
       {/* the questions people ask before trying (also read by search engines) */}
       <section data-testid="home-faq" className="studio-grain studio-light relative flex flex-col items-center gap-10 px-6 py-24 text-[#1d1d1f]">
         <h2 className="font-display text-balance text-center text-[clamp(30px,6vw,48px)] font-extrabold leading-[1.04]">{t('home.faq.title')}</h2>
