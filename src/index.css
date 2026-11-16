@@ -484,7 +484,10 @@ code {
   background: radial-gradient(70% 60% at 50% 0%, #ffffff 0%, #eceef3 55%, #dfe2ea 100%);
 }
 .studio-night {
-  background: radial-gradient(60% 55% at 50% 0%, #20253a 0%, #0b0c12 60%, #050507 100%);
+  background:
+    /* the brand's blue light behind the devices */
+    radial-gradient(42% 38% at 50% 64%, rgb(47 107 255 / 0.2), transparent 72%),
+    radial-gradient(60% 55% at 50% 0%, #20253a 0%, #0b0c12 60%, #050507 100%);
 }
 .studio-grain {
   /* its element is positioned already (relative, sticky…): the grain lies over it */

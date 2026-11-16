@@ -3,8 +3,6 @@ import { importImages } from '@/lib/importImage';
 import { picking } from '@/scene/picking';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { toast } from '@/store/toasts';
-import { t } from '@/i18n';
 import { MODEL_DRAG_TYPE } from './dragTypes';
 
 export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -89,7 +87,7 @@ function onKey(e: KeyboardEvent) {
 /** Pasted or dropped files go where the screen expects them. */
 function routeFiles(files: File[]) {
   const screen = useUi.getState().screen;
-  if (screen === 'home') toast.info(t('home.pickMode'));
+  if (screen === 'home') void import('@/home/start').then((m) => m.startWithFiles(files));
   else if (screen === 'quick') void import('@/quick/store').then((m) => files[0] && m.quick.setImage(files[0]));
   else if (screen === 'project') void import('@/project/store').then((m) => m.pack.add(files));
   else void importImages(files);

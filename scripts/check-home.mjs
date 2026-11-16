@@ -71,8 +71,12 @@ await page.evaluate(async () => {
   dt.items.add(new File([png], 'paste.png', { type: 'image/png' }));
   window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }));
 });
-await page.waitForTimeout(400);
-check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'home' && (await page.getByText('Choisis d’abord un mode').isVisible()), 'paste on home asks to pick a mode first');
+// a capture pasted on the landing opens the Studio with it (2026-11-17: try it from the landing)
+await page.waitForFunction(() => window.__mockuplab.ui.getState().screen === 'studio', null, { timeout: 8000 }).catch(() => {});
+check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'studio', 'paste on home opens the Studio with the capture');
+await page.goto('http://localhost:5173/');
+await page.waitForFunction(() => window.__mockuplab);
+await page.waitForTimeout(800);
 check((await page.getByRole('button', { name: 'Mes projets' }).count()) === 0, 'no « Mes projets » before any project');
 await cta.click();
 await page.waitForTimeout(400);
@@ -249,5 +253,35 @@ for (const [path, by] of [['/', 'Conçu par'], ['/en/', 'Made by']]) {
   const wide = await page.evaluate(() => document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1);
   check(!wide, `${path}: no sideways scroll at 375 px`);
   await page.screenshot({ path: `out/home5/faq-credit-375${path === '/' ? '' : '-en'}.png`, fullPage: false });
+}
+// 10. try it from the landing: a capture dropped in the hero opens the Studio with the mock-up made; an example too
+{
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('http://localhost:5173/');
+  await page.waitForFunction(() => window.__mockuplab);
+  await page.waitForTimeout(800);
+  const zone = page.getByTestId('home-try');
+  const box = await zone.boundingBox();
+  check(!!box && box.y + box.height <= 900, 'the « drop your capture » zone is in the first screen');
+  await zone.locator('input[type=file]').setInputFiles('scripts/fixtures/capture.png');
+  await page.waitForFunction(() => window.__mockuplab.ui.getState().screen === 'studio', null, { timeout: 10000 }).catch(() => {});
+  const got = await page.evaluate(() => {
+    const items = window.__mockuplab.project.getState().items;
+    const ids = items.flatMap((it) => Object.values(it.surfaces).map((s) => s.assetId)).filter(Boolean);
+    return { screen: window.__mockuplab.ui.getState().screen, own: ids.some((id) => !window.__mockuplab.assetName(id)?.startsWith('sample-')) };
+  });
+  check(got.screen === 'studio' && got.own, `a capture dropped in the hero opens the Studio with it on a device (${JSON.stringify(got)})`);
+  await page.evaluate(() => { indexedDB.deleteDatabase('mockuplab'); localStorage.removeItem('mockuplab:project'); });
+  await page.goto('http://localhost:5173/');
+  await page.waitForFunction(() => window.__mockuplab);
+  await page.waitForTimeout(800);
+  const example = page.getByTestId('home-hero').getByRole('button', { name: 'Voir un exemple' });
+  const outlined = await example.evaluate((el) => getComputedStyle(el).boxShadow !== 'none' || getComputedStyle(el).borderStyle !== 'none');
+  check(outlined, 'the second hero button is outlined');
+  await example.click();
+  await page.waitForFunction(() => window.__mockuplab.ui.getState().screen === 'studio', null, { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(1500);
+  const ex = await page.evaluate(() => window.__mockuplab.project.getState().items.some((it) => Object.values(it.surfaces).some((s) => window.__mockuplab.assetName(s.assetId ?? '')?.startsWith('sample-'))));
+  check(ex, '« Voir un exemple » opens the Studio with a sample scene');
 }
 await done(browser, errors);

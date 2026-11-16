@@ -133,7 +133,8 @@ export const FRAMES: Record<StoryChapter, (p: number) => Frame> = {
 
 const SAMPLE = (n: string) => `samples/sample-${n}.png`;
 const ACTORS: { key: Key; model: string; finish?: number; screen: (c: StoryChapter) => string; more?: Record<string, string>; params?: Record<string, ParamValue> }[] = [
-  { key: 'laptop', model: 'laptop-14', screen: () => SAMPLE('web') },
+  // the laptop shows MockupLab's own Studio: the tool, seen from the first screen (16:10, like the screen)
+  { key: 'laptop', model: 'laptop-14', screen: () => 'showcase/studio-ui.jpg' },
   { key: 'phone', model: 'phone-pro', screen: (c) => (c === 'social' ? SAMPLE('poster') : SAMPLE('app')) },
   { key: 'phoneB', model: 'phone-pro', finish: 1, screen: () => SAMPLE('poster') },
   { key: 'phoneC', model: 'phone', finish: 1, screen: () => SAMPLE('label') },

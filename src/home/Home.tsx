@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, ImagePlus } from 'lucide-react';
 import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
@@ -11,6 +11,7 @@ import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 import { SLICES, STORY, useStoryProgress, type StoryChapter } from './useStoryProgress';
 import { WordReveal } from './WordReveal';
+import { startWithExample, startWithFiles } from './start';
 import { anchorTo } from './labelAnchors';
 
 /*
@@ -157,6 +158,45 @@ function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   );
 }
 
+/** « Drop your capture here »: a file dropped, pasted or picked opens the Studio with the mock-up already made. */
+function TryHere({ light }: { light: boolean }) {
+  const { t } = useT();
+  const [over, setOver] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const take = (files: FileList | null | undefined) => void startWithFiles([...(files ?? [])]);
+  return (
+    <div
+      data-testid="home-try"
+      onDragOver={(e) => {
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        // handled here, not by the page-wide drop
+        e.preventDefault();
+        e.stopPropagation();
+        setOver(false);
+        take(e.dataTransfer?.files);
+      }}
+      className={cx(
+        'pointer-events-auto mt-1 flex w-full max-w-[460px] items-center justify-center gap-3 rounded-[18px] border border-dashed px-5 py-3.5 text-[14.5px] backdrop-blur-md transition-colors duration-150',
+        light ? 'border-black/20 bg-white/50 text-[#1d1d1f]/75' : 'border-white/25 bg-white/[0.06] text-white/75',
+        over && (light ? 'border-brand-solid bg-white/80' : 'border-brand-solid bg-brand-solid/15'),
+      )}
+    >
+      <ImagePlus size={18} className="shrink-0 text-brand" />
+      <span>
+        {t('home.try')}{' '}
+        <button type="button" onClick={() => input.current?.click()} className={cx('font-semibold underline underline-offset-[3px]', light ? 'decoration-black/25' : 'decoration-white/35')}>
+          {t('home.tryBrowse')}
+        </button>
+      </span>
+      <input ref={input} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => take(e.target.files)} />
+    </div>
+  );
+}
+
 /** The opening's words: the title, one sentence, the main button, the way back into a project. */
 function Opening({ light, reveal }: { light: boolean; reveal: number }) {
   const { t } = useT();
@@ -165,12 +205,20 @@ function Opening({ light, reveal }: { light: boolean; reveal: number }) {
     <div className="flex flex-col items-center gap-6 text-center">
       <h1 className="font-display max-w-[980px] text-balance text-[clamp(46px,7vw,104px)] font-extrabold leading-[0.96]">{t('home.title')}</h1>
       <WordReveal text={t('home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+      <div className="flex flex-wrap items-center justify-center gap-3">
         <OpenStudio />
-        <a href="#home-modes" className="pointer-events-auto text-[15px] font-medium text-brand underline-offset-4 hover:underline">
-          {t('home.otherModes')}
-        </a>
+        <button
+          type="button"
+          onClick={() => void startWithExample()}
+          className={cx(
+            'pointer-events-auto h-12 rounded-full px-6 text-[16px] font-semibold transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
+            light ? 'text-[#1d1d1f] shadow-[inset_0_0_0_1.5px_rgb(0_0_0/0.18)] hover:bg-black/5' : 'text-white shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.28)] hover:bg-white/10',
+          )}
+        >
+          {t('home.example')}
+        </button>
       </div>
+      <TryHere light={light} />
       {last && (
         <button type="button" onClick={() => void openProject(last)} className="pointer-events-auto text-[14px] font-medium underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100">
           {t('home.resume', { name: last.name })}
