@@ -5,10 +5,8 @@ import { useLibrary } from '@/library/store';
 import { useT } from '@/i18n';
 import { library, newProject } from '@/store/persistence';
 import { openProjectFile, saveProjectFile } from '@/app/projectFiles';
-import { MOD } from '@/app/shortcuts';
 import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
-import { Kbd } from '@/ui/primitives';
 
 /** Editable project name + autosave status + project menu. */
 export function ProjectMenu() {
@@ -72,7 +70,6 @@ export function ProjectMenu() {
             <DropdownMenu.Item className={item} onSelect={() => void saveProjectFile()}>
               <Save size={15} />
               <span className="flex-1">{t('project.save')}</span>
-              {window.mockuplabDesktop && <Kbd>{MOD}S</Kbd>}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

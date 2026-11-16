@@ -5,6 +5,10 @@ The rules every screen, picture and post follows. The values live in code: colou
 [`src/shell/Logo.tsx`](src/shell/Logo.tsx), the app icons in [`scripts/make-icons.mjs`](scripts/make-icons.mjs).
 Change them there, not by hand in a component.
 
+The browsable design system (tokens, live components, logo and pictures) is published at
+https://claude.ai/artifact/K2w4F66eZ3fvdpWN7dArTS (private until shared). Its component files are rebuilt from
+this code with `npm run build && npm run design-system -- <folder>/project`.
+
 ## The idea
 
 **A photo studio for your designs.** The product is the picture you export: the interface stays quiet, light

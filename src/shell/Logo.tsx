@@ -4,7 +4,8 @@ import { navigate, urlOf } from './route';
 /** The mark: an upright phone in the brand blue, a lighter copy behind it for depth (« 3D »), its island in white. */
 export function LogoMark({ size = 26, className }: { size?: number; className?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className={className}>
+    // the box hugs the drawing (22 × 33 of its 40 × 40 grid): at header size the phone keeps its depth and island
+    <svg width={Math.round(size * 0.68)} height={size} viewBox="9.5 3.5 22 33" aria-hidden className={className}>
       <rect x="14" y="4" width="17" height="32" rx="5.2" fill="#2f6bff" opacity={0.35} />
       <rect x="10" y="4" width="17" height="32" rx="5.2" fill="#2f6bff" />
       <rect x="15.3" y="7.4" width="6.4" height="2" rx="1" fill="#fff" />

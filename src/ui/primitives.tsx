@@ -9,8 +9,9 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 type Variant = 'primary' | 'secondary' | 'ghost';
 const variants: Record<Variant, string> = {
   primary: 'bg-accent text-accent-fg hover:bg-accent-hover shadow-[0_1px_2px_rgb(0_0_0/0.12)]',
-  secondary: 'bg-surface-2 text-fg hover:bg-surface-3 shadow-[0_0_0_1px_var(--line)_inset]',
-  ghost: 'text-fg-muted hover:text-fg hover:bg-surface-3',
+  // every button has an outline (a filled one its fill): never a bare label
+  secondary: 'bg-surface-2 text-fg hover:bg-surface-3 shadow-[0_0_0_1px_var(--line-strong)_inset]',
+  ghost: 'text-fg-muted hover:text-fg hover:bg-surface-3 shadow-[0_0_0_1px_var(--line-strong)_inset]',
 };
 
 export function Button({
@@ -312,7 +313,7 @@ export function Chip({
       onClick={onClick}
       className={cx(
         'inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-medium transition-[background-color,color,transform] duration-150 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none',
-        active ? 'bg-fg text-bg' : 'bg-surface-3 text-fg-muted hover:text-fg',
+        active ? 'bg-fg text-bg' : 'bg-surface-3 text-fg-muted shadow-[0_0_0_1px_var(--line)_inset] hover:text-fg',
       )}
       {...rest}
     >

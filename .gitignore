@@ -6,8 +6,5 @@ out/
 test-results/
 node_modules
 .superpowers/
-desktop/web/
-desktop/node_modules/
-release/
 docs/
 .claude/

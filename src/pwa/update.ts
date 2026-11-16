@@ -19,11 +19,6 @@ declare global {
   interface Window {
     __BUILD_ID__?: string;
     __mockuplabUpdate?: { show: () => void };
-    mockuplabDesktop?: {
-      platform: string;
-      onUpdate: (cb: (info: { state: 'available' | 'downloaded'; version: string }) => void) => void;
-      installUpdate: () => void;
-    };
   }
 }
 
@@ -34,11 +29,6 @@ export function offerUpdate(apply: () => void) {
 export async function startUpdates() {
   window.__BUILD_ID__ = __BUILD_ID__;
   window.__mockuplabUpdate = { show: () => useUpdate.setState({ dismissed: false }) };
-  const desktop = window.mockuplabDesktop;
-  if (desktop) {
-    desktop.onUpdate(() => offerUpdate(() => desktop.installUpdate()));
-    return;
-  }
   if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
   const { registerSW } = await import('virtual:pwa-register');
   const updateSW = registerSW({

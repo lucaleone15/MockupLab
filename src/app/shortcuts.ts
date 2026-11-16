@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { importImages, pickImages } from '@/lib/importImage';
+import { importImages } from '@/lib/importImage';
 import { picking } from '@/scene/picking';
 import { selectSelectedItem, useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
@@ -13,27 +13,20 @@ export const MOD = IS_MAC ? '⌘' : 'Ctrl ';
 const isEditable = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 
-/** ⌘S, ⌘O and ⌘D belong to the browser (save page, open file, bookmark — Arc's sidebar…): the web app leaves
- * them alone; the desktop app has no such conflict and keeps them. */
-const IN_DESKTOP = typeof window !== 'undefined' && !!window.mockuplabDesktop;
-const BROWSER_KEYS = ['sc.save', 'sc.open', 'sc.duplicate'];
 
 /** Shortcut list shown in the help dialog: [keys, i18n key]. */
 export const SHORTCUTS: [string, string][] = ([
   [`${MOD}Z`, 'sc.undo'],
   [`⇧${MOD}Z`, 'sc.redo'],
   [`${MOD}E`, 'sc.export'],
-  [`${MOD}S`, 'sc.save'],
-  [`${MOD}O`, 'sc.open'],
   [`${MOD}V`, 'sc.paste'],
-  [`${MOD}D`, 'sc.duplicate'],
   ['⌫', 'sc.delete'],
   ['← ↑ → ↓', 'sc.nudge'],
   ['R', 'sc.rotate'],
   ['F', 'sc.frame'],
   ['Esc', 'sc.deselect'],
   ['?', 'sc.help'],
-] as [string, string][]).filter(([, label]) => IN_DESKTOP || !BROWSER_KEYS.includes(label));
+] as [string, string][]);
 
 function onKey(e: KeyboardEvent) {
   if (isEditable(e.target) || e.defaultPrevented) return;
@@ -65,18 +58,9 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault();
     // the Export window, on the tab used last (image or video)
     ui.setExportOpen(true);
-  } else if (mod && (key === 's' || key === 'o' || key === 'd') && !IN_DESKTOP) {
-    // the browser's own shortcut
+  } else if (mod && (key === 's' || key === 'o' || key === 'd')) {
+    // ⌘S, ⌘O and ⌘D belong to the browser (save page, open file, bookmark): left alone
     return;
-  } else if (mod && key === 's') {
-    e.preventDefault();
-    void import('./projectFiles').then((m) => m.saveProjectFile());
-  } else if (mod && key === 'o') {
-    e.preventDefault();
-    pickImages();
-  } else if (mod && key === 'd') {
-    e.preventDefault();
-    if (item) project.duplicateItem(item.id);
   } else if (!mod && (key === 'delete' || key === 'backspace')) {
     e.preventDefault();
     if (ui.selectedOverlayId) {

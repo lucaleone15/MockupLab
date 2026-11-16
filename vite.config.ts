@@ -5,9 +5,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'node:url';
 
 // Served from the site root (Netlify); BASE_PATH overrides it (e.g. a fork served from a sub-folder).
-export default defineConfig(({ command, isPreview, mode }) => ({
-  // the desktop app serves the build from app://mockuplab/ (mode "desktop")
-  base: mode === 'desktop' ? '/' : command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/') : '/',
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? (process.env.BASE_PATH ?? '/') : '/',
   // a new id per build: the app can tell which version runs (update checks, tests)
   define: { __BUILD_ID__: JSON.stringify(process.env.BUILD_ID ?? Date.now().toString(36)) },
   plugins: [
@@ -59,8 +58,8 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  // build outputs (web, desktop, packaged apps) are not sources: never reload the dev page for them
-  server: { watch: { ignored: ['**/dist/**', '**/desktop/**', '**/release/**'] } },
+  // the build output is not a source: never reload the dev page for it
+  server: { watch: { ignored: ['**/dist/**'] } },
   // loaded on demand (video export): pre-bundled so the dev server never reloads mid-session
   optimizeDeps: { entries: ['index.html'], include: ['mediabunny', 'gifenc', 'three/examples/jsm/exporters/GLTFExporter.js'] },
   build: {
@@ -68,7 +67,7 @@ export default defineConfig(({ command, isPreview, mode }) => ({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       // prerender.html: build-time only (scripts/prerender.mjs renders the landing with it, then deletes it)
-      input: mode === 'desktop' ? undefined : { main: 'index.html', prerender: 'prerender.html' },
+      input: { main: 'index.html', prerender: 'prerender.html' },
       output: {
         // stable vendor chunks: an app update does not invalidate the cached 3D engine
         manualChunks(id: string) {

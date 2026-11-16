@@ -232,7 +232,7 @@ export function BrandKit() {
           <span>{t('brand.sampleNote')}</span>
           <button
             type="button"
-            className="shrink-0 font-medium text-accent hover:underline"
+            className="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[12px] font-medium text-fg shadow-[0_0_0_1px_var(--line-strong)_inset] transition-colors hover:bg-surface-3"
             onClick={() => setBrand({ name: '', tagline: '', logoAssetId: null, colors: [{ hex: '#1D1D1F', name: '' }] })}
           >
             {t('brand.fromScratch')}

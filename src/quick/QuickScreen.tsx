@@ -119,7 +119,7 @@ function DevicePicker() {
       <GroupTitle aside={!confident ? <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span> : undefined}>{t('quick.device')}</GroupTitle>
       <div className="flex items-center justify-between gap-2 text-[13px]">
         <span className="truncate">{assetId && !byHand ? t('quick.detected', { name }) : name}</span>
-        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="shrink-0 rounded-md text-[12.5px] font-medium text-accent hover:underline">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[12px] font-medium text-fg shadow-[0_0_0_1px_var(--line-strong)_inset] transition-colors hover:bg-surface-3">
           {t('quick.change')}
         </button>
       </div>

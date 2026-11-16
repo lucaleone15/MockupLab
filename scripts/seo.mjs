@@ -5,7 +5,7 @@ export const HEAD = {
   fr: {
     title: 'MockupLab — mockups 3D gratuits dans ton navigateur',
     description:
-      'Mets tes designs en scène sur de vrais appareils et supports print en 3D, puis exporte en 4K, MP4 ou GIF. Gratuit, open source, rien ne quitte ton ordinateur.',
+      'Mets tes designs en scène sur de vrais appareils et supports print en 3D, puis exporte en 4K, MP4 ou GIF. Gratuit, sans compte, et rien ne quitte ton ordinateur.',
     ogImage: '/og/og-fr.png',
     ogAlt: 'Un ordinateur portable et un téléphone affichant des designs, rendus en 3D par MockupLab',
     locale: 'fr_FR',
@@ -13,7 +13,7 @@ export const HEAD = {
   en: {
     title: 'MockupLab — free 3D mockups in your browser',
     description:
-      'Stage your designs on real 3D devices and print items, then export in 4K, MP4 or GIF. Free and open source, and nothing ever leaves your computer.',
+      'Stage your designs on real 3D devices and print items, then export in 4K, MP4 or GIF. Free, no account, and nothing ever leaves your computer.',
     ogImage: '/og/og-en.png',
     ogAlt: 'A laptop and a phone showing designs, rendered in 3D by MockupLab',
     locale: 'en_US',

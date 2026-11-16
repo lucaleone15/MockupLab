@@ -10,8 +10,6 @@ import { langFromPath, onLangChange, useLang, type Lang } from '@/i18n';
  */
 
 const BASE = import.meta.env.BASE_URL;
-// the desktop app has no language in its addresses
-const DESKTOP = import.meta.env.MODE === 'desktop';
 
 export const SCREEN_PATH: Record<Screen, string> = {
   home: '',
@@ -22,7 +20,7 @@ export const SCREEN_PATH: Record<Screen, string> = {
 
 /** Address of a screen in a language (default: the current one), e.g. /studio, /en/studio, /en/. */
 export const urlOf = (screen: Screen, lang: Lang = useLang.getState().lang) =>
-  BASE + (!DESKTOP && lang === 'en' ? 'en/' : '') + SCREEN_PATH[screen];
+  BASE + (lang === 'en' ? 'en/' : '') + SCREEN_PATH[screen];
 
 /** Screens that can be opened in this version. */
 export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: true, project: true, studio: true };
@@ -40,7 +38,7 @@ export function screenFromLocation(pathname: string, hash: string): Screen {
   // older links: …/#/studio
   if (hash.startsWith('#/')) return screenFromSegment(hash.slice(2).replace(/\/$/, '')) ?? 'home';
   let rest = pathname.startsWith(BASE) ? pathname.slice(BASE.length) : pathname.replace(/^\//, '');
-  if (!DESKTOP) rest = rest.replace(/^en(\/|$)/, '');
+  rest = rest.replace(/^en(\/|$)/, '');
   return screenFromSegment(rest.replace(/\/$/, '')) ?? 'home';
 }
 
@@ -77,7 +75,7 @@ export function useRouteSync() {
     };
     sync();
     // a language change moves the address to that language (same screen)
-    const offLang = DESKTOP ? () => false : onLangChange((lang) => history.replaceState(null, '', urlOf(useUi.getState().screen, lang)));
+    const offLang = onLangChange((lang) => history.replaceState(null, '', urlOf(useUi.getState().screen, lang)));
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => {

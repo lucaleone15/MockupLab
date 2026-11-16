@@ -11,14 +11,8 @@ export type I18nString = Record<Lang, string>;
 const dicts: Record<Lang, Dict> = { fr, en };
 const STORAGE_KEY = 'mockuplab:lang';
 
-const DESKTOP = import.meta.env.MODE === 'desktop';
-
-/**
- * The language an address asks for: …/en/… is English, any other web address French. The desktop app has no
- * language in its addresses (null: it keeps the saved choice or the system language).
- */
+/** The language an address asks for: …/en/… is English, any other address French. */
 export function langFromPath(pathname: string): Lang | null {
-  if (DESKTOP) return null;
   const base = import.meta.env.BASE_URL;
   const rest = pathname.startsWith(base) ? pathname.slice(base.length) : pathname.replace(/^\//, '');
   return rest === 'en' || rest.startsWith('en/') ? 'en' : 'fr';

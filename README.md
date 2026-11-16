@@ -10,7 +10,7 @@ Gratuit, open source, et tout se passe dans ton navigateur : tes images ne quitt
 <p align="center">
   <a href="https://mockuplab3d.netlify.app/"><b>Ouvrir MockupLab dans le navigateur</b></a>
   &nbsp;·&nbsp;
-  <a href="https://github.com/lucaleone15/MockupLab/releases/latest">Télécharger pour Mac ou Windows</a>
+  <a href="https://mockuplab3d.netlify.app/en/">English</a>
 </p>
 
 ## Ce que ça fait
@@ -53,12 +53,9 @@ Gratuit, open source, et tout se passe dans ton navigateur : tes images ne quitt
 
 Tes projets s'enregistrent tout seuls dans ton navigateur, et chaque export garde ses réglages pour être repris plus tard.
 
-## Installer
+## Utiliser
 
-- **Dans le navigateur** : [mockuplab3d.netlify.app](https://mockuplab3d.netlify.app/). Le site s'installe comme une app et marche hors ligne.
-- **Mac et Windows** : la dernière version est dans les [Releases](https://github.com/lucaleone15/MockupLab/releases/latest) (`MockupLab-Mac.dmg`, `MockupLab-Windows.exe`). L'app se met à jour toute seule.
-  - Mac : au premier lancement, clic droit sur l'app › Ouvrir (elle n'est pas encore signée par Apple).
-  - Windows : si SmartScreen s'affiche, « Informations complémentaires » › « Exécuter quand même ».
+Ouvre [mockuplab3d.netlify.app](https://mockuplab3d.netlify.app/) ([English](https://mockuplab3d.netlify.app/en/)). Rien à installer, aucun compte. Si tu veux, le site s'installe comme une app et marche hors ligne.
 
 ## Développement
 
@@ -70,7 +67,9 @@ npm run dev      # http://localhost:5173
 npm run build    # version de production dans dist/
 ```
 
-Fait avec React, Three.js (React Three Fiber), Tailwind CSS et Vite. Le site est publié sur Netlify à la demande : `npm run deploy:preview` (adresse de test) puis `npm run deploy` (en ligne). Rien ne part automatiquement à chaque envoi sur `main`. Pour publier les apps, augmente `version` dans `desktop/package.json` puis pousse un tag `vX.Y.Z`.
+Fait avec React, Three.js (React Three Fiber), Tailwind CSS et Vite. Le site est publié sur Netlify à la demande : `npm run deploy:preview` (adresse de test) puis `npm run deploy` (en ligne). Rien ne part automatiquement à chaque envoi sur `main`.
+
+Les règles visuelles (logo, couleurs, typo, images) sont dans [DESIGN.md](DESIGN.md).
 
 ## Licence
 

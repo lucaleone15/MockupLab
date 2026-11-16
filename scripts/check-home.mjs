@@ -243,9 +243,9 @@ for (const [path, by] of [['/', 'Conçu par'], ['/en/', 'Made by']]) {
   await credit.scrollIntoViewIfNeeded();
   const links = await credit.locator('a').evaluateAll((as) => as.map((a) => ({ href: a.href, target: a.target, rel: a.rel })));
   const text = await credit.innerText();
-  const want = ['https://luca-leone.ch/', 'https://www.linkedin.com/in/leone-luca', 'https://github.com/lucaleone15/MockupLab'];
+  const want = ['https://luca-leone.ch/', 'https://www.linkedin.com/in/leone-luca'];
   check(text.includes(by) && text.includes('Luca Leone'), `${path}: signature « ${by} Luca Leone » (${text.replace(/\s+/g, ' ')})`);
-  check(want.every((w) => links.some((l) => l.href.replace(/\/$/, '') === w.replace(/\/$/, ''))) && links.every((l) => l.target === '_blank' && l.rel.includes('noreferrer')), `${path}: portfolio, LinkedIn and GitHub links open in a new tab (${links.map((l) => l.href)})`);
+  check(want.every((w) => links.some((l) => l.href.replace(/\/$/, '') === w.replace(/\/$/, ''))) && links.every((l) => l.target === '_blank' && l.rel.includes('noreferrer')) && !links.some((l) => l.href.includes('github.com')), `${path}: portfolio and LinkedIn links open in a new tab, no GitHub (${links.map((l) => l.href)})`);
   const wide = await page.evaluate(() => document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1);
   check(!wide, `${path}: no sideways scroll at 375 px`);
   await page.screenshot({ path: `out/home5/faq-credit-375${path === '/' ? '' : '-en'}.png`, fullPage: false });

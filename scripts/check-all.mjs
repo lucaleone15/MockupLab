@@ -5,8 +5,8 @@ import { spawn, spawnSync } from 'node:child_process';
 import { readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 
 const quick = process.argv.includes('--quick');
-// not part of the suite: production URL, packaged desktop app, and a check that needs a font file
-const SKIP = new Set(['check-all.mjs', 'check-prod.mjs', 'check-desktop.mjs', 'check-brand.mjs', 'check-seo.mjs', 'check-perf.mjs', 'check-pages-redirect.mjs']);
+// not part of the suite: production URL, and a check that needs a font file
+const SKIP = new Set(['check-all.mjs', 'check-prod.mjs', 'check-brand.mjs', 'check-seo.mjs', 'check-perf.mjs', 'check-pages-redirect.mjs']);
 const QUICK = ['check-home.mjs', 'check-nav.mjs', 'check-urls.mjs', 'check-studio.mjs', 'check-export.mjs', 'check-lang-urls.mjs'];
 
 const up = async () => {

@@ -35,7 +35,7 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
         <span className="block truncate text-[13.5px] font-medium">{f.name}</span>
         {!f.confident && <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span>}
         {f.pdf && (
-          <button type="button" className="block text-[12.5px] font-medium text-accent hover:underline" onClick={() => void pack.addPdfPages(f.id)}>
+          <button type="button" className="inline-flex h-7 items-center rounded-full px-3 text-[12px] font-medium text-fg shadow-[0_0_0_1px_var(--line-strong)_inset] transition-colors hover:bg-surface-3" onClick={() => void pack.addPdfPages(f.id)}>
             {f.pdf.pages === 2 ? t('project.pdfMoreOne') : t('project.pdfMore', { n: f.pdf.pages - 1 })}
           </button>
         )}

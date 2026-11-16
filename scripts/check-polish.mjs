@@ -1,8 +1,7 @@
 // scripts/check-polish.mjs — 1.0.1 polish: no monospace font in the UI, blue-only UI accents, one-font logo,
-// the app icon everywhere, the merged "Fond" decor, the real-mock-up home page, and a 3-file release.
+// the app icon everywhere, the merged "Fond" decor, the real-mock-up home page.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { createRequire } from 'node:module';
 import { openApp, check, done } from './lib/app.mjs';
 
 // --- static checks -------------------------------------------------------
@@ -10,12 +9,6 @@ const walk = (d) => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirect
 const ui = walk('src').filter((f) => /\.(tsx?|css)$/.test(f) && !/src\/(models|i18n)\//.test(f) && !/(brandDraw|brandArt|brandFonts|backgroundPresets|patterns|overlays|useScreenMaterial)\.ts$/.test(f) && !/store\/project\.ts$/.test(f)); // content (sample palette, default wallpaper), not UI
 const orange = ui.filter((f) => /ff5c35|255,\s*92,\s*53|255 92 53/i.test(readFileSync(f, 'utf8').replace(/--brand:\s*#ff5c35;/gi, '')));
 check(orange.length === 0, `no orange in the interface code (${orange.join(', ')})`);
-const yml = readFileSync('electron-builder.yml', 'utf8');
-check(/arch:\s*\[?universal/.test(yml) && !/target:\s*zip/.test(yml), 'macOS: one universal dmg, no zip');
-check(/MockupLab-Mac\.\$\{ext\}/.test(yml) && /MockupLab-Windows\.\$\{ext\}/.test(yml), 'clear file names (MockupLab-Mac.dmg, MockupLab-Windows.exe)');
-check(/differentialPackage:\s*false/.test(yml) && /writeUpdateInfo:\s*false/.test(yml), 'no blockmap files');
-const { isNewer } = createRequire(import.meta.url)('../desktop/update-check.cjs');
-check(isNewer('1.0.1', '1.0.0') && isNewer('v1.2.0', '1.1.9') && !isNewer('1.0.0', '1.0.0') && !isNewer('0.9.9', '1.0.0'), 'version comparison for the macOS update check');
 
 // --- in the app ----------------------------------------------------------
 const { browser, page, errors } = await openApp({ colorScheme: 'light' });

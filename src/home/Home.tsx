@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Code, Download, FolderOpen } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
@@ -27,7 +27,6 @@ const HeroStage = lazy(() => import('./HeroStage'));
 const webgl = hasWebGL2();
 const BASE = import.meta.env.BASE_URL;
 const shot = (name: string) => `${BASE}showcase/${name}`;
-const REPO = 'https://github.com/lucaleone15/MockupLab';
 const PORTFOLIO = 'https://luca-leone.ch';
 const LINKEDIN = 'https://www.linkedin.com/in/leone-luca';
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
@@ -161,12 +160,11 @@ function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
 /** The opening's words: the title, one sentence, the main button, the way back into a project. */
 function Opening({ light, reveal }: { light: boolean; reveal: number }) {
   const { t } = useT();
-  const desktop = !!window.mockuplabDesktop;
   const last = useLibrary((s) => s.list).find(worth);
   return (
     <div className="flex flex-col items-center gap-6 text-center">
       <h1 className="font-display max-w-[980px] text-balance text-[clamp(46px,7vw,104px)] font-extrabold leading-[0.96]">{t('home.title')}</h1>
-      <WordReveal text={t(desktop ? 'home.leadDesktop' : 'home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
+      <WordReveal text={t('home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
         <OpenStudio />
         <a href="#home-modes" className="pointer-events-auto text-[15px] font-medium text-brand underline-offset-4 hover:underline">
@@ -399,7 +397,6 @@ function Modes() {
 
 export function Home() {
   const { t } = useT();
-  const desktop = !!window.mockuplabDesktop;
   const root = useRef<HTMLDivElement>(null);
   const still = useMedia('(prefers-reduced-motion: reduce)');
   // the 3D starts once the page is shown and idle: the words and the first paint never wait for it
@@ -484,27 +481,16 @@ export function Home() {
           <h2 className="font-display text-balance text-[clamp(40px,6vw,88px)] font-extrabold leading-[0.98]">{t('home.end.title')}</h2>
         </Reveal>
         <Reveal delay={90}>
-          <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-white/70">{t(desktop ? 'home.end.leadDesktop' : 'home.end.lead')}</p>
+          <p className="max-w-[560px] text-pretty text-[19px] leading-[1.5] text-white/70">{t('home.end.lead')}</p>
         </Reveal>
         <Reveal delay={180} className="mt-3 flex flex-wrap items-center justify-center gap-3">
           <OpenStudio size="md" />
-          {!desktop && (
-            <a href={`${REPO}/releases/latest`} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full bg-white/10 px-5 text-[15px] font-medium text-white transition-colors hover:bg-white/15">
-              <Download size={16} />
-              {t('home.end.app')}
-            </a>
-          )}
-          <a href={REPO} target="_blank" rel="noreferrer" className="flex h-11 items-center gap-2 rounded-full px-4 text-[15px] font-medium text-white/70 transition-colors hover:text-white">
-            <Code size={16} />
-            {t('home.end.source')}
-          </a>
         </Reveal>
         <p data-testid="home-credit" className="mt-16 flex flex-wrap items-center justify-center gap-y-1 text-[13.5px] text-white/45">
           <span className="whitespace-nowrap">{t('home.credit.by')} <span className="text-white/75">Luca Leone</span></span>
           {[
             [PORTFOLIO, t('home.credit.portfolio')],
             [LINKEDIN, 'LinkedIn'],
-            [REPO, 'GitHub'],
           ].map(([href, label]) => (
             <span key={href}>
               <span aria-hidden className="mx-2">·</span>

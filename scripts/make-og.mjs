@@ -9,8 +9,8 @@ const geist = b64('node_modules/@fontsource-variable/geist/files/geist-latin-wgh
 const hero = b64('public/showcase/hero-still.webp');
 const icon = b64('public/icons/icon-192.png');
 const TEXT = {
-  fr: { tag: 'Mockups 3D gratuits, dans ton navigateur', small: 'Gratuit · Open source · Rien ne quitte ton ordinateur' },
-  en: { tag: 'Free 3D mockups, right in your browser', small: 'Free · Open source · Nothing leaves your computer' },
+  fr: { tag: 'Mockups 3D gratuits, dans ton navigateur', small: 'Gratuit · Sans compte · Rien ne quitte ton ordinateur' },
+  en: { tag: 'Free 3D mockups, right in your browser', small: 'Free · No account · Nothing leaves your computer' },
 };
 
 mkdirSync('public/og', { recursive: true });
