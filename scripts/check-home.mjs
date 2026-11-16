@@ -226,4 +226,27 @@ check(logo.svg && !logo.img && logo.colours === 1 && logo.text === 'MockupLab', 
 // 8b. the blue brand
 const orange = await page.evaluate(() => [...document.querySelectorAll('[data-testid=home] *')].filter((el) => getComputedStyle(el).color === 'rgb(255, 92, 53)' || getComputedStyle(el).backgroundColor === 'rgb(255, 92, 53)').length);
 check(orange === 0, `no orange on the home page (${orange})`);
+// 9. FAQ and signature, in both languages; at 375 px nothing sticks out sideways
+for (const [path, by] of [['/', 'Conçu par'], ['/en/', 'Made by']]) {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('http://localhost:5173' + path);
+  await page.waitForFunction(() => window.__mockuplab);
+  await page.waitForTimeout(600);
+  const faq = page.getByTestId('home-faq');
+  await faq.scrollIntoViewIfNeeded();
+  const qs = await faq.locator('details > summary').allInnerTexts();
+  check(qs.length === 6 && qs.every((q) => q.trim().length > 8), `${path}: FAQ with 6 questions (${qs.length})`);
+  await faq.locator('details > summary').first().click();
+  check(await faq.locator('details').first().evaluate((d) => d.open && d.querySelector('p').innerText.trim().length > 20), `${path}: a FAQ answer opens on click`);
+  const credit = page.getByTestId('home-credit');
+  await credit.scrollIntoViewIfNeeded();
+  const links = await credit.locator('a').evaluateAll((as) => as.map((a) => ({ href: a.href, target: a.target, rel: a.rel })));
+  const text = await credit.innerText();
+  const want = ['https://luca-leone.ch/', 'https://www.linkedin.com/in/leone-luca', 'https://github.com/lucaleone15/MockupLab'];
+  check(text.includes(by) && text.includes('Luca Leone'), `${path}: signature « ${by} Luca Leone » (${text.replace(/\s+/g, ' ')})`);
+  check(want.every((w) => links.some((l) => l.href.replace(/\/$/, '') === w.replace(/\/$/, ''))) && links.every((l) => l.target === '_blank' && l.rel.includes('noreferrer')), `${path}: portfolio, LinkedIn and GitHub links open in a new tab (${links.map((l) => l.href)})`);
+  const wide = await page.evaluate(() => document.querySelector('[data-testid=home]').scrollWidth > innerWidth + 1);
+  check(!wide, `${path}: no sideways scroll at 375 px`);
+  await page.screenshot({ path: `out/home5/faq-credit-375${path === '/' ? '' : '-en'}.png`, fullPage: false });
+}
 await done(browser, errors);

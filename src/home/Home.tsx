@@ -28,6 +28,9 @@ const webgl = hasWebGL2();
 const BASE = import.meta.env.BASE_URL;
 const shot = (name: string) => `${BASE}showcase/${name}`;
 const REPO = 'https://github.com/lucaleone15/MockupLab';
+const PORTFOLIO = 'https://luca-leone.ch';
+const LINKEDIN = 'https://www.linkedin.com/in/leone-luca';
+const FAQ = [1, 2, 3, 4, 5, 6] as const;
 
 /** Track heights (vh): the longer the chapter's motion, the longer the scroll. */
 const HEIGHT: Record<StoryChapter, number> = { open: 230, drop: 220, devices: 240, print: 260, studio: 260, motion: 240, social: 240, clients: 220, modes: 300 };
@@ -447,6 +450,21 @@ export function Home() {
         <PlainStory />
       )}
 
+      {/* the questions people ask before trying (also read by search engines) */}
+      <section data-testid="home-faq" className="flex flex-col items-center gap-10 bg-[#f5f5f7] px-6 py-24 text-[#1d1d1f]">
+        <h2 className="font-display text-balance text-center text-[clamp(30px,6vw,48px)] font-extrabold leading-[1.04]">{t('home.faq.title')}</h2>
+        <div className="flex w-full max-w-[760px] flex-col">
+          {FAQ.map((n) => (
+            <details key={n} className="group border-b border-black/10 py-5 first:border-t">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-[18px] font-semibold [&::-webkit-details-marker]:hidden">
+                {t(`home.faq.q${n}`)}
+                <span aria-hidden className="text-[22px] font-normal text-black/40 transition-transform duration-300 group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 max-w-[660px] text-pretty text-[16px] leading-[1.6] text-black/65">{t(`home.faq.a${n}`)}</p>
+            </details>
+          ))}
+        </div>
+      </section>
       {/* the end, on black */}
       <section data-testid="home-end" className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-black px-6 py-28 text-center text-white">
         <Reveal>
@@ -468,6 +486,21 @@ export function Home() {
             {t('home.end.source')}
           </a>
         </Reveal>
+        <p data-testid="home-credit" className="mt-16 flex flex-wrap items-center justify-center gap-y-1 text-[13.5px] text-white/45">
+          <span className="whitespace-nowrap">{t('home.credit.by')} <span className="text-white/75">Luca Leone</span></span>
+          {[
+            [PORTFOLIO, t('home.credit.portfolio')],
+            [LINKEDIN, 'LinkedIn'],
+            [REPO, 'GitHub'],
+          ].map(([href, label]) => (
+            <span key={href}>
+              <span aria-hidden className="mx-2">·</span>
+              <a href={href} target="_blank" rel="noreferrer" className="underline-offset-4 transition-colors hover:text-white hover:underline">
+                {label}
+              </a>
+            </span>
+          ))}
+        </p>
       </section>
     </div>
   );
