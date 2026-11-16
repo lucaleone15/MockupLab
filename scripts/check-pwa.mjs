@@ -4,7 +4,8 @@ import { execSync, spawn } from 'node:child_process';
 import { chromium } from 'playwright';
 import { check } from './lib/app.mjs';
 const URL = 'http://localhost:4173/';
-const build = (id) => execSync('npx vite build', { env: { ...process.env, BUILD_ID: id }, stdio: 'pipe' });
+// the real build: app + prerendered landings (/ and /en/)
+const build = (id) => execSync('npx vite build && node scripts/prerender.mjs', { env: { ...process.env, BUILD_ID: id }, stdio: 'pipe' });
 build('first');
 const preview = spawn('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 2500));
@@ -35,6 +36,18 @@ try {
   await page.waitForSelector('[data-testid=studio-rail]', { timeout: 15000 }).catch(() => {});
   check(await page.getByTestId('studio-rail').isVisible(), 'a deep link (/studio) opens offline too');
   await ctx.setOffline(false);
+  // English: once seen online, /en/ comes back offline as the English page itself (not the French one)
+  await page.goto(URL + 'en/');
+  await page.waitForTimeout(1500);
+  await ctx.setOffline(true);
+  const res = await page.goto(URL + 'en/');
+  const served = (await res?.text()) ?? '';
+  check(/<html lang="en"/.test(served) && served.includes('The photo studio for your designs.'), 'offline, /en/ is served as the English page');
+  await page.waitForSelector('[data-testid=home]', { timeout: 15000 }).catch(() => {});
+  check((await page.evaluate(() => document.documentElement.lang)) === 'en', 'offline, /en/ runs in English');
+  await ctx.setOffline(false);
+  await page.goto(URL);
+  await page.waitForSelector('[data-testid=home]', { timeout: 15000 });
   // a new version is published
   build('second');
   await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.update());

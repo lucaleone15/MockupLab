@@ -39,7 +39,15 @@ export default defineConfig(({ command, isPreview, mode }) => ({
         globPatterns: ['**/*.{js,mjs,css,html,svg,woff2}', 'icons/*.png'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',
+        // English addresses get the English page (prerendered after the build; prerender.mjs adds it to the
+        // precache): from the network when online, else that page
+        navigateFallbackDenylist: [/^\/en(\/|$)/],
         runtimeCaching: [
+          {
+            urlPattern: ({ request, url }) => request.mode === 'navigate' && /^\/en(\/|$)/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'mockuplab-pages', networkTimeoutSeconds: 4, precacheFallback: { fallbackURL: 'en/index.html' } },
+          },
           {
             urlPattern: ({ url }) => /\/(assets\/(light|materials|photo)|samples|showcase)\//.test(url.pathname),
             handler: 'CacheFirst',

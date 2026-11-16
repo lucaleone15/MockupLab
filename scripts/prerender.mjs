@@ -7,6 +7,7 @@
 import { chromium } from 'playwright';
 import { preview } from 'vite';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { AUTHOR, HEAD, REPO, SITE_URL } from './seo.mjs';
 
 const template = readFileSync('dist/index.html', 'utf8');
@@ -125,3 +126,12 @@ for (const lang of ['fr', 'en']) {
 
 await browser.close();
 await new Promise((r) => server.httpServer.close(r));
+
+// the service worker was generated before these pages: give it their real content (offline visitors get them)
+const rev = (f) => createHash('md5').update(readFileSync(f)).digest('hex');
+let sw = readFileSync('dist/sw.js', 'utf8');
+const before = sw;
+sw = sw.replace(/\{url:"index\.html",revision:"[0-9a-f]+"\}/, `{url:"index.html",revision:"${rev('dist/index.html')}"},{url:"en/index.html",revision:"${rev('dist/en/index.html')}"}`);
+if (sw === before) throw new Error('index.html not found in the service worker precache list');
+writeFileSync('dist/sw.js', sw);
+console.log('service worker precache updated (index.html, en/index.html)');
