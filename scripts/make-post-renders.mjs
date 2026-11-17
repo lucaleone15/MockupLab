@@ -25,7 +25,11 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       // a trio is framed straight on first (all facing us), then turned: the camera follows the device with the
       // largest footprint, and a turned phone has a larger one than the middle one
       byX = [...items].sort((a, b) => a.position[0] - b.position[0]);
-      if (yaws) byX.forEach((it) => s.updateItem(it.id, (x) => ({ rotation: [x.rotation[0], 0, x.rotation[2]] })));
+      // …on one straight line, evenly spaced around the middle, all at the same depth (the row is staggered)
+      if (yaws) {
+        const gap = Math.abs(byX[byX.length - 1].position[0] - byX[0].position[0]) / Math.max(1, byX.length - 1);
+        byX.forEach((it, i) => s.updateItem(it.id, (x) => ({ rotation: [x.rotation[0], 0, x.rotation[2]], position: [(i - (byX.length - 1) / 2) * gap, x.position[1], 0] })));
+      }
       if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
       if (background) s.setBackground(background);
       if (decor) s.setDecor(decor);
