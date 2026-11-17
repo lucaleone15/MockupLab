@@ -181,7 +181,7 @@ export function ModelCard({ model: m, onDelete, onAdded, replaceId }: { model: D
                           type="button"
                           aria-label={t('glb.delete')}
                           onClick={onDelete}
-                          className="absolute left-1.5 top-1.5 grid size-6 scale-90 place-items-center rounded-full bg-black/60 text-white opacity-0 shadow-md transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100"
+                          className="absolute left-1.5 top-1.5 grid size-6 scale-90 place-items-center rounded-full bg-black/60 text-white opacity-0 shadow-md transition-[opacity,transform] duration-150 group-hover:scale-100 group-hover:opacity-100 focus-visible:opacity-100 touch:scale-100 touch:opacity-100"
                         >
                           <Trash2 size={12} />
                         </button>

@@ -16,6 +16,7 @@ import { FloatingBar } from '@/shell/FloatingBar';
 import { MOD } from './shortcuts';
 import { OverlayLayer } from './OverlayLayer';
 import { ModeRole } from '@/shell/ModeRole';
+import { isTouch } from '@/ui/useCompact';
 
 /** While an animation preview plays: the app is frozen (the scene is a temporary copy), with a stop button. */
 export function PreviewOverlay() {
@@ -79,6 +80,28 @@ function EmptyHint() {
   // the role line explains an empty Studio; once a design is in, it would only cover the scene
   const sceneHasImage = useProject((s) => s.items.some((it) => Object.values(it.surfaces).some((b) => b.assetId)));
   const [before, after] = t('stage.emptyHint').split('{paste}');
+  const sample = async () => {
+    setLoading(true);
+    try {
+      if (item) await loadSamples(item.id);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // a touch screen can neither drag a file in nor paste: two plain buttons, clear of the device
+  if (isTouch())
+    return (
+      <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center gap-2 animate-[fade-in_300ms_ease-out]" data-testid="empty-hint">
+        <button type="button" onClick={() => pickImages()} className="pointer-events-auto flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-[13px] font-semibold text-black shadow-xl">
+          <ImagePlus size={15} />
+          {t('stage.pickImage')}
+        </button>
+        <button type="button" disabled={loading} onClick={() => void sample()} className="pointer-events-auto flex h-9 items-center gap-1.5 rounded-full bg-black/55 px-3.5 text-[13px] font-medium text-white shadow-xl backdrop-blur-xl">
+          {loading ? <Spinner size={12} /> : <Sparkles size={14} />}
+          {t('stage.sampleShort')}
+        </button>
+      </div>
+    );
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-2 animate-[fade-in_300ms_ease-out]">
       {!sceneHasImage && <ModeRole screen="studio" className="rounded-full bg-black/45 px-3 py-1 text-[12px] text-white/80 backdrop-blur-xl" />}
@@ -95,14 +118,7 @@ function EmptyHint() {
         <button
           type="button"
           disabled={loading}
-          onClick={async () => {
-            setLoading(true);
-            try {
-              if (item) await loadSamples(item.id);
-            } finally {
-              setLoading(false);
-            }
-          }}
+          onClick={() => void sample()}
           className="flex h-7 items-center gap-1.5 rounded-lg bg-white/12 px-2.5 font-medium text-white transition-colors hover:bg-white/20"
         >
           {loading ? <Spinner size={12} /> : <Sparkles size={13} />}
@@ -182,16 +198,18 @@ export function ExportOverlay() {
  * The export frame inside an area of `box` (CSS px), centred in the space the
  * panels leave free on the left: the largest rectangle of `ratio` that fits.
  */
-export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft: number, insetTop = 0) {
-  const padX = 56;
-  const padY = 84;
+export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft: number, insetTop = 0, { insetBottom = 0, compact = false } = {}) {
+  // a phone keeps thin margins; the floating bar sits under the frame
+  const padX = compact ? 14 : 56;
+  const padTop = compact ? 10 : 84;
+  const padBottom = compact ? 58 : 84;
   const free = Math.max(0, box.w - insetLeft);
   const aw = Math.max(0, free - padX * 2);
-  const freeH = Math.max(0, box.h - insetTop);
-  const ah = Math.max(0, freeH - padY * 2);
+  const freeH = Math.max(0, box.h - insetTop - insetBottom);
+  const ah = Math.max(0, freeH - padTop - padBottom);
   const width = Math.floor(Math.min(aw, ah * ratio));
   const height = Math.floor(width / ratio);
-  return { x: Math.round(insetLeft + (free - width) / 2), y: Math.round(insetTop + (freeH - height) / 2), width, height };
+  return { x: Math.round(insetLeft + (free - width) / 2), y: Math.round(insetTop + padTop + (ah - height) / 2), width, height };
 }
 
 /**
@@ -199,7 +217,7 @@ export function frameIn(box: { w: number; h: number }, ratio: number, insetLeft:
  * floating panels); the export frame sits in the free space, the camera frames
  * exactly its content, and a veil dims the scene around it.
  */
-export function Viewport({ insetLeft = 0, insetTop = 0 }: { insetLeft?: number; insetTop?: number }) {
+export function Viewport({ insetLeft = 0, insetTop = 0, insetBottom = 0, compact = false }: { insetLeft?: number; insetTop?: number; insetBottom?: number; compact?: boolean }) {
   const ratio = useProject((s) => s.export.ratio);
   const empty = useProject((s) => s.items.length === 0);
   const hasImage = useProject((s) => {
@@ -216,7 +234,7 @@ export function Viewport({ insetLeft = 0, insetTop = 0 }: { insetLeft?: number; 
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const f = frameIn(box, ratioValue(ratio), insetLeft, insetTop);
+  const f = frameIn(box, ratioValue(ratio), insetLeft, insetTop, { insetBottom, compact });
   useLayoutEffect(() => {
     Object.assign(viewFrame, f);
     invalidateScene();
@@ -243,8 +261,8 @@ export function Viewport({ insetLeft = 0, insetTop = 0 }: { insetLeft?: number; 
         <DropOverlay />
         <ExportOverlay />
       </main>
-      <div className="pointer-events-none absolute bottom-4 right-0 flex justify-center" style={{ left: insetLeft }}>
-        <FloatingBar onFullscreen={() => void root.current?.requestFullscreen?.()} />
+      <div className="pointer-events-none absolute right-0 flex justify-center" style={{ left: insetLeft, bottom: compact ? insetBottom + 6 : 16 }}>
+        <FloatingBar compact={compact} onFullscreen={() => void root.current?.requestFullscreen?.()} />
       </div>
     </div>
   );

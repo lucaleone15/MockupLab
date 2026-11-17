@@ -64,7 +64,7 @@ function Card({ id, index, onZoom }: { id: string; index: number; onZoom: () => 
           <span className="absolute right-3 top-3 rounded-full bg-black/55 px-2 py-0.5 text-[10.5px] text-white/85 backdrop-blur">{String(index + 1).padStart(2, '0')}</span>
         </button>
         {ready && (
-          <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+          <div className="absolute bottom-3 right-3 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 touch:opacity-100">
             <Tooltip label={t('variants.zoom')}>
               <button type="button" aria-label={t('variants.zoom')} className={action} onClick={onZoom}>
                 <Maximize2 size={14} />
@@ -187,11 +187,11 @@ export function VariantsDialog() {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-[var(--overlay)] backdrop-blur-[4px] animate-[fade-in_150ms_ease-out]" />
         <Dialog.Content
-          className="menu-surface fixed inset-4 z-40 flex flex-col overflow-hidden rounded-[18px] animate-[toast-in_200ms_var(--ease-out-quart)]"
+          className="menu-surface fixed inset-4 z-40 flex max-md:inset-2 flex-col overflow-hidden rounded-[18px] animate-[toast-in_200ms_var(--ease-out-quart)]"
           onEscapeKeyDown={(e) => viewer && e.preventDefault()}
           data-testid="variants"
         >
-          <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3.5">
+          <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-3.5 max-md:relative max-md:gap-2 max-md:px-4 max-md:pr-12">
             <div className="mr-2 flex items-center gap-2.5">
               <span className="grid size-8 place-items-center rounded-[10px] bg-fg text-bg">
                 <Sparkles size={16} />
@@ -228,14 +228,15 @@ export function VariantsDialog() {
               <RefreshCw size={14} />
               {selected.length ? t('variants.regenerateKeep') : t('variants.regenerate')}
             </Button>
-            <Dialog.Close className="ml-auto grid size-8 place-items-center rounded-lg text-fg-muted hover:bg-surface-3 hover:text-fg" aria-label={t('cancel')}>
+            <Dialog.Close className="ml-auto grid size-8 max-md:absolute max-md:right-3 max-md:top-3 place-items-center rounded-lg text-fg-muted hover:bg-surface-3 hover:text-fg" aria-label={t('cancel')}>
               <X size={16} />
             </Dialog.Close>
           </div>
 
           <div className="relative min-h-0 flex-1">
-            <div className="scroll-thin h-full overflow-y-auto p-5">
-              <div className="grid gap-x-4 gap-y-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+            <div className="scroll-thin h-full overflow-y-auto p-5 max-md:p-3">
+              {/* a phone: one column as wide as the window */}
+              <div className="grid gap-x-4 gap-y-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))' }}>
                 {looks.map((l, i) => (
                   <Card key={l.id} id={l.id} index={i} onZoom={() => setViewer({ ids: looks.map((x) => x.id), start: i })} />
                 ))}
@@ -244,7 +245,7 @@ export function VariantsDialog() {
             {viewer && <Viewer ids={viewer.ids} start={viewer.start} onClose={() => setViewer(null)} />}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3">
+          <div className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3 max-md:gap-2 max-md:px-4">
             <div className="text-[12.5px] text-fg-muted">{t('variants.selected', { n: selected.length })}</div>
             <Button size="sm" variant="ghost" onClick={() => variants.selectAll(selected.length < looks.length)}>
               {selected.length < looks.length ? t('variants.all') : t('variants.none')}
@@ -256,7 +257,7 @@ export function VariantsDialog() {
               </Button>
             )}
             {job && (
-              <div className="flex min-w-[220px] items-center gap-2.5 text-[12px] text-fg-muted">
+              <div className="flex min-w-[220px] items-center gap-2.5 text-[12px] text-fg-muted max-md:min-w-0">
                 <Spinner size={13} />
                 <span>{t(job.kind === 'export' ? 'variants.exporting' : 'variants.rendering', { done: job.done, total: job.total })}</span>
                 <div className="h-1 w-24 overflow-hidden rounded-full bg-surface-4">

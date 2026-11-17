@@ -42,7 +42,7 @@ export function ProjectCard({ meta }: { meta: ProjectMeta }) {
           <button
             type="button"
             aria-label={t('library.options', { name })}
-            className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity duration-150 hover:bg-black/65 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+            className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-black/45 text-white opacity-0 backdrop-blur transition-opacity duration-150 hover:bg-black/65 focus-visible:opacity-100 group-hover:opacity-100 touch:opacity-100 data-[state=open]:opacity-100"
           >
             <Ellipsis size={16} />
           </button>

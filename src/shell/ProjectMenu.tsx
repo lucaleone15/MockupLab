@@ -9,7 +9,7 @@ import { useProject } from '@/store/project';
 import { useUi } from '@/store/ui';
 
 /** Editable project name + autosave status + project menu. */
-export function ProjectMenu() {
+export function ProjectMenu({ compact = false }: { compact?: boolean } = {}) {
   const { t } = useT();
   const name = useProject((s) => s.name);
   const savedAt = useUi((s) => s.savedAt);
@@ -21,7 +21,7 @@ export function ProjectMenu() {
   const item = 'flex cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-[13px] text-fg outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-fg';
   return (
     <div className="flex min-w-0 items-center gap-1">
-      <input
+      {!compact && <input
         aria-label={t('project.name')}
         name="project-name"
         autoComplete="off"
@@ -30,7 +30,7 @@ export function ProjectMenu() {
         placeholder={t('project.untitled')}
         onChange={(e) => useProject.setState({ name: e.target.value || 'Untitled' })}
         className="h-8 w-[200px] min-w-0 rounded-[10px] bg-transparent px-2 text-[13.5px] font-medium text-fg outline-none placeholder:text-fg-subtle hover:bg-surface-3 focus:bg-surface-3"
-      />
+      />}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <button type="button" aria-label={t('project.menu')} className="grid size-8 place-items-center rounded-[10px] text-fg-muted hover:bg-surface-3 hover:text-fg">

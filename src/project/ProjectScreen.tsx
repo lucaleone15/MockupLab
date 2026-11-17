@@ -29,8 +29,9 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
   const { t } = useT();
   const asset = useAssets((s) => s.assets[f.assetId]);
   return (
-    <li data-testid="project-file" className="flex items-center gap-3 rounded-[12px] bg-surface-2 p-2 pr-3">
-      <span className="grid h-12 w-16 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-surface-3">{asset && <img src={asset.url} alt="" className="h-full w-full object-cover object-top" />}</span>
+    // on a phone the support menu goes to a second line
+    <li data-testid="project-file" className="flex flex-wrap items-center gap-3 rounded-[12px] bg-surface-2 p-2 pr-3 max-md:gap-x-1.5 max-md:gap-y-2">
+      <span className="grid h-12 w-16 shrink-0 place-items-center overflow-hidden rounded-[8px] bg-surface-3 max-md:mr-1.5">{asset && <img src={asset.url} alt="" className="h-full w-full object-cover object-top" />}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13.5px] font-medium">{f.name}</span>
         {!f.confident && <span className="text-[12px] text-fg-muted">{t('quick.toConfirm')}</span>}
@@ -44,7 +45,7 @@ function FileRow({ f, index, count }: { f: PackFile; index: number; count: numbe
         aria-label={t('project.supportOf', { name: f.name })}
         value={f.support}
         onChange={(e) => pack.setSupport(f.id, e.target.value as PackFile['support'])}
-        className="h-8 rounded-[10px] bg-surface px-2.5 text-[13px] text-fg shadow-[0_0_0_1px_var(--line-strong)_inset] outline-none"
+        className="h-8 max-md:order-last max-md:ml-[76px] max-md:h-9 max-md:flex-1 rounded-[10px] bg-surface px-2.5 text-[13px] text-fg shadow-[0_0_0_1px_var(--line-strong)_inset] outline-none"
       >
         {SUPPORTS.map((s) => (
           <option key={s} value={s}>
@@ -73,7 +74,7 @@ function PackItem({ url, label, onOpen, onDownload, ratio, target, index = 0 }: 
       <div className="relative overflow-hidden rounded-[14px] bg-surface-2" style={{ aspectRatio: String(ratio) }}>
         {url ? <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[img-in_420ms_var(--ease-out)]" /> : <span className="absolute inset-0 grid place-items-center text-fg-subtle"><Spinner /></span>}
         {onOpen && (
-          <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+          <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100 touch:hidden">
             {onDownload && (
               <Button variant="primary" size="sm" disabled={!url || busy} onClick={onDownload}>
                 <Download size={13} />
@@ -88,6 +89,21 @@ function PackItem({ url, label, onOpen, onDownload, ratio, target, index = 0 }: 
         )}
       </div>
       <span className="truncate px-0.5 text-[12.5px] text-fg-muted">{label}</span>
+      {/* a touch screen has no hover: the scene's actions sit under it */}
+      {onOpen && (
+        <span className="hidden flex-wrap gap-1.5 touch:flex">
+          {onDownload && (
+            <Button variant="primary" size="sm" disabled={!url || busy} onClick={onDownload}>
+              <Download size={13} />
+              {t('quick.download')}
+            </Button>
+          )}
+          <Button size="sm" onClick={onOpen}>
+            <SlidersHorizontal size={13} />
+            {t('project.openStudio')}
+          </Button>
+        </span>
+      )}
       {target && <SceneColor target={target} name={label} />}
     </div>
   );
@@ -278,7 +294,7 @@ export function ProjectScreen() {
   const open = (target: string) => () => void pack.openInStudio(target, () => navigate('studio'));
   return (
     <div className="flex min-h-0 flex-1 p-2" data-testid="project-screen">
-      <main className="glass scroll-thin flex min-w-0 flex-1 flex-col gap-10 overflow-y-auto overscroll-contain rounded-[14px] px-8 py-7">
+      <main className="glass scroll-thin flex min-w-0 flex-1 flex-col gap-10 overflow-y-auto overscroll-contain rounded-[14px] px-8 py-7 max-md:gap-8 max-md:px-4 max-md:py-5">
         <Step n={1} title={t('project.step.images')}>
           <div className="flex flex-col gap-3">
             {!s.files.length && <ModeRole screen="project" className="mb-1 text-[14px] text-fg" />}
@@ -303,7 +319,7 @@ export function ProjectScreen() {
         </Step>
         {s.files.length > 0 && (
           <Step n={2} title={t('project.step.style')}>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-4 max-md:gap-2.5">
               {STYLES.map((id) => {
                 const url = s.thumbs.styles[id];
                 const active = s.style === id;
@@ -322,8 +338,8 @@ export function ProjectScreen() {
         )}
         {s.files.length > 0 && (
           <Step n={3} title={t('project.step.pack')}>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <div className="col-span-2 row-span-2">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 max-md:grid-cols-1">
+              <div className="col-span-2 row-span-2 max-md:col-span-1">
                 <PackItem url={s.thumbs.hero} label={t('project.hero')} ratio={ratio} target="hero" onOpen={open('hero')} onDownload={() => void pack.downloadOne('hero')} />
               </div>
               {s.files.map((f, i) => (

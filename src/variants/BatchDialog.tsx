@@ -99,7 +99,7 @@ export function BatchDialog() {
                         type="button"
                         aria-label={t('props.remove')}
                         onClick={() => batch.remove(f.id)}
-                        className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-black/65 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-black/65 text-white opacity-0 transition-opacity group-hover:opacity-100 touch:opacity-100"
                       >
                         <X size={11} />
                       </button>

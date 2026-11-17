@@ -300,7 +300,7 @@ export function BrandKit() {
                 aria-label={t('text.delete')}
                 disabled={brand.colors.length <= 1}
                 onClick={() => setBrand({ colors: brand.colors.filter((_, j) => j !== i) })}
-                className="grid size-6 place-items-center rounded-md text-fg-subtle opacity-0 hover:bg-surface-3 hover:text-fg group-hover:opacity-100 disabled:hidden"
+                className="grid size-6 place-items-center rounded-md text-fg-subtle opacity-0 hover:bg-surface-3 hover:text-fg group-hover:opacity-100 touch:opacity-100 disabled:hidden"
               >
                 <X size={12} />
               </button>

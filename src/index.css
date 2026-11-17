@@ -9,6 +9,8 @@
 @import '@fontsource/instrument-serif/400-italic.css';
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+/* touch screens without hover: what shows on hover is shown outright */
+@custom-variant touch (@media (hover: none));
 
 /*
  * The app is a photo studio: frosted panels float over a soft, lit field like
@@ -149,6 +151,10 @@ html,
 body,
 #root {
   height: 100%;
+}
+/* phones: the visible height, without the browser bars */
+#root {
+  height: 100dvh;
 }
 
 body {

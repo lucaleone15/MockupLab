@@ -34,7 +34,7 @@ function Tile({ tile, index, featured = false }: { tile: QuickTile; index: numbe
             <Spinner />
           </span>
         )}
-        <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100">
+        <span className="absolute inset-0 flex items-center justify-center gap-2 bg-black/35 opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100 touch:hidden">
           <Button variant="primary" size="sm" disabled={!url || !!busy} onClick={() => void quick.download([tile.id])}>
             {busy ? <Spinner size={12} /> : <Download size={13} />}
             {t('quick.download')}
@@ -51,13 +51,26 @@ function Tile({ tile, index, featured = false }: { tile: QuickTile; index: numbe
           onClick={() => quick.toggle(tile.id)}
           className={cx(
             'absolute left-2.5 top-2.5 grid size-6 place-items-center rounded-full transition-[opacity,background-color]',
-            selected ? 'bg-accent text-accent-fg opacity-100' : 'bg-black/40 text-white opacity-0 ring-1 ring-white/70 group-hover:opacity-100 focus-visible:opacity-100',
+            selected ? 'bg-accent text-accent-fg opacity-100' : 'bg-black/40 text-white opacity-0 ring-1 ring-white/70 group-hover:opacity-100 focus-visible:opacity-100 touch:opacity-100',
           )}
         >
           <Check size={13} strokeWidth={3} />
         </button>
       </div>
-      <span className={cx('truncate px-0.5 font-medium text-fg', featured ? 'text-[15px]' : 'text-[13px]')}>{label}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className={cx('min-w-0 truncate px-0.5 font-medium text-fg', featured ? 'text-[15px]' : 'text-[13px]')}>{label}</span>
+        {/* a touch screen has no hover: the shot's actions sit under it */}
+        <span className="hidden shrink-0 gap-1.5 touch:flex">
+          <Button size="sm" onClick={() => void quick.customize(tile.id, () => navigate('studio'))}>
+            <SlidersHorizontal size={13} />
+            {t('quick.customize')}
+          </Button>
+          <Button variant="primary" size="sm" disabled={!url || !!busy} onClick={() => void quick.download([tile.id])}>
+            {busy ? <Spinner size={12} /> : <Download size={13} />}
+            {t('quick.download')}
+          </Button>
+        </span>
+      </div>
     </div>
   );
 }
@@ -148,8 +161,9 @@ export function QuickScreen() {
     return () => quick.stop();
   }, []);
   return (
-    <div className="flex min-h-0 flex-1 gap-2 p-2" data-testid="quick-screen">
-      <aside className="glass flex w-[280px] shrink-0 flex-col gap-6 overflow-y-auto rounded-[14px] p-5">
+    // on a phone: one column that scrolls, the settings above the shots
+    <div className="flex min-h-0 flex-1 gap-2 p-2 max-md:flex-col max-md:overflow-y-auto max-md:overscroll-contain" data-testid="quick-screen">
+      <aside className="glass flex w-[280px] shrink-0 flex-col gap-6 overflow-y-auto rounded-[14px] p-5 max-md:w-full max-md:gap-5 max-md:overflow-visible max-md:p-4">
         <div className="flex flex-col gap-3">
           {!asset && <ModeRole screen="quick" className="text-fg" />}
           <GroupTitle>{t('quick.design')}</GroupTitle>
@@ -157,7 +171,7 @@ export function QuickScreen() {
             type="button"
             data-testid="quick-pick"
             onClick={() => pickImages((files) => files[0] && void quick.setImage(files[0]))}
-            className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-[12px] border-[1.5px] border-dashed border-line-strong bg-surface-2 text-fg-muted transition-colors hover:border-accent hover:text-fg"
+            className="relative grid aspect-[4/3] place-items-center overflow-hidden max-md:aspect-[5/2] rounded-[12px] border-[1.5px] border-dashed border-line-strong bg-surface-2 text-fg-muted transition-colors hover:border-accent hover:text-fg"
           >
             {asset ? (
               <img src={asset.url} alt={asset.name} className="h-full w-full object-contain" />
@@ -190,8 +204,8 @@ export function QuickScreen() {
           </div>
         </div>
       </aside>
-      <main className="glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px]">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4 pt-5">
+      <main className="glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px] max-md:flex-none max-md:overflow-visible">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4 pt-5 max-md:px-4">
           <h1 className="font-display text-[22px] font-bold">{t('screen.quick')}</h1>
           {/* the gallery's families */}
           <div data-testid="quick-categories" className="flex gap-1.5">
@@ -203,13 +217,13 @@ export function QuickScreen() {
           </div>
         </div>
         {/* a gallery: the first shot big, the others wide */}
-        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-5 gap-y-6 overflow-y-auto overscroll-contain px-5 pb-6">
+        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-5 gap-y-6 overflow-y-auto overscroll-contain px-5 pb-6 max-md:grid-cols-1 max-md:overflow-visible max-md:px-4">
           {shown.map((tile, i) => (
             <Tile key={tile.id} tile={tile} index={i} featured={i === 0 && shown.length > 2} />
           ))}
         </div>
         {s.selected.length > 0 && (
-          <div className="flex items-center justify-between border-t border-line px-5 py-3">
+          <div className="flex items-center justify-between border-t border-line px-5 py-3 max-md:sticky max-md:bottom-0 max-md:rounded-b-[14px] max-md:bg-[var(--card)] max-md:px-4">
             <span className="text-[13px] text-fg-muted">{t('quick.selected', { n: s.selected.length })}</span>
             <Button variant="primary" disabled={!!s.busy} onClick={() => void quick.download(s.selected)}>
               <Download size={15} />

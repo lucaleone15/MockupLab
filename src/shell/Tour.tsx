@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { isTouch } from '@/ui/useCompact';
 import { X } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
 import { useUi, type StudioPage } from '@/store/ui';
@@ -75,7 +76,8 @@ function close() {
   useUi.getState().setStudioPage('devices');
 }
 
-const CARD_W = 320;
+// a phone gets a card as wide as the screen allows
+const cardW = () => Math.min(320, window.innerWidth - 32);
 const GAP = 14;
 const PAD = 6;
 
@@ -83,13 +85,13 @@ const PAD = 6;
 function cardPosition(rect: DOMRect | null, cardH: number) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  if (!rect) return { left: (vw - CARD_W) / 2, top: Math.max(16, (vh - cardH) / 2) };
+  if (!rect) return { left: (vw - cardW()) / 2, top: Math.max(16, (vh - cardH) / 2) };
   const clampTop = (y: number) => Math.min(Math.max(16, y), vh - cardH - 16);
-  const clampLeft = (x: number) => Math.min(Math.max(16, x), vw - CARD_W - 16);
-  if (rect.right + GAP + CARD_W + 16 <= vw && rect.height > 120) return { left: rect.right + GAP, top: clampTop(rect.top + 24) };
-  if (rect.left - GAP - CARD_W >= 16 && rect.height > 120) return { left: rect.left - GAP - CARD_W, top: clampTop(rect.top + 24) };
-  if (rect.bottom + GAP + cardH + 16 <= vh) return { left: clampLeft(rect.left + rect.width / 2 - CARD_W / 2), top: rect.bottom + GAP };
-  return { left: clampLeft(rect.left + rect.width / 2 - CARD_W / 2), top: Math.max(16, rect.top - GAP - cardH) };
+  const clampLeft = (x: number) => Math.min(Math.max(16, x), vw - cardW() - 16);
+  if (rect.right + GAP + cardW() + 16 <= vw && rect.height > 120) return { left: rect.right + GAP, top: clampTop(rect.top + 24) };
+  if (rect.left - GAP - cardW() >= 16 && rect.height > 120) return { left: rect.left - GAP - cardW(), top: clampTop(rect.top + 24) };
+  if (rect.bottom + GAP + cardH + 16 <= vh) return { left: clampLeft(rect.left + rect.width / 2 - cardW() / 2), top: rect.bottom + GAP };
+  return { left: clampLeft(rect.left + rect.width / 2 - cardW() / 2), top: Math.max(16, rect.top - GAP - cardH) };
 }
 
 export function Tour() {
@@ -158,8 +160,9 @@ export function Tour() {
       )}
       <div
         ref={setCard}
+        data-testid="tour-card"
         className="menu-surface absolute flex flex-col gap-3 rounded-[18px] p-5 transition-[left,top] duration-300 ease-[var(--ease-out-quart)]"
-        style={{ width: CARD_W, left: pos.left, top: pos.top }}
+        style={{ width: cardW(), left: pos.left, top: pos.top }}
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id="tour-title" className="font-display text-[18px] font-bold leading-tight">
@@ -169,7 +172,7 @@ export function Tour() {
             <X size={15} />
           </button>
         </div>
-        <p className="text-[13px] leading-relaxed text-fg-muted">{t(`tour.${step.id}.body` as I18nKey, { mod: MOD })}</p>
+        <p className="text-[13px] leading-relaxed text-fg-muted">{t(`tour.${step.id}.${isTouch() && (step.id === 'scene' || step.id === 'export') ? 'bodyTouch' : 'body'}` as I18nKey, { mod: MOD })}</p>
         <div className="flex items-center gap-2 pt-1">
           <span className="text-[12px] tabular-nums text-fg-subtle">
             {index + 1} / {STEPS.length}

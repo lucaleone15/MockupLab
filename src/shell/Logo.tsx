@@ -14,12 +14,12 @@ export function LogoMark({ size = 26, className }: { size?: number; className?: 
 }
 
 /** The phone mark and « MockupLab » in one colour, Archivo Expanded. Links to the home page. */
-export function Logo({ asLink = true, tone }: { asLink?: boolean; tone?: 'light' }) {
+export function Logo({ asLink = true, tone, markOnly = false }: { asLink?: boolean; tone?: 'light'; markOnly?: boolean }) {
   const { t } = useT();
   const mark = (
     <span className={`flex items-center gap-2${tone === 'light' ? ' text-white' : ''}`} data-testid="logo">
       <LogoMark />
-      <span className="font-display text-[17px] font-bold leading-none">MockupLab</span>
+      {markOnly ? <span className="sr-only">MockupLab</span> : <span className="font-display text-[17px] font-bold leading-none">MockupLab</span>}
     </span>
   );
   if (!asLink) return mark;

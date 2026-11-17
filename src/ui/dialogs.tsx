@@ -4,6 +4,7 @@ import { FileUp } from 'lucide-react';
 import { useT } from '@/i18n';
 import { useUi } from '@/store/ui';
 import { Button, Sheet, cx } from './primitives';
+import { isTouch } from './useCompact';
 
 /*
  * The app's own pop-ups, in place of the browser's (confirm, prompt, the bare
@@ -61,6 +62,17 @@ export function askText(o: Omit<TextAsk, 'kind' | 'resolve'>): Promise<string | 
 /** Files dropped, pasted or browsed in the app's dialog (empty when it is closed). */
 export function askFiles(o: Omit<FileAsk, 'kind' | 'resolve'>): Promise<File[]> {
   settleOpen();
+  // a touch screen has nothing to drop or paste: the system picker (photos, files) opens straight away
+  if (isTouch())
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = o.accept;
+      input.multiple = o.multiple;
+      input.onchange = () => resolve([...(input.files ?? [])].filter((f) => matches(f, o.accept)));
+      input.addEventListener('cancel', () => resolve([]));
+      input.click();
+    });
   return new Promise((resolve) => useAsk.setState({ ask: { kind: 'file', ...o, resolve } }));
 }
 

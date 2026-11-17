@@ -10,7 +10,7 @@ import { Tooltip, cx } from '@/ui/primitives';
 const btn = 'flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[12.5px] font-medium text-fg-muted transition-colors hover:bg-surface-3 hover:text-fg';
 
 /** Output format, recenter, full-screen preview and Ideas, floating over the stage. */
-export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
+export function FloatingBar({ onFullscreen, compact = false }: { onFullscreen: () => void; compact?: boolean }) {
   const { t } = useT();
   return (
     <div className="glass-float pointer-events-auto flex items-center gap-1 rounded-full p-1" data-testid="floating-bar">
@@ -21,11 +21,14 @@ export function FloatingBar({ onFullscreen }: { onFullscreen: () => void }) {
           <Scan size={15} />
         </button>
       </Tooltip>
-      <Tooltip label={t('stage.fullscreen')}>
-        <button type="button" className={btn} aria-label={t('stage.fullscreen')} onClick={onFullscreen}>
-          <Maximize2 size={15} />
-        </button>
-      </Tooltip>
+      {/* phones: the scene already fills the screen (and iOS has no full screen for a page) */}
+      {!compact && (
+        <Tooltip label={t('stage.fullscreen')}>
+          <button type="button" className={btn} aria-label={t('stage.fullscreen')} onClick={onFullscreen}>
+            <Maximize2 size={15} />
+          </button>
+        </Tooltip>
+      )}
       <span className="mx-1 h-5 w-px bg-line-strong" />
       <Tooltip label={t('stage.ideasHint')}>
         <button type="button" className={cx(btn, 'text-fg')} onClick={() => variants.open()} data-testid="open-variants">

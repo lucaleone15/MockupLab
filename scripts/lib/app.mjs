@@ -2,9 +2,10 @@
 import { chromium } from 'playwright';
 
 /** Opens the app on a fresh profile. `hash` like '#/studio'. */
-export async function openApp({ hash = '', lang = 'fr', colorScheme = 'dark', fresh = true, viewport = { width: 1440, height: 900 }, init } = {}) {
+export async function openApp({ hash = '', lang = 'fr', colorScheme = 'dark', fresh = true, viewport = { width: 1440, height: 900 }, init, mobile = false } = {}) {
   const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu'] });
-  const context = await browser.newContext({ viewport, colorScheme, acceptDownloads: true });
+  // `mobile`: a touch phone (touch events, no hover)
+  const context = await browser.newContext({ viewport, colorScheme, acceptDownloads: true, ...(mobile && { isMobile: true, hasTouch: true, deviceScaleFactor: 2 }) });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

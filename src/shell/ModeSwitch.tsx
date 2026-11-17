@@ -1,11 +1,51 @@
 import type { KeyboardEvent } from 'react';
+import { DropdownMenu } from 'radix-ui';
+import { Check, ChevronDown } from 'lucide-react';
 import { useT, type I18nKey } from '@/i18n';
+import { useCompact } from '@/ui/useCompact';
 import { useUi } from '@/store/ui';
 import { Tooltip, cx } from '@/ui/primitives';
 import { AVAILABLE, MODE_ORDER, navigate } from './route';
 
 /** Studio · Rapide · Projet · Photo — a pill segmented control; each mode says what it is for on hover, unbuilt modes say "Soon". */
 export function ModeSwitch() {
+  const compact = useCompact();
+  return compact ? <ModeMenu /> : <ModePills />;
+}
+
+/** On a phone: the open mode's name, the others in a menu with what each is for. */
+function ModeMenu() {
+  const { t } = useT();
+  const screen = useUi((s) => s.screen);
+  const row = 'flex cursor-pointer items-start gap-2.5 rounded-[10px] px-3 py-2.5 outline-none data-[highlighted]:bg-surface-3';
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button type="button" data-testid="mode-switch" aria-label={t('screen.home')} className="flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-semibold text-fg">
+          {t(`screen.${screen}` as I18nKey)}
+          <ChevronDown size={15} className="text-fg-muted" />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content sideOffset={8} align="center" className="menu-surface menu-pop z-50 w-[min(300px,calc(100vw-32px))] rounded-[16px] p-1.5">
+          <DropdownMenu.RadioGroup value={screen} onValueChange={(m) => navigate(m as typeof screen)}>
+            {MODE_ORDER.filter((m) => AVAILABLE[m]).map((m) => (
+              <DropdownMenu.RadioItem key={m} value={m} className={row}>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[14px] font-semibold text-fg">{t(`screen.${m}` as I18nKey)}</span>
+                  <span className="text-[12.5px] leading-snug text-fg-muted">{t(`mode.${m}.role` as I18nKey)}</span>
+                </span>
+                <Check size={15} className={cx('mt-0.5 shrink-0 text-accent', m !== screen && 'opacity-0')} />
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function ModePills() {
   const { t } = useT();
   const screen = useUi((s) => s.screen);
   // radio group keyboard pattern: arrows move between the available modes
