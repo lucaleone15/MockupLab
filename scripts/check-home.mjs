@@ -82,7 +82,7 @@ await cta.click();
 await page.waitForTimeout(400);
 check((await page.evaluate(() => window.__mockuplab.ui.getState().screen)) === 'studio', 'Open the Studio opens the Studio');
 
-// 2. a saved project: « Mes projets » and « Reprendre »
+// 2. a saved project: « Mes projets » in the header opens it (the hero has no « Reprendre » line)
 await page.evaluate(() => window.__mockuplab.project.setState({ name: 'Reprise' }));
 await page.waitForTimeout(2500);
 await page.goto('http://localhost:5173/');
@@ -91,10 +91,10 @@ await page.waitForTimeout(800);
 await page.getByRole('button', { name: 'Mes projets' }).click();
 await page.waitForTimeout(300);
 check(await page.getByTestId('all-projects').isVisible(), '« Mes projets » opens the projects window');
-await page.keyboard.press('Escape');
-await page.getByTestId('home-hero').getByRole('button', { name: /Reprendre « Reprise »/ }).click();
+check((await page.getByTestId('home-hero').getByRole('button', { name: /Reprendre/ }).count()) === 0, 'no « Reprendre » line in the hero');
+await page.getByTestId('all-projects').getByRole('button', { name: /Reprise/ }).first().click();
 await page.waitForTimeout(600);
-check((await page.evaluate(() => window.__mockuplab.project.getState().name)) === 'Reprise', '« Reprendre » opens the last project');
+check((await page.evaluate(() => window.__mockuplab.project.getState().name)) === 'Reprise', 'a project card in « Mes projets » opens it');
 
 // 3. desktop: pinned chapters, continuous 3D, both ways
 await page.setViewportSize({ width: 1440, height: 900 });
@@ -278,7 +278,9 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
   await page.waitForTimeout(800);
   const zone = page.getByTestId('home-try');
   const box = await zone.boundingBox();
-  check(!!box && box.y + box.height <= 900, 'the « drop your capture » zone is in the first screen');
+  check(!!box && box.y + box.height <= 900, '« Importer une capture » is in the first screen');
+  const sizes = await page.getByTestId('home-hero').locator('button').evaluateAll((els) => els.filter((e) => e.offsetHeight > 40).map((e) => e.offsetHeight));
+  check(sizes.length === 2 && sizes[0] === sizes[1], `the hero has two buttons of one height (${sizes})`);
   await zone.locator('input[type=file]').setInputFiles('scripts/fixtures/capture.png');
   await page.waitForFunction(() => window.__mockuplab.ui.getState().screen === 'studio', null, { timeout: 10000 }).catch(() => {});
   const got = await page.evaluate(() => {

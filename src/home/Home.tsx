@@ -5,7 +5,6 @@ import { useT, type I18nKey } from '@/i18n';
 import { Logo } from '@/shell/Logo';
 import { MoreMenu } from '@/shell/MoreMenu';
 import { AVAILABLE, MODE_ORDER, navigate } from '@/shell/route';
-import { openProject } from '@/library/actions';
 import { useLibrary } from '@/library/store';
 import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
@@ -159,66 +158,43 @@ function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   );
 }
 
-/** « Drop your capture here »: a file dropped, pasted or picked opens the Studio with the mock-up already made. */
-function TryHere({ light }: { light: boolean }) {
+/** The second hero button, the same size as the first: a capture picked here (or dropped, or pasted anywhere on
+ * the page) opens the Studio with the mock-up already made. While a file is dragged over the page it says so. */
+function ImportCapture({ light }: { light: boolean }) {
   const { t } = useT();
-  const [over, setOver] = useState(false);
+  const dragging = useUi((s) => s.dragging);
   const input = useRef<HTMLInputElement>(null);
-  const take = (files: FileList | null | undefined) => void startWithFiles([...(files ?? [])]);
   return (
-    <div
-      data-testid="home-try"
-      onDragOver={(e) => {
-        e.preventDefault();
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => {
-        // handled here, not by the page-wide drop
-        e.preventDefault();
-        e.stopPropagation();
-        setOver(false);
-        take(e.dataTransfer?.files);
-      }}
-      className={cx(
-        'pointer-events-auto mt-1 flex w-full max-w-[460px] items-center justify-center gap-3 rounded-[18px] border border-dashed px-5 py-3.5 text-[14.5px] backdrop-blur-md transition-colors duration-150',
-        light ? 'border-black/20 bg-white/50 text-[#1d1d1f]/75' : 'border-white/25 bg-white/[0.06] text-white/75',
-        over && (light ? 'border-brand-solid bg-white/80' : 'border-brand-solid bg-brand-solid/15'),
-      )}
-    >
-      <ImagePlus size={18} className="shrink-0 text-brand" />
-      {/* a touch screen can't drag a file: it gets the picker alone (CSS, so the static page and the app agree) */}
-      <span className="touch:hidden">
-        {t('home.try')}{' '}
-        <button type="button" onClick={() => input.current?.click()} className={cx('font-semibold underline underline-offset-[3px]', light ? 'decoration-black/25' : 'decoration-white/35')}>
-          {t('home.tryBrowse')}
-        </button>
-      </span>
-      <button type="button" onClick={() => input.current?.click()} className="hidden font-semibold touch:inline">
-        {t('stage.pickImage')}
+    <span data-testid="home-try" className="pointer-events-auto inline-flex max-sm:flex">
+      <button
+        type="button"
+        onClick={() => input.current?.click()}
+        className={cx(
+          'pointer-events-auto flex h-12 items-center justify-center gap-2 rounded-full px-7 max-sm:w-full text-[16px] font-semibold transition-[background-color,box-shadow,transform] duration-150 ease-out active:scale-[0.97]',
+          light ? 'text-[#1d1d1f] shadow-[inset_0_0_0_1.5px_rgb(0_0_0/0.18)] hover:bg-black/5' : 'text-white shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.28)] hover:bg-white/10',
+          dragging && 'bg-brand-solid/15 shadow-[inset_0_0_0_1.5px_var(--color-brand-solid)]',
+        )}
+      >
+        <ImagePlus size={18} className="shrink-0" />
+        {dragging ? t('home.dropHere') : t('home.import')}
       </button>
-      <input ref={input} type="file" accept={IMAGE_OR_PDF} multiple hidden onChange={(e) => take(e.target.files)} />
-    </div>
+      <input ref={input} type="file" accept={IMAGE_OR_PDF} multiple hidden onChange={(e) => void startWithFiles([...(e.target.files ?? [])])} />
+    </span>
   );
 }
 
-/** The opening's words: the title, one sentence, the main button, the way back into a project. */
+/** The opening's words: the title, one sentence, the main button, the drop zone (projects: « Mes projets » in the header). */
 function Opening({ light, reveal }: { light: boolean; reveal: number }) {
   const { t } = useT();
-  const last = useLibrary((s) => s.list).find(worth);
   return (
     <div className="flex flex-col items-center gap-6 text-center">
       <h1 className="font-display max-w-[980px] text-balance text-[clamp(46px,7vw,104px)] font-extrabold leading-[0.96]">{t('home.title')}</h1>
       <WordReveal text={t('home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      {/* two actions, one row, one size */}
+      <div className="flex flex-wrap items-center justify-center gap-3 max-sm:w-full max-sm:max-w-[320px] max-sm:flex-col max-sm:items-stretch">
         <OpenStudio />
+        <ImportCapture light={light} />
       </div>
-      <TryHere light={light} />
-      {last && (
-        <button type="button" onClick={() => void openProject(last)} className="pointer-events-auto text-[14px] font-medium underline underline-offset-4 opacity-70 transition-opacity hover:opacity-100">
-          {t('home.resume', { name: last.name })}
-        </button>
-      )}
     </div>
   );
 }
