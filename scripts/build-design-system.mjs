@@ -12,7 +12,7 @@ if (!out) throw new Error('usage: node scripts/build-design-system.mjs <out-dir>
 mkdirSync(`${out}/components`, { recursive: true });
 
 // the cards, in order (TooltipProvider is exported too, but a provider gets no card)
-const NAMES = ['Logo', 'LogoMark', 'Button', 'IconButton', 'Tooltip', 'Kbd', 'GroupTitle', 'Section', 'Field', 'Segmented', 'Slider', 'ColorField', 'Spinner', 'Switch', 'Advanced', 'Chip', 'Sheet'];
+const NAMES = ['Logo', 'LogoMark', 'Button', 'IconButton', 'Tooltip', 'Kbd', 'GroupTitle', 'Section', 'Field', 'Segmented', 'Slider', 'ColorField', 'Spinner', 'Switch', 'Advanced', 'Chip', 'Sheet', 'TopBar', 'ModeSwitch', 'Rail', 'RailPage', 'FloatingBar', 'Menu', 'Toast'];
 // react/jsx-runtime from the page's React (the bundle carries no React of its own)
 const header = `/* @ds-bundle: ${JSON.stringify({ format: 4, namespace: 'MockupLab', components: NAMES.map((name) => ({ name })) })} */\n`;
 const banner = `var __MLJSX=(function(R){function j(t,p,k){return R.createElement(t,k===undefined?p:Object.assign({},p,{key:k}))}return{jsx:j,jsxs:j,Fragment:R.Fragment}})(window.React);`;

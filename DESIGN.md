@@ -58,6 +58,13 @@ Shadows are tinted night-blue (`rgb(22 32 72 / …)`), never plain grey.
 - **Motion**: strong ease-out (`--ease-out`) for what enters or answers (160–340 ms), ease-in-out for what
   moves on screen; keyboard actions never animate; everything respects `prefers-reduced-motion`.
 
+## Phones
+
+The whole editor works by finger below 768 px: the top bar keeps the mark, the mode as a menu, undo, ⋯ and an
+export icon; the Studio's pages become a tab bar at the bottom with a folding panel above it; Rapide and Projet
+are one scrolling column. On touch screens, what a computer shows on hover is shown outright, and « Choisir une
+image » opens the system picker. Checked by `node scripts/check-mobile.mjs`.
+
 ## Pictures (landing, README, posts)
 
 - **Real renders only**, made by MockupLab itself (`node scripts/make-showcase.mjs`), with the bundled sample
@@ -73,4 +80,4 @@ Shadows are tinted night-blue (`rgb(22 32 72 / …)`), never plain grey.
 - French first, « tu », short sentences, no jargon (« mock-up », « Studio », « Rapide », « Projet »).
   English: « you », same tone.
 - Say what it does, not how clever it is: « Glisse une capture, obtiens un mock-up photoréaliste en 4K. »
-- Promises we keep: free, open source, nothing leaves your computer.
+- Promises we keep: free, no account, nothing leaves your computer. The story is about the pictures, not the code: no « open source » or GitHub in headlines.
