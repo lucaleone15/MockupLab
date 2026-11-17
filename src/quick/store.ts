@@ -13,7 +13,7 @@ import { toast } from '@/store/toasts';
 import { useUi } from '@/store/ui';
 import { inSandbox, onCancelSandboxes, renderFull, renderThumb, settleScene, whenIdle } from '@/variants/render';
 import { detectSupport, modelForSupport, type Support } from './detect';
-import { QUICK_COLORS, SHOTS, type ShotId } from './templates';
+import { QUICK_COLORS, SHOTS, type ShotId, type ShotGroup } from './templates';
 
 /*
  * Quick mode: the user's design (or a sample) on the device that suits it,
@@ -22,7 +22,7 @@ import { QUICK_COLORS, SHOTS, type ShotId } from './templates';
  * never touched.
  */
 
-export type QuickTile = { id: ShotId; label: I18nString };
+export type QuickTile = { id: ShotId; label: I18nString; group: ShotGroup };
 
 interface QuickState {
   assetId: string | null;

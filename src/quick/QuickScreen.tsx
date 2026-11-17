@@ -17,7 +17,7 @@ const FORMATS: { id: RatioPreset; label: string | I18nString }[] = [
   ...SOCIAL.filter((s) => s.id === 'ig-post' || s.id === 'story').map((s) => ({ id: s.id, label: s.label })),
 ];
 
-function Tile({ tile, index }: { tile: QuickTile; index: number }) {
+function Tile({ tile, index, featured = false }: { tile: QuickTile; index: number; featured?: boolean }) {
   const { t } = useT();
   const url = useQuick((s) => s.thumbs[tile.id]);
   const selected = useQuick((s) => s.selected.includes(tile.id));
@@ -25,7 +25,7 @@ function Tile({ tile, index }: { tile: QuickTile; index: number }) {
   const ratio = ratioValue(useProject((s) => s.export.ratio));
   const label = labelOf(tile);
   return (
-    <div data-testid="quick-tile" className="group flex flex-col gap-1.5 animate-[rise_380ms_var(--ease-out)_both]" style={{ animationDelay: `${index * 45}ms` }}>
+    <div data-testid="quick-tile" className={cx('group flex flex-col gap-2 animate-[rise_380ms_var(--ease-out)_both]', featured && 'sm:col-span-2 sm:row-span-2')} style={{ animationDelay: `${index * 45}ms` }}>
       <div className={cx('relative overflow-hidden rounded-[14px] bg-surface-2 transition-shadow', selected && 'shadow-[0_0_0_2.5px_var(--accent)]')} style={{ aspectRatio: String(ratio) }}>
         {url ? (
           <img src={url} alt={label} className="absolute inset-0 h-full w-full object-cover animate-[img-in_420ms_var(--ease-out)]" draggable={false} />
@@ -57,7 +57,7 @@ function Tile({ tile, index }: { tile: QuickTile; index: number }) {
           <Check size={13} strokeWidth={3} />
         </button>
       </div>
-      <span className="truncate px-0.5 text-[12.5px] text-fg-muted">{label}</span>
+      <span className={cx('truncate px-0.5 font-medium text-fg', featured ? 'text-[15px]' : 'text-[13px]')}>{label}</span>
     </div>
   );
 }
@@ -141,6 +141,8 @@ export function QuickScreen() {
   const s = useQuick();
   const asset = useAssets((a) => (s.assetId ? a.assets[s.assetId] : undefined));
   const ratio = useProject((p) => p.export.ratio);
+  const [group, setGroup] = useState<'all' | 'plain' | 'staged'>('all');
+  const shown = group === 'all' ? s.tiles : s.tiles.filter((x) => x.group === group);
   useEffect(() => {
     quick.start();
     return () => quick.stop();
@@ -189,12 +191,21 @@ export function QuickScreen() {
         </div>
       </aside>
       <main className="glass flex min-w-0 flex-1 flex-col overflow-hidden rounded-[14px]">
-        <div className="px-5 pb-3 pt-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 pb-4 pt-5">
           <h1 className="font-display text-[22px] font-bold">{t('screen.quick')}</h1>
+          {/* the gallery's families */}
+          <div data-testid="quick-categories" className="flex gap-1.5">
+            {(['all', 'plain', 'staged'] as const).map((g) => (
+              <Chip key={g} active={group === g} onClick={() => setGroup(g)}>
+                {t(`quick.group.${g}` as I18nKey)}
+              </Chip>
+            ))}
+          </div>
         </div>
-        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-x-4 gap-y-5 overflow-y-auto overscroll-contain px-5 pb-6">
-          {s.tiles.map((tile, i) => (
-            <Tile key={tile.id} tile={tile} index={i} />
+        {/* a gallery: the first shot big, the others wide */}
+        <div className="scroll-thin grid flex-1 auto-rows-max grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-x-5 gap-y-6 overflow-y-auto overscroll-contain px-5 pb-6">
+          {shown.map((tile, i) => (
+            <Tile key={tile.id} tile={tile} index={i} featured={i === 0 && shown.length > 2} />
           ))}
         </div>
         {s.selected.length > 0 && (

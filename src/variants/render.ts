@@ -7,6 +7,7 @@ import { settle } from '@/scene/exporter';
 import { loadMaterialMap } from '@/scene/realMaterials';
 import { pauseAutosave, snapshot } from '@/store/persistence';
 import { useProject } from '@/store/project';
+import { loadImage, useAssets } from '@/store/assets';
 import { useUi } from '@/store/ui';
 import { applyLook, type Look } from './looks';
 
@@ -70,8 +71,11 @@ async function sandbox<T>(fn: () => Promise<T>): Promise<T> {
 
 /** Waits until what the current state needs is loaded and drawn. */
 export async function settleScene() {
-  const { decor, background } = useProject.getState();
+  const { decor, background, items } = useProject.getState();
   const jobs: Promise<unknown>[] = [prepareBackground(background)];
+  // the designs on the devices: decoded before the frames below, so the screens are drawn with them
+  const assets = useAssets.getState().assets;
+  for (const it of items) for (const b of Object.values(it.surfaces)) if (b.assetId && assets[b.assetId]) jobs.push(loadImage(assets[b.assetId].url));
   const material = decor.kind === 'table' || decor.kind === 'surface' || (decor.kind === 'podium' && decor.podiumFinish === 'material');
   if (material) for (const f of ['color', 'normal', 'rough'] as const) jobs.push(loadMaterialMap(decor.material, f));
   if (decor.kind === 'table') jobs.push(loadAmbience(decor.ambience));

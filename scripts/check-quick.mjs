@@ -94,6 +94,19 @@ check(/Ordinateur.*détecté/.test(await page.getByTestId('quick-device').textCo
 await page.getByTestId('quick-device').getByRole('button', { name: 'Changer' }).click();
 check((await page.getByTestId('quick-support').getByRole('button', { pressed: true }).textContent()).trim() === 'Ordinateur', '“Changer” lists the supports, Ordinateur chosen');
 await page.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 3, null, { timeout: 60000 }).catch(() => {});
+// 3b. a gallery: category chips filter the shots, the first one is shown big, the others wide
+{
+  const cats = page.getByTestId('quick-categories').getByRole('button');
+  check((await cats.count()) === 3, `three categories (${await cats.allInnerTexts()})`);
+  const sizes = await tiles.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+  check(sizes.length === 6 && sizes[0] > sizes[1] * 1.5 && sizes[1] >= 300, `the first shot is big, the others wide (${sizes})`);
+  await cats.filter({ hasText: 'Mis en scène' }).click();
+  await page.waitForTimeout(400);
+  const staged = await tiles.allInnerTexts();
+  check(staged.length === 3 && staged.some((x) => /podium/i.test(x)) && !staged.some((x) => /^Face/.test(x.trim())), `« Mis en scène » keeps the staged shots (${staged.map((x) => x.trim())})`);
+  await cats.filter({ hasText: 'Tout' }).click();
+  await page.waitForTimeout(400);
+}
 // 4. download one
 await tiles.first().hover();
 const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 240000 }), tiles.first().getByRole('button', { name: /Télécharger/ }).click()]);
@@ -108,4 +121,23 @@ const st = await page.evaluate(() => {
   return { screen: api.ui.getState().screen, model: p.items[0].modelId, image: api.assetName(Object.values(p.items[0].surfaces)[0].assetId) };
 });
 check(st.screen === 'studio' && st.model === 'laptop-14' && st.image === 'sample-web.png', `customize opens the studio with that mock-up (${JSON.stringify(st)})`);
+// 6. straight onto /rapide in a fresh browser: the first shot shows the design too (it once rendered before its image)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const fresh = await ctx.newPage();
+  await fresh.addInitScript(() => localStorage.setItem('mockuplab:lang', 'fr'));
+  await fresh.goto('http://localhost:5173/rapide');
+  await fresh.waitForFunction(() => document.querySelectorAll('[data-testid=quick-tile] img').length >= 6, null, { timeout: 90000 });
+  await fresh.waitForTimeout(800);
+  const warm = await fresh.evaluate(() => [...document.querySelectorAll('[data-testid=quick-tile] img')].slice(0, 3).map((img) => {
+    const c = document.createElement('canvas'); c.width = 200; c.height = 120;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0, 200, 120);
+    const d = g.getImageData(60, 10, 80, 100).data; let n = 0;
+    // the phone sample's warm orange
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 200 && d[i + 1] > 150 && d[i + 2] < 120) n++;
+    return n;
+  }));
+  check(warm.every((n) => n > 10), `cold start: the first shots all show the design (warm pixels ${warm})`);
+  await ctx.close();
+}
 await done(browser, errors);

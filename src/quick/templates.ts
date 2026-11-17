@@ -7,13 +7,16 @@ import type { I18nString } from '@/i18n';
 
 export type ShotId = 'front' | 'threeQuarter' | 'podium' | 'top' | 'pair' | 'close';
 
-export const SHOTS: { id: ShotId; label: I18nString }[] = [
-  { id: 'front', label: { fr: 'Face', en: 'Front' } },
-  { id: 'threeQuarter', label: { fr: 'Trois-quarts', en: 'Three-quarter' } },
-  { id: 'podium', label: { fr: 'Sur podium', en: 'On a podium' } },
-  { id: 'top', label: { fr: 'Vu de dessus', en: 'From above' } },
-  { id: 'pair', label: { fr: 'Deux appareils', en: 'Two devices' } },
-  { id: 'close', label: { fr: 'Gros plan', en: 'Close-up' } },
+/** The gallery's two families: the device alone, plain; or set in a scene (podium, pair, close-up). */
+export type ShotGroup = 'plain' | 'staged';
+
+export const SHOTS: { id: ShotId; label: I18nString; group: ShotGroup }[] = [
+  { id: 'front', label: { fr: 'Face', en: 'Front' }, group: 'plain' },
+  { id: 'threeQuarter', label: { fr: 'Trois-quarts', en: 'Three-quarter' }, group: 'plain' },
+  { id: 'podium', label: { fr: 'Sur podium', en: 'On a podium' }, group: 'staged' },
+  { id: 'top', label: { fr: 'Vu de dessus', en: 'From above' }, group: 'plain' },
+  { id: 'pair', label: { fr: 'Deux appareils', en: 'Two devices' }, group: 'staged' },
+  { id: 'close', label: { fr: 'Gros plan', en: 'Close-up' }, group: 'staged' },
 ];
 
 /** Studio colours: pale tints first, then deep ones. */
