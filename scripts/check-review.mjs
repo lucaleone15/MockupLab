@@ -13,7 +13,7 @@ s = await st();
 check(s.screen === 'home' && s.hash === '/', `the photo mode is gone: #/photo shows the home page (${s.screen}/${s.hash})`);
 await page.evaluate(() => window.__mockuplab.persistence.newProject());
 await page.waitForTimeout(300);
-// 2. a paste on home stays on home (pick a mode first)
+// 2. a paste on home opens the Studio with the capture on a device (2026-11-17: try it from the landing), not Rapide
 await page.evaluate(() => (location.hash = '#/'));
 await page.waitForTimeout(200);
 await page.evaluate(async () => {
@@ -33,7 +33,7 @@ const landed = await page.evaluate(() => {
   const scene = api.project.getState().items.flatMap((it) => Object.values(it.surfaces).map((b) => b.assetId && api.assetName(b.assetId)));
   return { screen: api.ui.getState().screen, image: q.assetId && api.assetName(q.assetId), scene };
 });
-check(landed.screen === 'home' && landed.image !== 'home-paste.png' && !landed.scene.includes('home-paste.png'), `paste on home stays on home, nothing imported (${JSON.stringify(landed)})`);
+check(landed.screen === 'studio' && landed.image !== 'home-paste.png' && landed.scene.includes('home-paste.png'), `paste on home opens the Studio with it (${JSON.stringify(landed)})`);
 await page.evaluate(() => (location.hash = '#/studio'));
 await page.waitForTimeout(300);
 // 3. a leftover video kind does not hijack the image export
