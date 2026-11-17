@@ -56,12 +56,17 @@ export const LIGHT_PRESETS: Record<LightPresetId, LightPreset> = {
     id: 'highkey',
     name: { fr: 'Haute clé', en: 'High key' },
     swatch: 'radial-gradient(circle at 50% 30%, #ffffff 0 40%, #d4d4d8 75%, #a1a1aa)',
-    envColor: '#c9c9cd',
+    // the studio around the softboxes is darker than the sweep: metal and glass get defined highlights, not a grey wash
+    envColor: '#8d8e94',
     formers: [
       { form: 'rect', intensity: 3, position: [0, 10, 2], rotation: up, scale: [24, 16, 1] },
-      { form: 'rect', intensity: 2.2, position: [-10, 2, 4], rotation: [0, PI / 2.4, 0], scale: [8, 20, 1] },
-      { form: 'rect', intensity: 2.2, position: [10, 2, 4], rotation: [0, -PI / 2.4, 0], scale: [8, 20, 1] },
-      { form: 'rect', intensity: 1.6, position: [0, 2, 10], rotation: [0, PI, 0], scale: [26, 14, 1] },
+      { form: 'rect', intensity: 2.4, position: [-10, 2, 4], rotation: [0, PI / 2.4, 0], scale: [8, 20, 1] },
+      { form: 'rect', intensity: 2.4, position: [10, 2, 4], rotation: [0, -PI / 2.4, 0], scale: [8, 20, 1] },
+      // a softbox in front and above, tilted down: the soft diagonal sheen on screens
+      { form: 'rect', intensity: 1.6, position: [-3, 7, 9], rotation: [-0.55, PI + 0.25, 0], scale: [10, 5, 1] },
+      // thin hard strips: crisp lines along metal edges and chamfers
+      { form: 'rect', intensity: 5, position: [-6, 4, 6], rotation: [0, PI * 0.75, 0], scale: [0.6, 16, 1] },
+      { form: 'rect', intensity: 3.5, position: [7, 4, 5], rotation: [0, -PI * 0.75, 0], scale: [0.5, 16, 1] },
       { form: 'rect', intensity: 1.2, color: '#f4f2ee', position: [0, -6, 0], rotation: down, scale: [30, 30, 1] },
     ],
     manual: { intensity: 1.1, color: '#ffffff', azimuth: -20, elevation: 72, softness: 0.85, environment: 1, exposure: 1 },
