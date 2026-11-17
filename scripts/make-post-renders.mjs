@@ -9,9 +9,9 @@ mkdirSync(OUT, { recursive: true });
 const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
 const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
 
-async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1 }) {
+async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground }) {
   await page.evaluate(
-    async ({ models, layout, preset, background, decor, params, finishes, zoom }) => {
+    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground }) => {
       const api = window.__mockuplab;
       const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
       const s = api.project.getState();
@@ -23,12 +23,15 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
       if (background) s.setBackground(background);
       if (decor) s.setDecor(decor);
+      if (light) s.applyLightPreset(light);
+      if (camera) s.setCamera(camera);
+      if (ground) s.setGround(ground);
       for (const it of api.project.getState().items) await api.loadSamples(it.id);
       s.setExport({ ratio: '4:5', format: 'png', resolution: '2k' });
       api.ui.getState().resetView();
       s.setCamera({ zoom });
     },
-    { models, layout, preset, background, decor, params, finishes, zoom },
+    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground },
   );
   await page.waitForTimeout(4000);
   const b64 = await page.evaluate(async () => {
@@ -43,10 +46,11 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
 }
 
 await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18 });
-await shot('render-phones.png', { models: ['phone-pro', 'phone', 'phone-pro'], layout: 'fan', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'lavender', 'orange'], zoom: 1.15 });
-await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'none' }, background: { kind: 'solid', color: '#eceff5' } });
+await shot('render-phones.png', { models: ['phone-pro', 'phone', 'phone-pro'], layout: 'fan', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'lavender', 'orange'], zoom: 1.15, light: 'golden' });
+// a flat lay on the plain studio floor, lit like daylight: soft directional shadows, no grey halo around the paper
+await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#eceff5' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 } });
 await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', params: [{ app: 'post', caption: 'Le nouveau site est en ligne' }] });
-await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12 });
+await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12, light: 'daylight' });
 await browser.close();
 
 // the post's images, 1080 × 1350: the hook (the first render with its title), then the renders as they are
