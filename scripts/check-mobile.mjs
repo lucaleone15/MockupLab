@@ -36,6 +36,10 @@ await page.waitForTimeout(400);
 const folded = await page.getByTestId('rail-page').isVisible().catch(() => false);
 const frame2 = await box('[data-testid="frame"]');
 check(!folded && frame2.y > frame.y, `tapping the open tab folds the panel and the frame moves into the freed space (${frame.y} → ${frame2.y})`);
+// a page opened from elsewhere (a tapped device, « Ajouter un appareil ») unfolds the panel
+await page.evaluate(() => window.__mockuplab.ui.getState().setStudioPage('settings'));
+await page.waitForTimeout(400);
+check(await page.getByTestId('rail-page').isVisible(), 'a page opened by the app unfolds the folded panel');
 await page.getByTestId('studio-rail').locator('[data-page="devices"]').tap();
 await page.waitForTimeout(300);
 check(await page.getByTestId('empty-hint').isVisible(), 'a touch screen gets « Choisir une image » instead of drag and paste');

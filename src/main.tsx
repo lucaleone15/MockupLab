@@ -4,6 +4,7 @@ import './index.css';
 import { App } from './app/App';
 import { useLang } from './i18n';
 import { screenFromLocation } from './shell/route';
+import { markProjectReady } from './store/ready';
 
 document.documentElement.lang = useLang.getState().lang;
 
@@ -38,6 +39,7 @@ void import('./models/glb/userModels')
   .then((p) => p.startAutosave())
   .catch(() => undefined)
   .finally(() => {
+    markProjectReady();
     if (!landing) render();
     void import('./library/thumbs').then((m) => m.startThumbs());
     void import('./pwa/update').then((m) => m.startUpdates());

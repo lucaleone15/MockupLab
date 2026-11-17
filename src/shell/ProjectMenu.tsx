@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DropdownMenu } from 'radix-ui';
-import { Check, ChevronDown, Copy, FilePlus2, FolderOpen, LayoutGrid, Save } from 'lucide-react';
+import { Check, ChevronDown, Copy, FilePlus2, FolderOpen, LayoutGrid, PenLine, Save } from 'lucide-react';
+import { askText } from '@/ui/dialogs';
 import { useLibrary } from '@/library/store';
 import { useT } from '@/i18n';
 import { library, newProject } from '@/store/persistence';
@@ -39,6 +40,19 @@ export function ProjectMenu({ compact = false }: { compact?: boolean } = {}) {
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content sideOffset={6} align="start" className="menu-surface z-50 min-w-[240px] rounded-[14px] p-1.5 menu-pop">
+            {/* a phone's top bar has no room for the name field: renaming is here */}
+            {compact && (
+              <DropdownMenu.Item
+                className={item}
+                onSelect={async () => {
+                  const next = await askText({ title: t('project.name'), label: t('project.name'), value: name === 'Untitled' ? '' : name });
+                  if (next?.trim()) useProject.setState({ name: next.trim() });
+                }}
+              >
+                <PenLine size={15} />
+                {t('project.rename')}
+              </DropdownMenu.Item>
+            )}
             <DropdownMenu.Item
               className={item}
               onSelect={() => newProject()}

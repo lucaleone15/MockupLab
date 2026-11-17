@@ -12,6 +12,7 @@ import { cx } from '@/ui/primitives';
 import { SLICES, STORY, useStoryProgress, type StoryChapter } from './useStoryProgress';
 import { WordReveal } from './WordReveal';
 import { startWithExample, startWithFiles } from './start';
+import { IMAGE_OR_PDF } from '@/lib/pdf';
 import { anchorTo } from './labelAnchors';
 
 /*
@@ -186,13 +187,17 @@ function TryHere({ light }: { light: boolean }) {
       )}
     >
       <ImagePlus size={18} className="shrink-0 text-brand" />
-      <span>
+      {/* a touch screen can't drag a file: it gets the picker alone (CSS, so the static page and the app agree) */}
+      <span className="touch:hidden">
         {t('home.try')}{' '}
         <button type="button" onClick={() => input.current?.click()} className={cx('font-semibold underline underline-offset-[3px]', light ? 'decoration-black/25' : 'decoration-white/35')}>
           {t('home.tryBrowse')}
         </button>
       </span>
-      <input ref={input} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => take(e.target.files)} />
+      <button type="button" onClick={() => input.current?.click()} className="hidden font-semibold touch:inline">
+        {t('stage.pickImage')}
+      </button>
+      <input ref={input} type="file" accept={IMAGE_OR_PDF} multiple hidden onChange={(e) => take(e.target.files)} />
     </div>
   );
 }

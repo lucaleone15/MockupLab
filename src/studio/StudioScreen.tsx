@@ -65,6 +65,8 @@ export function StudioScreen() {
   useEffect(() => {
     if (touring) setUnfolded(true);
   }, [touring]);
+  // a page opened from elsewhere (« Ajouter un appareil », a tapped device, the guide) shows unfolded
+  useEffect(() => setUnfolded(true), [page]);
   const vh = useViewportHeight();
   if (compact) {
     const panel = panelHeight(vh);

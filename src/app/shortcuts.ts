@@ -56,9 +56,6 @@ function onKey(e: KeyboardEvent) {
     e.preventDefault();
     // the Export window, on the tab used last (image or video)
     ui.setExportOpen(true);
-  } else if (mod && (key === 's' || key === 'o' || key === 'd')) {
-    // ⌘S, ⌘O and ⌘D belong to the browser (save page, open file, bookmark): left alone
-    return;
   } else if (!mod && (key === 'delete' || key === 'backspace')) {
     e.preventDefault();
     if (ui.selectedOverlayId) {

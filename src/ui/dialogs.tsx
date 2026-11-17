@@ -69,8 +69,18 @@ export function askFiles(o: Omit<FileAsk, 'kind' | 'resolve'>): Promise<File[]> 
       input.type = 'file';
       input.accept = o.accept;
       input.multiple = o.multiple;
-      input.onchange = () => resolve([...(input.files ?? [])].filter((f) => matches(f, o.accept)));
-      input.addEventListener('cancel', () => resolve([]));
+      let done = false;
+      const finish = (files: File[]) => {
+        if (done) return;
+        done = true;
+        window.removeEventListener('focus', onFocus);
+        resolve(files);
+      };
+      // browsers without the input's « cancel » event: back from the picker with no file is a cancel
+      const onFocus = () => setTimeout(() => finish([]), 1000);
+      input.onchange = () => finish([...(input.files ?? [])].filter((f) => matches(f, o.accept)));
+      input.addEventListener('cancel', () => finish([]));
+      window.addEventListener('focus', onFocus);
       input.click();
     });
   return new Promise((resolve) => useAsk.setState({ ask: { kind: 'file', ...o, resolve } }));
