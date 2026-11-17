@@ -22,20 +22,22 @@ const BAND_W = 2.3;
 const BAND_T = 0.32;
 /** The band's path (y, z) from the top lug, around the back, to the bottom lug. */
 const BAND_PATH: [number, number][] = [
+  // out of the top lug, a short rise (the band shows ~5 mm above the case, as on the real thing) then straight back
   [2.2, -0.1],
-  [2.85, -0.22],
-  [3.28, -0.85],
-  [3.4, -2.2],
-  [3.05, -3.6],
-  [2.05, -4.6],
-  [0.4, -5.1],
-  [-1.2, -4.95],
-  [-2.5, -4.05],
-  [-3.25, -2.65],
-  [-3.35, -1.2],
-  [-2.9, -0.32],
+  [2.62, -0.28],
+  [2.84, -0.9],
+  [2.8, -1.85],
+  [2.45, -2.95],
+  [1.6, -3.95],
+  [0.3, -4.5],
+  [-1.1, -4.45],
+  [-2.3, -3.85],
+  [-3.1, -2.85],
+  [-3.35, -1.7],
+  [-3.05, -0.62],
+  [-2.6, -0.2],
   [-2.2, -0.1],
-];
+]
 /** The watch leans back a little and rests on the curve of its band, like a watch set down (the classic shot). */
 const LEAN = -0.17;
 /** Lowest point of the leaning band (the watch rests on it). */
