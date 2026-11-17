@@ -31,7 +31,7 @@ export const phonePro = definePhone({
   camera: {
     // measured on the maker's photos (perspective corrected): a raised block inset ~4.5 mm, 6.25 × 3.3 cm
     at: [3.595, 2.15],
-    plateau: { width: 6.25, height: 3.45, radius: 0.92, thickness: 0.14, material: 'metal' },
+    plateau: { width: 6.25, height: 3.45, radius: 0.6, thickness: 0.14, material: 'metal' },
     lenses: [
       [-1.95, 0.87, 0.86],
       [-1.95, -0.87, 0.86],
@@ -60,54 +60,63 @@ export const phonePro = definePhone({
   defaultFinish: 'silver',
 });
 
-/** 6.1" mainstream phone: satin aluminium band, notch, glossy back, diagonal dual camera. */
+/**
+ * Current 6.3" mainstream phone (measured on the 2025 generation, 71.5 × 149.6 × 7.95 mm): contoured
+ * aluminium band, thin borders, pill cutout, matte colour-infused glass back, a vertical glass capsule with
+ * two stacked lenses (the flash outside it, to the right), action button, side button and camera control.
+ */
 export const phoneClassic = definePhone({
   id: 'phone',
   name: { fr: 'Phone', en: 'Phone' },
   width: 7.15,
-  height: 14.67,
-  depth: 0.78,
-  radius: 1.25,
-  smooth: 0.55,
-  bandEdge: { d: 0.1, z: 0.11 },
-  frame: { roughness: 0.38, anisotropy: 0.12 },
-  display: { width: 6.46, height: 13.98, radius: 0.9 },
-  nativeSize: [1170, 2532],
-  cutout: { kind: 'notch', width: 2.7, height: 0.56, radius: 0.26 },
-  back: 'glossy',
+  height: 14.96,
+  depth: 0.795,
+  radius: 1.18,
+  smooth: 0.6,
+  bandEdge: { d: 0.16, z: 0.17 },
+  frame: { roughness: 0.42, anisotropy: 0.12 },
+  display: { width: 6.77, height: 14.58, radius: 1.0 },
+  nativeSize: [1206, 2622],
+  cutout: { kind: 'island', width: 2.0, height: 0.6, top: 0.2 },
+  back: 'frosted',
   camera: {
-    at: [0.32 + 1.475, 0.32 + 1.475],
-    plateau: { width: 2.95, height: 2.95, radius: 0.78, thickness: 0.09 },
+    // the capsule: 1.95 × 3.9 cm, fully rounded ends, its centre 1.45 cm in and 2.45 cm down
+    at: [1.45, 2.45],
+    plateau: { width: 1.95, height: 3.9, radius: 0.975, thickness: 0.12 },
     lenses: [
-      [-0.66, 0.66, 0.64],
-      [0.66, -0.66, 0.64],
+      [0, 0.97, 0.78],
+      [0, -0.97, 0.78],
     ],
-    flash: [0.74, 0.76, 0.2],
-    mic: [-0.72, -0.78],
+    collar: true,
+    flash: [1.6, 1.3, 0.3],
+    mic: [1.6, 0.55],
   },
   buttons: [
-    [-1, 2.45, 0.55],
-    [-1, 3.6, 0.9],
-    [-1, 4.8, 0.9],
-    [1, 4.2, 1.6],
+    // left: action, volume up, volume down; right: side button, camera control
+    [-1, 2.9, 0.6],
+    [-1, 4.25, 1.0],
+    [-1, 5.5, 1.0],
+    [1, 4.55, 1.7],
+    [1, 9.5, 1.85],
   ],
   finishes: [
-    phoneFinish('midnight', 'Minuit', 'Midnight', '#2e3138', '#20242c', '#2a2d33'),
-    phoneFinish('starlight', 'Lumière stellaire', 'Starlight', '#e6dfd2', '#f1ebe1', '#d6cfc2'),
-    phoneFinish('blue', 'Bleu', 'Blue', '#a5b7cb', '#bfcddc', '#92a3b6'),
-    phoneFinish('purple', 'Mauve', 'Purple', '#c4b7d4', '#d6cde2', '#b0a4c0'),
-    phoneFinish('red', 'Rouge', 'Red', '#b51f2e', '#c42a38', '#9c1a27'),
+    phoneFinish('lavender', 'Lavande', 'Lavender', '#b9a9d2', '#cdbfe0', '#a797bf'),
+    phoneFinish('sage', 'Sauge', 'Sage', '#a9b79c', '#c0cab3', '#97a58b'),
+    phoneFinish('mist-blue', 'Bleu brume', 'Mist blue', '#9fb7cf', '#bccbdc', '#8ea5bc'),
+    phoneFinish('white', 'Blanc', 'White', '#e3e3e0', '#f1f1ee', '#d1d1ce'),
+    phoneFinish('black', 'Noir', 'Black', '#2c2d31', '#36373b', '#26272a'),
   ],
-  defaultFinish: 'midnight',
+  defaultFinish: 'lavender',
 });
 
 /** Generic Android-style flagship: flat aluminium frame, punch-hole, floating lenses. */
 export const phoneNeo = definePhone({
   id: 'phone-neo',
   name: { fr: 'Phone Neo', en: 'Phone Neo' },
-  width: 7.06,
-  height: 14.7,
-  depth: 0.76,
+  // a current compact Android flagship (Galaxy S proportions: 70.5 × 146.9 × 7.2 mm), flat band, punch-hole
+  width: 7.05,
+  height: 14.69,
+  depth: 0.72,
   radius: 0.95,
   smooth: 0.35,
   bandEdge: { d: 0.12, z: 0.14 },

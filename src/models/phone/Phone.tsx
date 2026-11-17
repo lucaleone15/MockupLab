@@ -140,7 +140,8 @@ function buildGeometry(s: PhoneSpec): PhoneGeometry {
           thickness: p.thickness,
           front: { d: Math.min(0.07, p.thickness * 0.6), z: Math.min(0.06, p.thickness * 0.55) },
           back: 0,
-          smooth: s.smooth,
+          // a capsule (radius = half its width) keeps true half-circle ends: no corner smoothing
+          smooth: p.radius * 2 >= Math.min(p.width, p.height) - 1e-3 ? 0 : s.smooth,
           segments: 24,
           edgeSegments: 8,
         })
