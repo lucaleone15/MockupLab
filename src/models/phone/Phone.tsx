@@ -21,7 +21,8 @@ export type Cutout =
 export interface CameraSpec {
   /** Module centre, measured on the back from the top-left corner (x → right, y → down). */
   at: [number, number];
-  plateau?: { width: number; height: number; radius: number; thickness: number };
+  /** `metal`: the plateau is part of an aluminium unibody (same finish as the band); else glass. */
+  plateau?: { width: number; height: number; radius: number; thickness: number; material?: 'glass' | 'metal' };
   /** Lens centres and outer ring radii, relative to the module centre (x → right, y → up, back view). */
   lenses: [number, number, number][];
   flash?: [number, number, number];
@@ -158,7 +159,13 @@ function CameraModule({ s, g, finish, backZ }: { s: PhoneSpec; g: PhoneGeometry;
   return (
     <group position={[s.width / 2 - cam.at[0], s.height / 2 - cam.at[1], -backZ]} rotation={[0, Math.PI, 0]}>
       {g.plateau && cam.plateau && (
-        <mesh geometry={g.plateau} material={glossyGlass(finish.colors.back)} position={[0, 0, cam.plateau.thickness / 2 - 0.01]} castShadow />
+        <mesh
+          geometry={g.plateau}
+          // unibody: the plateau is the back's anodised aluminium, a touch rougher than the band so it stays light
+          material={cam.plateau.material === 'metal' ? brushedMetal(finish.colors.back, s.frame.roughness + 0.12, s.frame.anisotropy) : glossyGlass(finish.colors.back)}
+          position={[0, 0, cam.plateau.thickness / 2 - 0.01]}
+          castShadow
+        />
       )}
       {cam.lenses.map(([x, y, r], i) => (
         <Lens key={i} position={[x, y, z]} radius={r} ring={finish.colors.frame} />

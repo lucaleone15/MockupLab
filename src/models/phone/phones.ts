@@ -5,47 +5,54 @@ import { definePhone, phoneFinish } from './Phone';
  * centimetres and follow typical 2022–2025 proportions; names are neutral.
  */
 
-/** 6.1" flagship: titanium band, pill cutout, matte back, triple camera plateau. */
+/**
+ * Current 6.3" pro flagship (measured on the 2025–2026 generation, 71.9 × 150.0 × 8.75 mm): aluminium unibody,
+ * thin even borders, pill cutout, a camera plateau across the whole width of the back (three lenses in a
+ * triangle on the left, flash and LiDAR on the right), action button, side button and a flush camera control.
+ */
 export const phonePro = definePhone({
   id: 'phone-pro',
   name: { fr: 'Phone Pro', en: 'Phone Pro' },
-  width: 7.06,
-  height: 14.66,
-  depth: 0.825,
-  radius: 1.1,
+  width: 7.19,
+  height: 15.0,
+  depth: 0.875,
+  radius: 1.2,
   smooth: 0.6,
-  bandEdge: { d: 0.17, z: 0.2 },
-  frame: { roughness: 0.32, anisotropy: 0.35 },
-  display: { width: 6.51, height: 14.11, radius: 0.825 },
-  nativeSize: [1179, 2556],
-  cutout: { kind: 'island', width: 2.09, height: 0.61, top: 0.18 },
+  bandEdge: { d: 0.2, z: 0.22 },
+  // bead-blasted anodised aluminium (low anisotropy → fine grain, not brushed)
+  frame: { roughness: 0.36, anisotropy: 0.12 },
+  display: { width: 6.79, height: 14.6, radius: 1.0 },
+  nativeSize: [1206, 2622],
+  cutout: { kind: 'island', width: 2.0, height: 0.6, top: 0.2 },
   back: 'frosted',
   camera: {
-    at: [0.3 + 1.775, 0.3 + 1.775],
-    plateau: { width: 3.55, height: 3.55, radius: 0.95, thickness: 0.11 },
+    at: [3.595, 2.0],
+    plateau: { width: 7.13, height: 3.75, radius: 1.15, thickness: 0.13, material: 'metal' },
     lenses: [
-      [-0.84, 0.84, 0.79],
-      [-0.84, -0.84, 0.79],
-      [0.88, 0, 0.79],
+      [-2.25, 0.88, 0.84],
+      [-2.25, -0.88, 0.84],
+      [-0.62, 0, 0.84],
     ],
-    flash: [0.92, 1.24, 0.25],
-    sensor: [0.92, -1.24, 0.22],
-    mic: [0.25, 1.4],
+    flash: [2.05, 0.9, 0.27],
+    sensor: [2.05, -0.9, 0.25],
+    mic: [1.2, 1.35],
   },
   buttons: [
-    [-1, 2.55, 0.55],
-    [-1, 3.85, 1.0],
-    [-1, 5.15, 1.0],
-    [1, 4.4, 1.7],
+    // left: action, volume up, volume down; right: side button, camera control
+    [-1, 2.95, 0.6],
+    [-1, 4.3, 1.05],
+    [-1, 5.6, 1.05],
+    [1, 4.6, 1.75],
+    [1, 9.55, 1.9],
   ],
   finishes: [
-    phoneFinish('natural', 'Titane naturel', 'Natural titanium', '#b4aea4', '#c6c0b5', '#9d978d'),
-    phoneFinish('black', 'Titane noir', 'Black titanium', '#4a4b4f', '#3d3e42', '#3a3b3e'),
-    phoneFinish('white', 'Titane blanc', 'White titanium', '#dddcd7', '#efeee9', '#c9c8c3'),
-    phoneFinish('blue', 'Titane bleu', 'Blue titanium', '#46526a', '#4f5b70', '#3c4659'),
-    phoneFinish('desert', 'Titane sable', 'Desert titanium', '#c3a68e', '#d2bda7', '#ad937c'),
+    phoneFinish('silver', 'Argent', 'Silver', '#cfd0d2', '#e3e3e1', '#bdbec0'),
+    phoneFinish('deep-blue', 'Bleu intense', 'Deep blue', '#34405a', '#3b4762', '#2c364c'),
+    phoneFinish('orange', 'Orange cosmique', 'Cosmic orange', '#c96a35', '#d9784a', '#b25d2d'),
+    phoneFinish('cherry', 'Cerise sombre', 'Dark cherry', '#5c2633', '#68303c', '#4e202b'),
+    phoneFinish('black', 'Noir', 'Black', '#2c2d31', '#35363a', '#252629'),
   ],
-  defaultFinish: 'natural',
+  defaultFinish: 'silver',
 });
 
 /** 6.1" mainstream phone: satin aluminium band, notch, glossy back, diagonal dual camera. */
