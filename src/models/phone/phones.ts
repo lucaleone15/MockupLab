@@ -30,16 +30,16 @@ export const phonePro = definePhone({
   back: 'frosted',
   camera: {
     // measured on the maker's photos (perspective corrected): a raised block inset ~4.5 mm, 6.25 × 3.3 cm
-    at: [3.595, 2.1],
-    plateau: { width: 6.25, height: 3.3, radius: 0.9, thickness: 0.14, material: 'metal' },
+    at: [3.595, 2.15],
+    plateau: { width: 6.25, height: 3.45, radius: 0.92, thickness: 0.14, material: 'metal' },
     lenses: [
-      [-1.98, 0.8, 0.77],
-      [-1.98, -0.8, 0.77],
-      [-0.3, -0.06, 0.77],
+      [-1.95, 0.87, 0.86],
+      [-1.95, -0.87, 0.86],
+      [-0.18, -0.06, 0.86],
     ],
     collar: true,
-    flash: [2.22, 0.76, 0.3],
-    sensor: [2.05, -0.98, 0.3],
+    flash: [2.2, 0.85, 0.32],
+    sensor: [2.05, -1.0, 0.32],
     mic: [2.15, -0.1],
   },
   buttons: [
