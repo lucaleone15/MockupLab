@@ -9,9 +9,9 @@ mkdirSync(OUT, { recursive: true });
 const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
 const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
 
-async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground }) {
+async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground, yaws }) {
   await page.evaluate(
-    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground }) => {
+    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws }) => {
       const api = window.__mockuplab;
       const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
       const s = api.project.getState();
@@ -20,6 +20,8 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       const items = api.project.getState().items;
       (params ?? []).forEach((p, i) => p && Object.entries(p).forEach(([k, v]) => s.setParam(items[i].id, k, v)));
       (finishes ?? []).forEach((f, i) => f && s.updateItem(items[i].id, { finishId: f }));
+      // turns each device (radians), e.g. a mirrored trio: the sides face the middle one
+      (yaws ?? []).forEach((y, i) => s.updateItem(items[i].id, (it) => ({ rotation: [it.rotation[0], y, it.rotation[2]] })));
       if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
       if (background) s.setBackground(background);
       if (decor) s.setDecor(decor);
@@ -31,7 +33,7 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       api.ui.getState().resetView();
       s.setCamera({ zoom });
     },
-    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground },
+    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws },
   );
   await page.waitForTimeout(4000);
   const b64 = await page.evaluate(async () => {
@@ -46,10 +48,12 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
 }
 
 await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18 });
-await shot('render-phones.png', { models: ['phone-pro', 'phone', 'phone-pro'], layout: 'fan', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'lavender', 'orange'], zoom: 1.15, light: 'golden' });
+// three phones in a row, the middle one facing us, the two others turned towards it like a mirror
+await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'silver', 'orange'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight' });
 // a flat lay on the plain studio floor, lit like daylight: soft directional shadows, no grey halo around the paper
 await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#eceff5' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 } });
-await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', params: [{ app: 'post', caption: 'Le nouveau site est en ligne' }] });
+// the podium without its arch: the arch caught the phone's shadow right behind it
+await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', decor: { kind: 'podium', podiumFinish: 'paint', color: '#e8d9c8', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Le nouveau site est en ligne' }] });
 await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12, light: 'daylight' });
 await browser.close();
 
