@@ -424,7 +424,6 @@ export const fr = {
   'home.label.cards': 'Cartes de visite',
   'home.label.swatches': 'Nuancier',
   'home.openStudio': 'Ouvrir le Studio',
-  'home.example': 'Voir un exemple',
   'home.gallery.title': 'Des mock-ups prêts en quelques secondes.',
   'home.gallery.lead': 'Tous faits avec MockupLab, à partir d’une simple capture.',
   'home.try': 'Glisse ta capture ici, ou',

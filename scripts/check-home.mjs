@@ -287,17 +287,9 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     return { screen: window.__mockuplab.ui.getState().screen, own: ids.some((id) => !window.__mockuplab.assetName(id)?.startsWith('sample-')) };
   });
   check(got.screen === 'studio' && got.own, `a capture dropped in the hero opens the Studio with it on a device (${JSON.stringify(got)})`);
-  await page.evaluate(() => { indexedDB.deleteDatabase('mockuplab'); localStorage.removeItem('mockuplab:project'); });
   await page.goto('http://localhost:5173/');
   await page.waitForFunction(() => window.__mockuplab);
   await page.waitForTimeout(800);
-  const example = page.getByTestId('home-hero').getByRole('button', { name: 'Voir un exemple' });
-  const outlined = await example.evaluate((el) => getComputedStyle(el).boxShadow !== 'none' || getComputedStyle(el).borderStyle !== 'none');
-  check(outlined, 'the second hero button is outlined');
-  await example.click();
-  await page.waitForFunction(() => window.__mockuplab.ui.getState().screen === 'studio', null, { timeout: 10000 }).catch(() => {});
-  await page.waitForTimeout(1500);
-  const ex = await page.evaluate(() => window.__mockuplab.project.getState().items.some((it) => Object.values(it.surfaces).some((s) => window.__mockuplab.assetName(s.assetId ?? '')?.startsWith('sample-'))));
-  check(ex, '« Voir un exemple » opens the Studio with a sample scene');
+  check((await page.getByTestId('home-hero').getByRole('button', { name: 'Voir un exemple' }).count()) === 0, 'no « Voir un exemple » button in the hero');
 }
 await done(browser, errors);

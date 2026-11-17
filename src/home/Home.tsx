@@ -11,7 +11,7 @@ import { useUi, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 import { SLICES, STORY, useStoryProgress, type StoryChapter } from './useStoryProgress';
 import { WordReveal } from './WordReveal';
-import { startWithExample, startWithFiles } from './start';
+import { startWithFiles } from './start';
 import { IMAGE_OR_PDF } from '@/lib/pdf';
 import { anchorTo } from './labelAnchors';
 
@@ -212,16 +212,6 @@ function Opening({ light, reveal }: { light: boolean; reveal: number }) {
       <WordReveal text={t('home.lead')} reveal={reveal} light={light} className="max-w-[620px] text-pretty text-[19px] leading-[1.5]" />
       <div className="flex flex-wrap items-center justify-center gap-3">
         <OpenStudio />
-        <button
-          type="button"
-          onClick={() => void startWithExample()}
-          className={cx(
-            'pointer-events-auto h-12 rounded-full px-6 text-[16px] font-semibold transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
-            light ? 'text-[#1d1d1f] shadow-[inset_0_0_0_1.5px_rgb(0_0_0/0.18)] hover:bg-black/5' : 'text-white shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.28)] hover:bg-white/10',
-          )}
-        >
-          {t('home.example')}
-        </button>
       </div>
       <TryHere light={light} />
       {last && (

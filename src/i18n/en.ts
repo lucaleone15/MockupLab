@@ -426,7 +426,6 @@ export const en: Record<keyof typeof fr, string> = {
   'home.label.cards': 'Business cards',
   'home.label.swatches': 'Swatch fan',
   'home.openStudio': 'Open the Studio',
-  'home.example': 'See an example',
   'home.gallery.title': 'Mock-ups ready in seconds.',
   'home.gallery.lead': 'All made with MockupLab, from a single screenshot.',
   'home.try': 'Drop your screenshot here, or',
