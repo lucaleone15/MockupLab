@@ -36,8 +36,10 @@ const BAND_PATH: [number, number][] = [
   [-2.9, -0.32],
   [-2.2, -0.1],
 ];
-/** Lowest point of the band, under the case centre (the watch rests on it). */
-const FLOOR = 3.35 + BAND_T / 2;
+/** The watch leans back a little and rests on the curve of its band, like a watch set down (the classic shot). */
+const LEAN = -0.17;
+/** Lowest point of the leaning band (the watch rests on it). */
+const FLOOR = -Math.min(...BAND_PATH.map(([y, z]) => y * Math.cos(LEAN) - z * Math.sin(LEAN))) + BAND_T / 2;
 /** The whole object is centred in depth for framing. */
 const Z_SHIFT = 2.45;
 
@@ -139,7 +141,7 @@ function Watch({ finish, surfaces, screen, params }: DeviceProps) {
   const band = useMemo(() => silicone(bandColor), [bandColor]);
   const glassTop = D / 2 + 0.06;
   return (
-    <group position={[0, FLOOR, Z_SHIFT]}>
+    <group position={[0, FLOOR, Z_SHIFT]} rotation={[LEAN, 0, 0]}>
       <mesh geometry={g.case} material={frame} castShadow receiveShadow />
       <mesh geometry={g.glass} material={coverGlass()} position={[0, 0, glassTop - 0.08]} />
       <mesh geometry={g.display} material={screenMaterial} position={[0, 0, glassTop + 0.0015]} />
