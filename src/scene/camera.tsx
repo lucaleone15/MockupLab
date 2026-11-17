@@ -295,7 +295,8 @@ export function CameraRig({ floorY }: { floorY: number }) {
     const dir =
       settings.preset === 'custom' && controls.current
         ? camera.position.clone().sub(controls.current.target)
-        : composedDirection(presetDirection(settings.preset, leadItem(items, item)), settings.preset, items);
+        : // the 3/4 view takes the main device's own angle; the other views (Face, Top…) face the selected device
+          composedDirection(presetDirection(settings.preset, settings.preset === 'threeQuarter' ? leadItem(items, item) : (item ?? leadItem(items, item))), settings.preset, items);
     const f = frame(items, dir, camera.fov, ratioValue(ratio), floorY, (items.length > 1 ? 0.78 : 0.82) * (settings.zoom ?? 1));
     camera.position.copy(f.position);
     cameraState.target.copy(f.target);
