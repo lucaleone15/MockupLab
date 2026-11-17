@@ -18,10 +18,14 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       s.setComposition([], 'auto');
       s.setComposition(models, layout);
       const items = api.project.getState().items;
+      let byX = items;
       (params ?? []).forEach((p, i) => p && Object.entries(p).forEach(([k, v]) => s.setParam(items[i].id, k, v)));
       (finishes ?? []).forEach((f, i) => f && s.updateItem(items[i].id, { finishId: f }));
       // turns each device (radians), e.g. a mirrored trio: the sides face the middle one
-      (yaws ?? []).forEach((y, i) => s.updateItem(items[i].id, (it) => ({ rotation: [it.rotation[0], y, it.rotation[2]] })));
+      // a trio is framed straight on first (all facing us), then turned: the camera follows the device with the
+      // largest footprint, and a turned phone has a larger one than the middle one
+      byX = [...items].sort((a, b) => a.position[0] - b.position[0]);
+      if (yaws) byX.forEach((it) => s.updateItem(it.id, (x) => ({ rotation: [x.rotation[0], 0, x.rotation[2]] })));
       if (preset) applyScenePreset(SCENE_PRESETS.find((p) => p.id === preset));
       if (background) s.setBackground(background);
       if (decor) s.setDecor(decor);
@@ -35,7 +39,16 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
     },
     { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws },
   );
-  await page.waitForTimeout(4000);
+  await page.waitForTimeout(yaws ? 2500 : 4000);
+  if (yaws) {
+    // turned left to right on screen, without framing again
+    await page.evaluate((yaws) => {
+      const s = window.__mockuplab.project.getState();
+      [...s.items].sort((a, b) => a.position[0] - b.position[0]).forEach((it, i) => s.updateItem(it.id, (x) => ({ rotation: [x.rotation[0], yaws[i], x.rotation[2]] })));
+    }, yaws);
+    await page.waitForTimeout(2500);
+  }
+  if (process.env.DBG) console.log(file, JSON.stringify(await page.evaluate(() => { const st = window.__mockuplab.project.getState(); return { cam: st.camera.preset, sel: st.selectedId?.slice(0, 4), items: st.items.map((i) => [i.id.slice(0, 4), Math.round(i.position[0]), +i.rotation[1].toFixed(2)]) }; })));
   const b64 = await page.evaluate(async () => {
     const { blob } = await window.__mockuplab.renderImage();
     const buf = new Uint8Array(await blob.arrayBuffer());
@@ -49,7 +62,7 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
 
 await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18 });
 // three phones in a row, the middle one facing us, the two others turned towards it like a mirror
-await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'silver', 'orange'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight' });
+await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'silver', 'orange'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight', camera: { preset: 'front' } });
 // a flat lay on the plain studio floor, lit like daylight: soft directional shadows, no grey halo around the paper
 await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#eceff5' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 } });
 // the podium without its arch: the arch caught the phone's shadow right behind it
