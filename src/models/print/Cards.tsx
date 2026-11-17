@@ -301,10 +301,60 @@ export const letterhead: DeviceModule = {
   Component: Letterhead,
 };
 
+/**
+ * The back of an envelope: the four flaps folded in (sides first, then the bottom, then the closed top flap on
+ * them), each a touch different in tone, with creases along the edges and a soft shadow under the top flap.
+ */
+function envelopeBackTexture(w: number, h: number) {
+  const c = document.createElement('canvas');
+  c.width = 1536;
+  c.height = Math.round((1536 * h) / w);
+  const g = c.getContext('2d')!;
+  const W = c.width;
+  const H = c.height;
+  const flap = (pts: [number, number][], fill: string, shadow = 0) => {
+    g.save();
+    if (shadow) {
+      g.shadowColor = 'rgba(40,30,20,0.28)';
+      g.shadowBlur = shadow;
+      g.shadowOffsetY = shadow / 3;
+    }
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x * W, y * H) : g.moveTo(x * W, y * H)));
+    g.closePath();
+    g.fillStyle = fill;
+    g.fill();
+    g.restore();
+    g.strokeStyle = 'rgba(60,50,40,0.16)';
+    g.lineWidth = W * 0.0012;
+    g.stroke();
+  };
+  g.fillStyle = '#efece5';
+  g.fillRect(0, 0, W, H);
+  flap([[0, 0], [0.33, 0.52], [0, 1]], '#f2efe9');
+  flap([[1, 0], [0.67, 0.52], [1, 1]], '#f2efe9');
+  flap([[0, 1], [0.12, 0.5], [0.5, 0.4], [0.88, 0.5], [1, 1]], '#f5f3ee', W * 0.006);
+  flap([[0, 0], [1, 0], [0.56, 0.6], [0.5, 0.62], [0.44, 0.6]], '#f7f5f1', W * 0.012);
+  // the fold all around: a hair darker at the very edge
+  g.strokeStyle = 'rgba(60,50,40,0.22)';
+  g.lineWidth = W * 0.004;
+  g.strokeRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 function Envelope({ surfaces, params }: DeviceProps) {
   const [w, h] = paperDims(ENVELOPE_SIZES, params, useImageAspects(surfaces), 'front');
   const front = usePrintMaterial(surfaces.front, w / h, { finish: finishOf(params) });
-  return <Card w={w} h={h} t={0.12} r={0.06} front={front} back={paperMaterial()} position={[0, 0, 0]} />;
+  const backSide = params.side === 'back';
+  const flaps = useMemo(() => {
+    if (!backSide) return null;
+    return new THREE.MeshPhysicalMaterial({ map: envelopeBackTexture(w, h), roughness: 0.88, sheen: 0.3, sheenRoughness: 0.8, sheenColor: new THREE.Color('#ffffff') });
+  }, [backSide, w, h]);
+  // the back side up shows the flaps; the design is on the face
+  return <Card w={w} h={h} t={0.12} r={0.06} front={flaps ?? front} back={backSide ? front : paperMaterial()} position={[0, 0, 0]} />;
 }
 
 export const envelope: DeviceModule = {
@@ -322,7 +372,21 @@ export const envelope: DeviceModule = {
   surfaces: [{ id: 'front', label: side('Enveloppe', 'Envelope'), aspect: 2, nativeSize: [2598, 1299] }],
   finishes: NO_FINISH,
   defaultFinish: 'default',
-  params: [FIT_PARAM, sizeParam(ENVELOPE_SIZES, 'dl'), PAPER_PARAM],
+  params: [
+    FIT_PARAM,
+    sizeParam(ENVELOPE_SIZES, 'dl'),
+    PAPER_PARAM,
+    {
+      id: 'side',
+      kind: 'choice',
+      label: side('Côté', 'Side'),
+      options: [
+        { value: 'front', label: side('Face', 'Front') },
+        { value: 'back', label: side('Dos (rabats)', 'Back (flaps)') },
+      ],
+      default: 'front',
+    },
+  ],
   view: FLAT_VIEW,
   yaw: 0,
   Component: Envelope,

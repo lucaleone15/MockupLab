@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import { withMicro } from '@/scene/microsurface';
 import { roundedRectOutline } from '@/lib/geometry/outline';
 import { latheZ, roundedPlane, roundedSlab } from '@/lib/geometry/sweep';
 import { brushedMetal, coverGlass, glossyGlass } from '@/scene/materials';
@@ -120,7 +121,14 @@ function build() {
   };
 }
 
-const silicone = (color: string) => new THREE.MeshPhysicalMaterial({ color, roughness: 0.62, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color('#ffffff'), clearcoat: 0.08, clearcoatRoughness: 0.5 });
+// fluoroelastomer: satin, with a very fine grain that breaks up its highlights (no plastic shine)
+const silicone = (color: string) =>
+  withMicro(
+    new THREE.MeshPhysicalMaterial({ color, roughness: 0.58, sheen: 0.45, sheenRoughness: 0.55, sheenColor: new THREE.Color('#ffffff'), clearcoat: 0.12, clearcoatRoughness: 0.42 }),
+    'bead',
+    [60, 60],
+    0.1,
+  );
 
 function Watch({ finish, surfaces, screen, params }: DeviceProps) {
   geometry ??= build();
