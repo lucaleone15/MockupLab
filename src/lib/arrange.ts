@@ -135,7 +135,7 @@ export function layoutItems(items: SceneItem[], layout: Layout): SceneItem[] {
 
 /** Back walls of the 3D sets (table set, studio sweep), local Z. */
 export const TABLE_BACK = -55;
-export const SWEEP_BACK = -70;
+export const SWEEP_BACK = -100;
 /** Radius of the photo studio's cove: its floor is flat in front of SWEEP_BACK + SWEEP_COVE. */
 export const SWEEP_COVE = 60;
 const STAGE_RADIUS = 600;

@@ -32,7 +32,7 @@ const fabricParam = (def: string): ParamDef => ({
 type Path = (g: CanvasRenderingContext2D, k: number) => void;
 
 /** Height field (0..1) from a blurred silhouette, sampled on a coarse grid. */
-function heightField(path: Path, W: number, H: number, res = 256, blurCm = 5) {
+function heightField(path: Path, W: number, H: number, res = 320, blurCm = 3.2) {
   const c = document.createElement('canvas');
   c.width = res;
   c.height = Math.round((res * H) / W);
@@ -65,8 +65,11 @@ function garmentGeometry(path: Path, W: number, H: number, puff: number, seed: n
     const a = field(x, y);
     // 0 at the silhouette edge (a = 0.5), full height inside
     const inside = Math.max(0, (a - 0.5) * 2) ** 0.6;
+    // broad folds, then finer creases (cotton lying flat never is)
     const wrinkles =
-      0.22 * Math.sin(x * 0.21 + y * 0.09 + seed) * Math.sin(y * 0.17 - seed) + 0.12 * Math.sin(x * 0.53 - y * 0.41 + seed * 2);
+      0.3 * Math.sin(x * 0.21 + y * 0.09 + seed) * Math.sin(y * 0.17 - seed) +
+      0.16 * Math.sin(x * 0.53 - y * 0.41 + seed * 2) +
+      0.07 * Math.sin(x * 1.31 + y * 0.83 - seed * 3) * Math.cos(y * 1.1 + seed);
     pos.setZ(i, inside * (puff + wrinkles * inside));
   }
   g.computeVertexNormals();
@@ -111,12 +114,13 @@ function Tote({ surfaces, params }: DeviceProps) {
     const handle = (sx: number) =>
       ribbonGeometry(
         [
-          new THREE.Vector3(sx * 7, 0.6, top),
-          new THREE.Vector3(sx * 7.6, 0.4, top - 10),
-          new THREE.Vector3(sx * 4, 0.3, top - 22),
-          new THREE.Vector3(sx * -2, 0.3, top - 25),
-          new THREE.Vector3(sx * -7, 0.4, top - 16),
-          new THREE.Vector3(sx * -7, 0.6, top),
+          // a strap lies on the floor in a loop above the bag: kept over the set's floor (it hid under it)
+          new THREE.Vector3(sx * 7, 1.1, top + 1),
+          new THREE.Vector3(sx * 7.6, 0.9, top - 10),
+          new THREE.Vector3(sx * 4, 0.8, top - 22),
+          new THREE.Vector3(sx * -2, 0.8, top - 25),
+          new THREE.Vector3(sx * -7, 0.9, top - 16),
+          new THREE.Vector3(sx * -7, 1.1, top + 1),
         ],
         2.6,
         120,
@@ -152,27 +156,30 @@ export const tote: DeviceModule = {
 
 /* ------------------------------------------------------------ t-shirt */
 
-const TEE_W = 86;
+const TEE_W = 92;
 const TEE_H = 78;
-const TEE_TEX: [number, number] = [2048, 1858];
+const TEE_TEX: [number, number] = [2048, 1737];
 
 /** Flat-lay crew-neck tee silhouette (cm, centre origin, canvas y down). */
 const teePath: Path = (g, k) => {
   const P = (x: number, y: number): [number, number] => [x * k, -y * k];
   g.beginPath();
   g.moveTo(...P(-26, -37));
-  g.lineTo(...P(-26.5, 17));
-  g.lineTo(...P(-37.5, 8));
-  g.quadraticCurveTo(...P(-41, 11), ...P(-42, 15.5));
-  g.lineTo(...P(-31.5, 31));
-  g.quadraticCurveTo(...P(-21, 35.5), ...P(-9.5, 36.5));
-  g.bezierCurveTo(...P(-7, 29), ...P(7, 29), ...P(9.5, 36.5));
-  g.quadraticCurveTo(...P(21, 35.5), ...P(31.5, 31));
-  g.lineTo(...P(42, 15.5));
-  g.quadraticCurveTo(...P(41, 11), ...P(37.5, 8));
-  g.lineTo(...P(26.5, 17));
-  g.lineTo(...P(26, -37));
-  g.quadraticCurveTo(...P(0, -38), ...P(-26, -37));
+  // side seam up to the armpit
+  g.quadraticCurveTo(...P(-26.6, -10), ...P(-25.5, 14));
+  // sleeve: underside, hem (≈ 17 cm opening, set at an angle), top line to a sloping shoulder
+  g.lineTo(...P(-36.5, 5.5));
+  g.lineTo(...P(-45, 19.5));
+  g.quadraticCurveTo(...P(-36, 28.5), ...P(-24, 33.5));
+  g.lineTo(...P(-9.8, 37));
+  // crew neck
+  g.bezierCurveTo(...P(-7.5, 29), ...P(7.5, 29), ...P(9.8, 37));
+  g.lineTo(...P(24, 33.5));
+  g.quadraticCurveTo(...P(36, 28.5), ...P(45, 19.5));
+  g.lineTo(...P(36.5, 5.5));
+  g.lineTo(...P(25.5, 14));
+  g.quadraticCurveTo(...P(26.6, -10), ...P(26, -37));
+  g.quadraticCurveTo(...P(0, -38.2), ...P(-26, -37));
   g.closePath();
 };
 
@@ -197,17 +204,17 @@ function TShirt({ surfaces, params }: DeviceProps) {
       g.fill();
       // inside of the back neck, seen through the neckline
       g.beginPath();
-      g.moveTo(-9.5 * k, -36.5 * k);
-      g.bezierCurveTo(-7 * k, -29 * k, 7 * k, -29 * k, 9.5 * k, -36.5 * k);
-      g.bezierCurveTo(6 * k, -35 * k, -6 * k, -35 * k, -9.5 * k, -36.5 * k);
+      g.moveTo(-9.8 * k, -37 * k);
+      g.bezierCurveTo(-7.5 * k, -29 * k, 7.5 * k, -29 * k, 9.8 * k, -37 * k);
+      g.bezierCurveTo(6 * k, -35.4 * k, -6 * k, -35.4 * k, -9.8 * k, -37 * k);
       g.fillStyle = shade(color, 0.72);
       g.fill();
       // ribbed collar
       g.beginPath();
-      g.moveTo(-9.5 * k, -36.5 * k);
-      g.bezierCurveTo(-7 * k, -29 * k, 7 * k, -29 * k, 9.5 * k, -36.5 * k);
-      g.strokeStyle = shade(color, 0.9);
-      g.lineWidth = 2 * k;
+      g.moveTo(-9.8 * k, -37 * k);
+      g.bezierCurveTo(-7.5 * k, -29 * k, 7.5 * k, -29 * k, 9.8 * k, -37 * k);
+      g.strokeStyle = shade(color, 0.92);
+      g.lineWidth = 2.4 * k;
       g.stroke();
       g.strokeStyle = 'rgba(0,0,0,0.12)';
       g.lineWidth = 0.08 * k;
@@ -218,10 +225,11 @@ function TShirt({ surfaces, params }: DeviceProps) {
       g.beginPath();
       g.moveTo(-26 * k, 34.8 * k);
       g.quadraticCurveTo(0, 35.8 * k, 26 * k, 34.8 * k);
-      g.moveTo(-39.6 * k, -10 * k);
-      g.lineTo(-40.4 * k, -14 * k);
-      g.moveTo(39.6 * k, -10 * k);
-      g.lineTo(40.4 * k, -14 * k);
+      // sleeve hems, 2 cm in from the opening
+      g.moveTo(-37.9 * k, -6.9 * k);
+      g.lineTo(-43.6 * k, -17.3 * k);
+      g.moveTo(37.9 * k, -6.9 * k);
+      g.lineTo(43.6 * k, -17.3 * k);
       g.stroke();
       g.restore();
       // chest print
@@ -235,7 +243,7 @@ function TShirt({ surfaces, params }: DeviceProps) {
     [color, surfaces.print?.fit],
   );
   const fabric = useFabricMaterial(texture, 14, { cutout: true });
-  const geometry = useMemo(() => garmentGeometry(teePath, TEE_W, TEE_H, 1.6, 0.6), []);
+  const geometry = useMemo(() => garmentGeometry(teePath, TEE_W, TEE_H, 2.2, 0.6), []);
   return <mesh geometry={geometry} material={fabric} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow />;
 }
 
@@ -245,8 +253,8 @@ export const tshirt: DeviceModule = {
   category: 'merch',
   surfaceKind: 'print',
   anchor: 'bottom',
-  size: [86, 2.5, 76],
-  sizeFor: () => ({ size: [86, 2.5, 76], focus: [0, 1.5, -6] }),
+  size: [92, 3, 76],
+  sizeFor: () => ({ size: [92, 3, 76], focus: [0, 1.5, -6] }),
   surfaces: [{ id: 'print', label: { fr: 'Impression poitrine', en: 'Chest print' }, aspect: 26 / 30, nativeSize: [3071, 3543], fit: 'contain' }],
   finishes: NO_FINISH,
   defaultFinish: 'default',
