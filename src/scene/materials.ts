@@ -76,11 +76,12 @@ export const lensGlass = () =>
       roughness: 0.02,
       clearcoat: 1,
       clearcoatRoughness: 0,
-      iridescence: 1,
-      iridescenceIOR: 1.9,
-      iridescenceThicknessRange: [250, 520],
+      // the anti-reflection coating: a faint blue-violet sheen on deep black glass (it read green)
+      iridescence: 0.3,
+      iridescenceIOR: 1.6,
+      iridescenceThicknessRange: [180, 260],
       specularIntensity: 1,
-      envMapIntensity: 1.6,
+      envMapIntensity: 0.9,
     }),
   );
 

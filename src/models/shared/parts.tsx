@@ -12,6 +12,7 @@ const RING_R = 0.79; // outer radius of the reference lens geometry
 
 let parts: {
   lensRing: THREE.BufferGeometry;
+  lensCollar: THREE.BufferGeometry;
   lensBarrel: THREE.BufferGeometry;
   lensDome: THREE.BufferGeometry;
   lensCover: THREE.BufferGeometry;
@@ -31,6 +32,20 @@ function geo() {
         [0.735, 0.145],
         [0.722, 0.138],
         [0.718, 0.12],
+      ],
+      72,
+    ),
+    // the pro phones' thick raised collar: wider, taller, chamfered top (the body's metal)
+    lensCollar: latheZ(
+      [
+        [0.79, 0],
+        [0.79, 0.13],
+        [0.776, 0.175],
+        [0.745, 0.198],
+        [0.67, 0.2],
+        [0.645, 0.185],
+        [0.632, 0.15],
+        [0.628, 0.12],
       ],
       72,
     ),
@@ -79,12 +94,12 @@ function geo() {
 type V3 = [number, number, number];
 
 /** Camera lens with a polished ring of the given outer radius, standing on +Z. */
-export function Lens({ position, radius, ring }: { position: V3; radius: number; ring: string }) {
+export function Lens({ position, radius, ring, collar = false }: { position: V3; radius: number; ring: string; collar?: boolean }) {
   const g = geo();
   const k = radius / RING_R;
   return (
     <group position={position} scale={[k, k, Math.min(1, k * 1.1)]}>
-      <mesh geometry={g.lensRing} material={polishedMetal(ring)} />
+      <mesh geometry={collar ? g.lensCollar : g.lensRing} material={polishedMetal(ring)} />
       <mesh geometry={g.lensBarrel} material={mattePlastic('#16161a', 0.42)} />
       <mesh geometry={g.lensDome} material={lensGlass()} />
       <mesh geometry={g.lensCover} material={sapphireCover()} />

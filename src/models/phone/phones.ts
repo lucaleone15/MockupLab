@@ -18,24 +18,29 @@ export const phonePro = definePhone({
   depth: 0.875,
   radius: 1.2,
   smooth: 0.6,
-  bandEdge: { d: 0.2, z: 0.22 },
+  // the band meets the screen glass with a small radius, and curves into the back with a large one
+  bandEdge: { d: 0.13, z: 0.15 },
+  backEdge: { d: 0.45, z: 0.42 },
+  unibody: true,
   // bead-blasted anodised aluminium (low anisotropy → fine grain, not brushed)
-  frame: { roughness: 0.36, anisotropy: 0.12 },
+  frame: { roughness: 0.5, anisotropy: 0.12 },
   display: { width: 6.79, height: 14.6, radius: 1.0 },
   nativeSize: [1206, 2622],
   cutout: { kind: 'island', width: 2.0, height: 0.6, top: 0.2 },
   back: 'frosted',
   camera: {
-    at: [3.595, 2.0],
-    plateau: { width: 7.13, height: 3.75, radius: 1.15, thickness: 0.13, material: 'metal' },
+    // measured on the maker's photos (perspective corrected): a raised block inset ~4.5 mm, 6.25 × 3.3 cm
+    at: [3.595, 2.1],
+    plateau: { width: 6.25, height: 3.3, radius: 0.9, thickness: 0.14, material: 'metal' },
     lenses: [
-      [-2.25, 0.88, 0.84],
-      [-2.25, -0.88, 0.84],
-      [-0.62, 0, 0.84],
+      [-1.98, 0.8, 0.77],
+      [-1.98, -0.8, 0.77],
+      [-0.3, -0.06, 0.77],
     ],
-    flash: [2.05, 0.9, 0.27],
-    sensor: [2.05, -0.9, 0.25],
-    mic: [1.2, 1.35],
+    collar: true,
+    flash: [2.22, 0.76, 0.3],
+    sensor: [2.05, -0.98, 0.3],
+    mic: [2.15, -0.1],
   },
   buttons: [
     // left: action, volume up, volume down; right: side button, camera control

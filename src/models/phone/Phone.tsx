@@ -25,6 +25,8 @@ export interface CameraSpec {
   plateau?: { width: number; height: number; radius: number; thickness: number; material?: 'glass' | 'metal' };
   /** Lens centres and outer ring radii, relative to the module centre (x → right, y → up, back view). */
   lenses: [number, number, number][];
+  /** Thick raised lens collars (pro phones) instead of thin rings. */
+  collar?: boolean;
   flash?: [number, number, number];
   sensor?: [number, number, number];
   mic?: [number, number];
@@ -40,6 +42,13 @@ export interface PhoneSpec {
   smooth: number;
   /** Rounding between side band and front/back glass. */
   bandEdge: EdgeRadius;
+  /** Rounding on the back side when it differs (an aluminium unibody curves into the back with a large radius). */
+  backEdge?: EdgeRadius;
+  /**
+   * Aluminium unibody: the back is the metal itself (the band's finish), with a frosted glass window below the
+   * camera plateau, instead of a full glass back.
+   */
+  unibody?: boolean;
   frame: { roughness: number; anisotropy: number };
   display: { width: number; height: number; radius: number };
   nativeSize: [number, number];
@@ -66,6 +75,8 @@ interface PhoneGeometry {
   button: Record<string, THREE.BufferGeometry>;
   antennaSide: THREE.BufferGeometry;
   antennaTop: THREE.BufferGeometry;
+  /** Unibody: the glass window on the back, and where its centre sits (from the top). */
+  window: { geometry: THREE.BufferGeometry; centre: number } | null;
   port: THREE.BufferGeometry;
   earpiece: THREE.BufferGeometry;
 }
@@ -103,7 +114,7 @@ function buildGeometry(s: PhoneSpec): PhoneGeometry {
       radius: s.radius,
       thickness: s.depth,
       front: s.bandEdge,
-      back: s.bandEdge,
+      back: s.backEdge ?? s.bandEdge,
       smooth: s.smooth,
       segments: 40,
       edgeSegments: 14,
@@ -137,6 +148,18 @@ function buildGeometry(s: PhoneSpec): PhoneGeometry {
     button,
     antennaSide: new THREE.BoxGeometry(0.008, 0.05, s.depth - 0.24),
     antennaTop: new THREE.BoxGeometry(0.05, 0.008, s.depth - 0.24),
+    window:
+      s.unibody && p
+        ? (() => {
+            // from just under the plateau to the flat of the back, as wide as the plateau
+            const top = s.camera.at[1] + p.height / 2 + 0.32;
+            const bottom = s.height - ((s.backEdge ?? s.bandEdge).d + 0.18);
+            return {
+              geometry: roundedSlab({ width: p.width, height: bottom - top, radius: p.radius, thickness: 0.012, front: { d: 0.006, z: 0.006 }, back: 0, smooth: s.smooth, segments: 24, edgeSegments: 4 }),
+              centre: (top + bottom) / 2,
+            };
+          })()
+        : null,
     port: roundedPlane(0.9, 0.3, 0.15, { smooth: 0, segments: 12 }),
     earpiece: roundedPlane(1.15, 0.032, 0.016, { smooth: 0, segments: 8 }),
   };
@@ -161,14 +184,14 @@ function CameraModule({ s, g, finish, backZ }: { s: PhoneSpec; g: PhoneGeometry;
       {g.plateau && cam.plateau && (
         <mesh
           geometry={g.plateau}
-          // unibody: the plateau is the back's anodised aluminium, a touch rougher than the band so it stays light
-          material={cam.plateau.material === 'metal' ? brushedMetal(finish.colors.back, s.frame.roughness + 0.12, s.frame.anisotropy) : glossyGlass(finish.colors.back)}
+          // unibody: the plateau is milled out of the same aluminium as the band
+          material={cam.plateau.material === 'metal' ? brushedMetal(finish.colors.frame, s.frame.roughness, s.frame.anisotropy) : glossyGlass(finish.colors.back)}
           position={[0, 0, cam.plateau.thickness / 2 - 0.01]}
           castShadow
         />
       )}
       {cam.lenses.map(([x, y, r], i) => (
-        <Lens key={i} position={[x, y, z]} radius={r} ring={finish.colors.frame} />
+        <Lens key={i} position={[x, y, z]} radius={r} ring={finish.colors.frame} collar={cam.collar} />
       ))}
       {cam.flash && <Flash position={[cam.flash[0], cam.flash[1], z]} radius={cam.flash[2]} />}
       {cam.sensor && <Sensor position={[cam.sensor[0], cam.sensor[1], z]} radius={cam.sensor[2]} />}
@@ -221,14 +244,23 @@ function Phone({ spec: s, finish, surfaces, screen, params, brand }: DeviceProps
         position={[0, earpieceY, (c.kind === 'notch' ? screenZ + 0.008 : glassTop + 0.001)]}
         scale={c.kind === 'punch' ? [0.7, 1, 1] : 1}
       />
-      {/* back */}
-      <mesh
-        geometry={g.glass}
-        material={s.back === 'frosted' ? frostedGlass(finish.colors.back) : glossyGlass(finish.colors.back)}
-        position={[0, 0, -glassZ]}
-        rotation={[0, Math.PI, 0]}
-      />
-      <CameraModule s={s} g={g} finish={finish} backZ={glassTop} />
+      {/* back: a glass back, or (unibody) the metal with a glass window under the plateau */}
+      {g.window ? (
+        <mesh
+          geometry={g.window.geometry}
+          material={frostedGlass(finish.colors.back)}
+          position={[0, s.height / 2 - g.window.centre, -(s.depth / 2) - 0.004]}
+          rotation={[0, Math.PI, 0]}
+        />
+      ) : (
+        <mesh
+          geometry={g.glass}
+          material={s.back === 'frosted' ? frostedGlass(finish.colors.back) : glossyGlass(finish.colors.back)}
+          position={[0, 0, -glassZ]}
+          rotation={[0, Math.PI, 0]}
+        />
+      )}
+      <CameraModule s={s} g={g} finish={finish} backZ={s.unibody ? s.depth / 2 : glassTop} />
       {/* buttons */}
       {s.buttons.map(([side, offset, len], i) => (
         <mesh
