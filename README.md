@@ -67,7 +67,7 @@ npm run dev      # http://localhost:5173
 npm run build    # version de production dans dist/
 ```
 
-Fait avec React, Three.js (React Three Fiber), Tailwind CSS et Vite. Le site est publié sur Netlify à la demande : `npm run deploy:preview` (adresse de test) puis `npm run deploy` (en ligne). Rien ne part automatiquement à chaque envoi sur `main`.
+Fait avec React, Three.js (React Three Fiber), Tailwind CSS et Vite. Le site est hébergé chez Infomaniak : chaque envoi sur `main` le construit et le met en ligne tout seul (GitHub Action `deploy-infomaniak.yml`). `npm run deploy` fait la même chose à la main. L'ancienne adresse Netlify ne fait plus que rediriger vers la nouvelle.
 
 Les règles visuelles (logo, couleurs, typo, images) sont dans [DESIGN.md](DESIGN.md).
 

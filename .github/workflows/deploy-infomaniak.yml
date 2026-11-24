@@ -1,0 +1,61 @@
+name: Deploy to Infomaniak
+
+# Every push to main builds MockupLab and puts it online at https://mockuplab.luca-leone.ch.
+# A broken build or a failed SEO check stops here: the site online stays as it was.
+# Needs the repository secret INFOMANIAK_SSH_KEY (the private half of a key added in
+# Infomaniak Manager → Hébergement → FTP / SSH → Clés SSH).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infomaniak
+  cancel-in-progress: false
+
+env:
+  SSH_TARGET: 0l4vhm_LucaLeone2004@0l4vhm.ftp.infomaniak.com
+  SITE_DIR: sites/mockuplab.luca-leone.ch/
+  # Pinned: the server's own key, so the upload never goes to an impostor.
+  KNOWN_HOST: 0l4vhm.ftp.infomaniak.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILPr5KkyhRViaLdMO+k9gVGkaX1rwBrYZSWZgDPNzMLp
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: infomaniak
+      url: https://mockuplab.luca-leone.ch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The landings are prerendered in a real browser.
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+      - run: node scripts/check-seo.mjs
+
+      - name: Upload dist/ (.htaccess included)
+        env:
+          SSH_KEY: ${{ secrets.INFOMANIAK_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOST" > ~/.ssh/known_hosts
+          rsync -az --delete --stats -e "ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes" dist/ "$SSH_TARGET:$SITE_DIR"
+
+      - name: Check the site online
+        run: |
+          for p in / /studio /en/ /app-icons/icon-192.png; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://mockuplab.luca-leone.ch$p")
+            echo "$p → $code"; test "$code" = 200
+          done

@@ -1,68 +1,18 @@
-# MockupLab on Netlify — https://mockuplab3d.netlify.app
-# Netlify never builds this site: `npm run deploy` (or `deploy:preview`) builds on the Mac and uploads dist/.
-# So pushes to GitHub cost no Netlify credits; only a production deploy does (15 credits).
+# The old address https://mockuplab3d.netlify.app now only sends people to https://mockuplab.luca-leone.ch.
+# Published once with `npm run deploy:netlify-redirect` (Netlify never builds on a push).
 
 [build]
-  publish = "dist"
+  publish = "scripts/netlify-redirect"
   # no command: nothing is built on Netlify
 
-# English addresses → the English page; every other address → the app (French landing, /studio, /rapide…).
-# Real files (assets, pictures, robots.txt…) are served first.
-[[redirects]]
-  from = "/en/*"
-  to = "/en/index.html"
-  status = 200
-
+# Every address → the same address on the new site (permanent, so search engines move it too).
+# Not forced: sw.js, the one real file here, is still served, so installed copies of the old app clean up.
 [[redirects]]
   from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Hashed build files never change: cached for a year.
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Pictures, textures and models: a week (their names do not change between versions).
-[[headers]]
-  for = "/showcase/*"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-# Pages and the service worker: always checked, so a new version shows up.
-[[headers]]
-  for = "/*.html"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/en/"
-  [headers.values]
-    Cache-Control = "no-cache"
+  to = "https://mockuplab.luca-leone.ch/:splat"
+  status = 301
 
 [[headers]]
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
-
-# Everywhere. No Content-Security-Policy: video export and PDF import use workers, blobs and WebAssembly,
-# which a strict policy would break.
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    X-Frame-Options = "DENY"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-
-# The installable-app manifest, with its proper type.
-[[headers]]
-  for = "/manifest.webmanifest"
-  [headers.values]
-    Content-Type = "application/manifest+json"

@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit",
     "shoot": "node scripts/shoot.mjs",
     "samples": "node scripts/make-samples.mjs",
-    "deploy": "node scripts/deploy.mjs --prod",
-    "deploy:preview": "node scripts/deploy.mjs",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:netlify-redirect": "node scripts/deploy.mjs --netlify-redirect",
     "design-system": "node scripts/build-design-system.mjs"
   },
   "dependencies": {
