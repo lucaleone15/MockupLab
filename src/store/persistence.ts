@@ -257,6 +257,9 @@ let paused = false;
 /** Changes not saved yet. */
 let dirty = false;
 
+/** A render sandbox (variants, batches) holds a staged scene right now. */
+export const autosavePaused = () => paused;
+
 /** Suspends autosave while the project is changed temporarily (variants, batches); resuming saves. */
 export function pauseAutosave(v: boolean, changedMeanwhile = false) {
   paused = v;

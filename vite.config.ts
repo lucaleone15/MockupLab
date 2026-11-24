@@ -13,7 +13,7 @@ export default defineConfig(({ command, isPreview }) => ({
     react(),
     tailwindcss(),
     // installable app: the code is cached at install, textures and photos when first used;
-    // a new version is only applied when the user accepts it
+    // a new version applies on its own at a quiet moment (src/pwa/update.ts)
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
