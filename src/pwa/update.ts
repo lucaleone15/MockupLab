@@ -32,8 +32,19 @@ export async function startUpdates() {
   window.__mockuplabUpdate = { show: () => useUpdate.setState({ dismissed: false }) };
   if (import.meta.env.DEV || !('serviceWorker' in navigator)) return;
   const { registerSW } = await import('virtual:pwa-register');
+  // the plugin reloads only when the new version arrived while this page was open; one already waiting at
+  // load would take over without reloading, so the page reloads itself when the new version takes control
+  let reloading = false;
+  const reloadInto = async () => {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return;
+      reloading = true;
+      location.reload();
+    });
+    await updateSW(true);
+  };
   const updateSW = registerSW({
-    onNeedRefresh: () => applyWhenQuiet(() => updateSW(true)),
+    onNeedRefresh: () => applyWhenQuiet(reloadInto),
     onRegisteredSW: (_url, reg) => {
       // check for a new version every hour while the app stays open
       if (reg) setInterval(() => void reg.update(), 60 * 60 * 1000);
