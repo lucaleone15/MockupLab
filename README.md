@@ -8,9 +8,9 @@ Gratuit, open source, et tout se passe dans ton navigateur : tes images ne quitt
 </p>
 
 <p align="center">
-  <a href="https://mockuplab3d.netlify.app/"><b>Ouvrir MockupLab dans le navigateur</b></a>
+  <a href="https://mockuplab.luca-leone.ch/"><b>Ouvrir MockupLab dans le navigateur</b></a>
   &nbsp;·&nbsp;
-  <a href="https://mockuplab3d.netlify.app/en/">English</a>
+  <a href="https://mockuplab.luca-leone.ch/en/">English</a>
 </p>
 
 ## Ce que ça fait
@@ -55,7 +55,7 @@ Tes projets s'enregistrent tout seuls dans ton navigateur, et chaque export gard
 
 ## Utiliser
 
-Ouvre [mockuplab3d.netlify.app](https://mockuplab3d.netlify.app/) ([English](https://mockuplab3d.netlify.app/en/)). Rien à installer, aucun compte. Si tu veux, le site s'installe comme une app et marche hors ligne.
+Ouvre [mockuplab.luca-leone.ch](https://mockuplab.luca-leone.ch/) ([English](https://mockuplab.luca-leone.ch/en/)). Rien à installer, aucun compte. Si tu veux, le site s'installe comme une app et marche hors ligne.
 
 ## Développement
 

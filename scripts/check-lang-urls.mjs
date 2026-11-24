@@ -32,7 +32,7 @@ let s = await state(page);
 check(s.lang === 'en' && s.path === '/en/', `/en/ is English even with French saved (${JSON.stringify(s)})`);
 check(await page.getByText('The photo studio for your designs.').first().isVisible(), '/en/ shows the English landing title');
 const icons = await page.evaluate(() => [...document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]')].map((l) => l.href));
-check(icons.length >= 3 && icons.every((h) => new URL(h).pathname.startsWith('/icons/')), `icons resolve to /icons/ from /en/ (${icons.join(', ')})`);
+check(icons.length >= 3 && icons.every((h) => new URL(h).pathname.startsWith('/app-icons/')), `icons resolve to /app-icons/ from /en/ (${icons.join(', ')})`);
 
 page = await open('/', { saved: 'en', locale: 'en-US' });
 s = await state(page);

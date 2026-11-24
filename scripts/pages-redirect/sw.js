@@ -1,5 +1,5 @@
 // Replaces the old MockupLab app's service worker on lucaleone15.github.io/MockupLab/: clears its caches,
-// unregisters, and reloads open tabs, which then follow the redirect to https://mockuplab3d.netlify.app.
+// unregisters, and reloads open tabs, which then follow the redirect to https://mockuplab.luca-leone.ch.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil(

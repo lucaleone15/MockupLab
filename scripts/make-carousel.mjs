@@ -28,7 +28,7 @@ const slides = [
     <div class="endmark">${mark(150)}</div>
     <h1>Gratuit. Sans compte.<br>Chez toi.</h1>
     <p>Tout se passe dans ton navigateur&nbsp;: tes images ne quittent jamais ton ordinateur. Marche aussi sur téléphone.</p>
-    <div class="url">mockuplab3d.netlify.app</div>
+    <div class="url">mockuplab.luca-leone.ch</div>
     <div class="by">Conçu par Luca Leone</div>
   </section>`,
 ];

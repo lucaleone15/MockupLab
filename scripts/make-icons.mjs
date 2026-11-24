@@ -28,15 +28,15 @@ async function shot(size, path, opts) {
   await p.screenshot({ path, omitBackground: true });
 }
 // macOS: 824/1024 body, 185 px radius (Apple's grid)
-await shot(1024, 'public/icons/icon-1024.png', { margin: 100, radius: 185, shadow: true });
+await shot(1024, 'public/app-icons/icon-1024.png', { margin: 100, radius: 185, shadow: true });
 // Windows / PWA: nearly full bleed
-await shot(512, 'public/icons/icon-512.png', { margin: 16, radius: 112, shadow: false });
-await shot(192, 'public/icons/icon-192.png', { margin: 6, radius: 42, shadow: false });
+await shot(512, 'public/app-icons/icon-512.png', { margin: 16, radius: 112, shadow: false });
+await shot(192, 'public/app-icons/icon-192.png', { margin: 6, radius: 42, shadow: false });
 // maskable (Android/PWA): the system crops it, so no margin and no rounding
-await shot(512, 'public/icons/icon-maskable-512.png', { margin: 0, radius: 0, shadow: false });
-await shot(180, 'public/icons/apple-touch-icon.png', { margin: 0, radius: 0, shadow: false });
+await shot(512, 'public/app-icons/icon-maskable-512.png', { margin: 0, radius: 0, shadow: false });
+await shot(180, 'public/app-icons/apple-touch-icon.png', { margin: 0, radius: 0, shadow: false });
 // browser tab: the rounded icon, nearly full bleed
-await shot(48, 'public/icons/favicon-48.png', { margin: 1, radius: 11, shadow: false });
-await shot(32, 'public/icons/favicon-32.png', { margin: 1, radius: 7, shadow: false });
+await shot(48, 'public/app-icons/favicon-48.png', { margin: 1, radius: 11, shadow: false });
+await shot(32, 'public/app-icons/favicon-32.png', { margin: 1, radius: 7, shadow: false });
 await b.close();
 console.log('icons written');

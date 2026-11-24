@@ -1,6 +1,6 @@
 name: GitHub Pages redirect
 
-# MockupLab now lives at https://mockuplab3d.netlify.app (published with `npm run deploy`).
+# MockupLab now lives at https://mockuplab.luca-leone.ch (published with `npm run deploy`).
 # The old address only serves a redirect page: run this by hand when that page changes.
 on:
   workflow_dispatch:

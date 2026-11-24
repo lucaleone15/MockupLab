@@ -1,5 +1,5 @@
 // scripts/check-pages-redirect.mjs — the old address (lucaleone15.github.io/MockupLab/…) sends everyone to
-// https://mockuplab3d.netlify.app on the same screen, including people whose browser still runs the old
+// https://mockuplab.luca-leone.ch on the same screen, including people whose browser still runs the old
 // installed app (its service worker is replaced by one that clears itself and reloads).
 // A local server stands in for GitHub Pages under /MockupLab/; Netlify is stubbed.
 import { createServer } from 'node:http';
@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { check } from './lib/app.mjs';
 
-const SITE = 'https://mockuplab3d.netlify.app';
+const SITE = 'https://mockuplab.luca-leone.ch';
 let site = 'old'; // what "GitHub Pages" serves: the old app, then the redirect folder
 const OLD = {
   'index.html': `<!doctype html><title>old app</title><h1 id="old">OLD APP</h1>
@@ -47,18 +47,18 @@ async function landing(context, path) {
 }
 const stubbed = async () => {
   const context = await browser.newContext();
-  await context.route(`${SITE}/**`, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<h1>netlify</h1>' }));
+  await context.route(`${SITE}/**`, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<h1>new site</h1>' }));
   return context;
 };
 
 // 1. plain visitors
 site = 'redirect';
 let ctx = await stubbed();
-check((await landing(ctx, '/')) === `${SITE}/`, '/MockupLab/ → netlify /');
-check((await landing(ctx, '/studio')) === `${SITE}/studio`, '/MockupLab/studio → netlify /studio');
+check((await landing(ctx, '/')) === `${SITE}/`, '/MockupLab/ → new site /');
+check((await landing(ctx, '/studio')) === `${SITE}/studio`, '/MockupLab/studio → new site /studio');
 check((await landing(ctx, '/rapide?x=1')) === `${SITE}/rapide?x=1`, 'query kept (/rapide?x=1)');
-check((await landing(ctx, '/#/projet')) === `${SITE}/projet`, 'old #/projet link → netlify /projet');
-check((await landing(ctx, '/en/studio')) === `${SITE}/en/studio`, '/MockupLab/en/studio → netlify /en/studio');
+check((await landing(ctx, '/#/projet')) === `${SITE}/projet`, 'old #/projet link → new site /projet');
+check((await landing(ctx, '/en/studio')) === `${SITE}/en/studio`, '/MockupLab/en/studio → new site /en/studio');
 const html = readFileSync('scripts/pages-redirect/index.html', 'utf8');
 check(html.includes(`<link rel="canonical" href="${SITE}/">`) && /<meta name="robots" content="noindex">/.test(html), 'redirect page: canonical to Netlify, not indexed');
 await ctx.close();
@@ -75,7 +75,7 @@ site = 'redirect';
 // next visit: the browser checks the worker, gets the clearing one, which reloads the page → redirect
 await page.goto(OLD_URL + 'studio');
 await page.waitForURL((u) => u.href.startsWith(SITE), { timeout: 15000 }).catch(() => {});
-check(page.url() === `${SITE}/studio`, `old installed app ends on netlify /studio (${page.url()})`);
+check(page.url() === `${SITE}/studio`, `old installed app ends on the new site /studio (${page.url()})`);
 const left = await ctx.newPage();
 await left.goto('http://localhost:4300/MockupLab/sw.js');
 const regs = await left.evaluate(async () => ({ regs: (await navigator.serviceWorker.getRegistrations()).length, caches: (await caches.keys()).length }));

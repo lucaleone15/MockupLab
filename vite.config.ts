@@ -17,7 +17,7 @@ export default defineConfig(({ command, isPreview }) => ({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['icons/favicon-48.png', 'icons/favicon-32.png', 'icons/apple-touch-icon.png'],
+      includeAssets: ['app-icons/favicon-48.png', 'app-icons/favicon-32.png', 'app-icons/apple-touch-icon.png'],
       manifest: {
         name: 'MockupLab',
         short_name: 'MockupLab',
@@ -29,13 +29,13 @@ export default defineConfig(({ command, isPreview }) => ({
         background_color: '#f5f5f7',
         theme_color: '#f5f5f7',
         icons: [
-          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'app-icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'app-icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'app-icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,mjs,css,html,svg,woff2}', 'icons/*.png'],
+        globPatterns: ['**/*.{js,mjs,css,html,svg,woff2}', 'app-icons/*.png'],
         globIgnores: ['prerender.html', 'assets/prerender-*.js', 'assets/server.browser-*.js'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         navigateFallback: 'index.html',

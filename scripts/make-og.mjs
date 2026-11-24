@@ -7,7 +7,7 @@ const b64 = (f) => readFileSync(f).toString('base64');
 const gabarito = b64('node_modules/@fontsource-variable/gabarito/files/gabarito-latin-wght-normal.woff2');
 const jakarta = b64('node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2');
 const hero = b64('public/showcase/hero-still.webp');
-const icon = b64('public/icons/icon-192.png');
+const icon = b64('public/app-icons/icon-192.png');
 const TEXT = {
   fr: { tag: 'Mockups 3D gratuits, dans ton navigateur', small: 'Gratuit · Sans compte · Rien ne quitte ton ordinateur' },
   en: { tag: 'Free 3D mockups, right in your browser', small: 'Free · No account · Nothing leaves your computer' },
@@ -37,7 +37,7 @@ for (const [lang, t] of Object.entries(TEXT)) {
       <h1>${t.tag}</h1>
       <p>${t.small}</p>
     </div>
-    <div class="url">mockuplab3d.netlify.app${lang === 'en' ? '/en' : ''}</div>
+    <div class="url">mockuplab.luca-leone.ch${lang === 'en' ? '/en' : ''}</div>
   </body></html>`);
   await page.evaluate(() => document.fonts.ready);
   const out = `public/og/og-${lang}.png`;

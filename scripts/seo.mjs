@@ -1,5 +1,5 @@
 // scripts/seo.mjs — the public address and each language's page head (used by prerender.mjs and check-seo.mjs).
-export const SITE_URL = 'https://mockuplab3d.netlify.app';
+export const SITE_URL = 'https://mockuplab.luca-leone.ch';
 
 export const HEAD = {
   fr: {

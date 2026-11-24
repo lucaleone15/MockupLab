@@ -17,4 +17,4 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://mockuplab3d.netlify.app/sitemap.xml
+Sitemap: https://mockuplab.luca-leone.ch/sitemap.xml

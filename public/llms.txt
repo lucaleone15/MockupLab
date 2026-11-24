@@ -2,8 +2,8 @@
 
 > MockupLab is a free, open-source 3D mockup generator that runs entirely in the web browser. You drop a screenshot or a design, it appears on photorealistic 3D devices or print items, and you export images or videos. Nothing is uploaded: images and projects stay on the user's device. No account is needed.
 
-- Website (French): https://mockuplab3d.netlify.app/
-- Website (English): https://mockuplab3d.netlify.app/en/
+- Website (French): https://mockuplab.luca-leone.ch/
+- Website (English): https://mockuplab.luca-leone.ch/en/
 - Source code (MIT licence): https://github.com/lucaleone15/MockupLab
 - Author: Luca Leone, media engineering (https://luca-leone.ch)
 
