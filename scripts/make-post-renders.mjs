@@ -1,10 +1,12 @@
 // scripts/make-post-renders.mjs — the LinkedIn post's pictures, rendered by MockupLab itself in 4:5 (1080 × 1350):
 // a different scene each (the post's story: one mock-up per project, never the same three). Dev server on :5173.
 // Output: docs/launch/post/render-*.png, then the hook (image 1) with its title → docs/launch/post/1-*.png …
+// `--fictif`: the same post with the app's own fictional samples (one brand per picture) → docs/launch/post-fictif/
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { openApp } from './lib/app.mjs';
-const OUT = 'docs/launch/post';
+const FICTIF = process.argv.includes('--fictif');
+const OUT = FICTIF ? 'docs/launch/post-fictif' : 'docs/launch/post';
 mkdirSync(OUT, { recursive: true });
 const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
 const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
@@ -76,6 +78,7 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
 
 const radial = (inner, outer) => ({ kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: inner, at: 0 }, { color: outer, at: 1 }] });
 const trio = { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', zoom: 1.15, yaws: [0.52, 0, -0.52], camera: { preset: 'front' } };
+if (!FICTIF) {
 // the portfolio: its red, deepened so the title reads
 await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: radial('#4a0f1c', '#0c0507'), zoom: 1.18, screens: [{ screen: 'portfolio-web.png' }, { screen: 'portfolio-mobile.png' }] });
 // F1 PitWall: a pit wall at night, carbon black with a red glow; three phones, the sides turned towards the middle one
@@ -86,6 +89,19 @@ await shot('render-ocean.png', { ...trio, preset: 'studio-dark', background: rad
 await shot('render-karting.png', { models: ['phone-pro'], preset: 'podium-arch', background: { kind: 'solid', color: '#16224a' }, decor: { kind: 'podium', podiumFinish: 'paint', color: '#c8102e', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Les résultats de la SWS du 5 mai 🏁' }], brand: { name: 'kartingvuiteboeuf', logo: 'kv-logo.png' }, screens: [{ screen: 'kv-post.png' }] });
 // L'Étoile Blanche: its real cards in a flat lay on linen, lit like daylight
 await shot('render-etoile.png', { models: ['flyer', 'flyer', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#e2cfb8' }, light: 'daylight', camera: { preset: 'top' }, zoom: 1.3, ground: { shadowOpacity: 0.22 }, screens: [{ front: 'eb-campagneAffichage.png' }, { front: 'eb-carteBoissons.png' }, { front: 'eb-anecdotes.png' }] });
+} else {
+// the app's fictional samples, one brand per picture, the background in its colours
+// norastudio (black, orange, cream): its website, deep charcoal with an orange glow so the title reads
+await shot('render-hero.png', { models: ['laptop-14'], preset: 'studio-dark', background: radial('#3a1d12', '#0d0b0a'), zoom: 1.12 });
+// Sunset sessions, the music app: three phones at dusk
+await shot('render-sunset.png', { ...trio, preset: 'studio-dark', background: radial('#5b3a8c', '#140c24'), finishes: ['orange', 'black', 'orange'], light: 'daylight' });
+// Solstice festival: its poster as an Instagram post, forest green with an orange podium
+await shot('render-solstice.png', { models: ['phone-pro'], preset: 'podium-arch', background: { kind: 'solid', color: '#2f4a3b' }, decor: { kind: 'podium', podiumFinish: 'paint', color: '#ff5c35', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Rendez-vous le 21 juin au Parc des Rives ☀️' }], brand: { name: 'solstice.festival' } });
+// Domaine des Rives: its wine, on warm linen
+await shot('render-domaine.png', { models: ['bottle'], preset: 'studio-light', background: radial('#f4ead8', '#d9c4a3'), light: 'daylight', zoom: 0.85 });
+// norastudio's stationery, a flat lay on its orange
+await shot('render-nora.png', { models: ['business-card', 'envelope'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#ff6a42' }, light: 'daylight', camera: { preset: 'top' }, zoom: 1.3, ground: { shadowOpacity: 0.22 }, params: [{ layout: 'pair' }] });
+}
 await browser.close();
 
 // the post's images, 1080 × 1350: the hook (the first render with its title), then the renders as they are
@@ -101,7 +117,8 @@ h1{font:700 92px/0.98 G;letter-spacing:-0.03em;text-wrap:balance}
 p{margin-top:26px;font:400 32px/1.4 J;opacity:.72}
 .b{position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center;align-items:center;gap:12px;font:700 30px G;letter-spacing:-0.025em}
 </style></head><body>${hook ? `<div class="h"><h1>${hook[0]}</h1><p>${hook[1]}</p></div><div class="b">${mark}MockupLab</div>` : ''}</body></html>`;
-const order = [['hero', ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.']], ['f1'], ['ocean'], ['karting'], ['etoile']];
+const hook = ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.'];
+const order = FICTIF ? [['hero', hook], ['sunset'], ['solstice'], ['domaine'], ['nora']] : [['hero', hook], ['f1'], ['ocean'], ['karting'], ['etoile']];
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1080, height: 1350 } });
 for (const [i, [name, hook]] of order.entries()) {
