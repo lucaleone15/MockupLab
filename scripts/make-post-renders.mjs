@@ -9,18 +9,19 @@ mkdirSync(OUT, { recursive: true });
 const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
 const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
 
-// the screens: real projects (luca-leone.ch, OceanSight, F1 PitWall, DriveGear) and print pieces in the portfolio's
-// colours, in docs/launch/screens/ (served by the dev server under /@fs/)
+// one real project per picture, the background in that project's colours: luca-leone.ch, F1 PitWall, OceanSight,
+// a Karting de Vuiteboeuf post, the Étoile Blanche cards. Files in docs/launch/screens/ (served under /@fs/)
 const SCREENS = `@fs${process.cwd()}/docs/launch/screens/`;
 
-async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground, yaws, screens }) {
+async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground, yaws, screens, brand }) {
   await page.evaluate(
-    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, dir }) => {
+    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, brand, dir }) => {
       const api = window.__mockuplab;
       const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
       const s = api.project.getState();
-      // the post's account is Luca's, not the sample brand
-      s.setBrand({ name: 'luca.leone' });
+      const { bundledAsset } = await import('/src/lib/samples.ts');
+      // the account a social post shows (name and picture)
+      if (brand) s.setBrand({ name: brand.name, logoAssetId: brand.logo ? await bundledAsset(dir + brand.logo, brand.logo) : null });
       s.setComposition([], 'auto');
       s.setComposition(models, layout);
       const items = api.project.getState().items;
@@ -44,14 +45,13 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       if (ground) s.setGround(ground);
       for (const it of api.project.getState().items) await api.loadSamples(it.id);
       // each device's own screens, in the order of `models`
-      const { bundledAsset } = await import('/src/lib/samples.ts');
       for (const [i, faces] of (screens ?? []).entries())
         for (const [slot, name] of Object.entries(faces ?? {})) s.setSurface(items[i].id, slot, { assetId: await bundledAsset(dir + name, name) });
       s.setExport({ ratio: '4:5', format: 'png', resolution: '2k' });
       api.ui.getState().resetView();
       s.setCamera({ zoom });
     },
-    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, dir: SCREENS },
+    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, brand, dir: SCREENS },
   );
   await page.waitForTimeout(yaws ? 2500 : 4000);
   if (yaws) {
@@ -74,15 +74,18 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
   console.log('saved', file);
 }
 
-await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18, screens: [{ screen: 'portfolio-web.png' }, { screen: 'oceansight-missions.png' }] });
-// three phones in a row, the middle one facing us, the two others turned towards it like a mirror: F1 PitWall on warm peach
-const peach = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#ffe6d6', at: 0 }, { color: '#f2a587', at: 1 }] };
-await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-light', background: peach, finishes: ['cherry', 'black', 'cherry'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight', camera: { preset: 'front' }, screens: [{ screen: 'f1-home.png' }, { screen: 'f1-standing.png' }, { screen: 'f1-track.png' }] });
-// a flat lay on the plain studio floor, lit like daylight: soft directional shadows, sage green
-await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#c6d5c0' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 }, screens: [{ front: 'flyer.png', back: 'card-back.png' }, { front: 'card-front.png', back: 'card-back.png' }, { front: 'postcard.png', back: 'card-back.png' }] });
-// the podium without its arch: the arch caught the phone's shadow right behind it
-await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', decor: { kind: 'podium', podiumFinish: 'paint', color: '#e8d9c8', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Mon nouveau portfolio est en ligne' }], screens: [{ screen: 'portfolio-post.png' }] });
-await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12, light: 'daylight', params: [{ orientation: 'landscape' }], screens: [{ screen: 'drivegear-tablet.png' }, { screen: 'oceansight-profile.png' }] });
+const radial = (inner, outer) => ({ kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: inner, at: 0 }, { color: outer, at: 1 }] });
+const trio = { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', zoom: 1.15, yaws: [0.52, 0, -0.52], camera: { preset: 'front' } };
+// the portfolio: its red, deepened so the title reads
+await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: radial('#4a0f1c', '#0c0507'), zoom: 1.18, screens: [{ screen: 'portfolio-web.png' }, { screen: 'portfolio-mobile.png' }] });
+// F1 PitWall: a pit wall at night, carbon black with a red glow; three phones, the sides turned towards the middle one
+await shot('render-f1.png', { ...trio, preset: 'studio-dark', background: radial('#4a0c0c', '#050505'), finishes: ['black', 'black', 'black'], screens: [{ screen: 'f1-home.png' }, { screen: 'f1-standing.png' }, { screen: 'f1-track.png' }] });
+// OceanSight: deep ocean
+await shot('render-ocean.png', { ...trio, preset: 'studio-dark', background: radial('#1d8088', '#062a31'), finishes: ['silver', 'silver', 'silver'], light: 'daylight', screens: [{ screen: 'oceansight-missions.png' }, { screen: 'oceansight-map.png' }, { screen: 'oceansight-profile.png' }] });
+// Karting de Vuiteboeuf: a real results post, on the club's navy with a red podium (no arch: it caught the phone's shadow)
+await shot('render-karting.png', { models: ['phone-pro'], preset: 'podium-arch', background: { kind: 'solid', color: '#16224a' }, decor: { kind: 'podium', podiumFinish: 'paint', color: '#c8102e', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Les résultats de la SWS du 5 mai 🏁' }], brand: { name: 'kartingvuiteboeuf', logo: 'kv-logo.png' }, screens: [{ screen: 'kv-post.png' }] });
+// L'Étoile Blanche: its real cards in a flat lay on linen, lit like daylight
+await shot('render-etoile.png', { models: ['flyer', 'flyer', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#e2cfb8' }, light: 'daylight', camera: { preset: 'top' }, zoom: 1.3, ground: { shadowOpacity: 0.22 }, screens: [{ front: 'eb-campagneAffichage.png' }, { front: 'eb-carteBoissons.png' }, { front: 'eb-anecdotes.png' }] });
 await browser.close();
 
 // the post's images, 1080 × 1350: the hook (the first render with its title), then the renders as they are
@@ -98,7 +101,7 @@ h1{font:700 92px/0.98 G;letter-spacing:-0.03em;text-wrap:balance}
 p{margin-top:26px;font:400 32px/1.4 J;opacity:.72}
 .b{position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center;align-items:center;gap:12px;font:700 30px G;letter-spacing:-0.025em}
 </style></head><body>${hook ? `<div class="h"><h1>${hook[0]}</h1><p>${hook[1]}</p></div><div class="b">${mark}MockupLab</div>` : ''}</body></html>`;
-const order = [['hero', ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.']], ['phones'], ['tablet'], ['social'], ['print']];
+const order = [['hero', ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.']], ['f1'], ['ocean'], ['karting'], ['etoile']];
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1080, height: 1350 } });
 for (const [i, [name, hook]] of order.entries()) {
