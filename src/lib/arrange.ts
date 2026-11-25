@@ -174,7 +174,10 @@ export function sceneWall(items: SceneItem[], decor: Pick<Decor, 'kind'>): Scene
  */
 export function constrainItems(items: SceneItem[], decor: Pick<Decor, 'kind'>): SceneItem[] {
   const wall = sceneWall(items, decor);
-  const back = wall?.z ?? decorWallZ(decor);
+  const wallZ = wall?.z ?? decorWallZ(decor);
+  // in the photo studio the floor curves up into the wall: a standing object stops where the floor is still flat,
+  // or the cove cuts it (a slanted cut, the part inside the cove hidden)
+  const back = wallZ !== null && decor.kind === 'sweep' ? Math.max(wallZ, SWEEP_BACK + SWEEP_COVE) : wallZ;
   return items.map((it) => {
     let [x, y, z] = it.position;
     let yaw = it.rotation[1];
