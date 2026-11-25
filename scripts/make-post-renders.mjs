@@ -9,12 +9,18 @@ mkdirSync(OUT, { recursive: true });
 const { browser, page } = await openApp({ hash: '#/studio', colorScheme: 'dark', viewport: { width: 1600, height: 1000 } });
 const night = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#1d2340', at: 0 }, { color: '#07080c', at: 1 }] };
 
-async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground, yaws }) {
+// the screens: real projects (luca-leone.ch, OceanSight, F1 PitWall, DriveGear) and print pieces in the portfolio's
+// colours, in docs/launch/screens/ (served by the dev server under /@fs/)
+const SCREENS = `@fs${process.cwd()}/docs/launch/screens/`;
+
+async function shot(file, { models, layout = 'auto', preset, background, decor, params, finishes, zoom = 1, light, camera, ground, yaws, screens }) {
   await page.evaluate(
-    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws }) => {
+    async ({ models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, dir }) => {
       const api = window.__mockuplab;
       const { SCENE_PRESETS, applyScenePreset } = await import('/src/scene/scenePresets.ts');
       const s = api.project.getState();
+      // the post's account is Luca's, not the sample brand
+      s.setBrand({ name: 'luca.leone' });
       s.setComposition([], 'auto');
       s.setComposition(models, layout);
       const items = api.project.getState().items;
@@ -37,11 +43,15 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
       if (camera) s.setCamera(camera);
       if (ground) s.setGround(ground);
       for (const it of api.project.getState().items) await api.loadSamples(it.id);
+      // each device's own screens, in the order of `models`
+      const { bundledAsset } = await import('/src/lib/samples.ts');
+      for (const [i, faces] of (screens ?? []).entries())
+        for (const [slot, name] of Object.entries(faces ?? {})) s.setSurface(items[i].id, slot, { assetId: await bundledAsset(dir + name, name) });
       s.setExport({ ratio: '4:5', format: 'png', resolution: '2k' });
       api.ui.getState().resetView();
       s.setCamera({ zoom });
     },
-    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws },
+    { models, layout, preset, background, decor, params, finishes, zoom, light, camera, ground, yaws, screens, dir: SCREENS },
   );
   await page.waitForTimeout(yaws ? 2500 : 4000);
   if (yaws) {
@@ -64,14 +74,15 @@ async function shot(file, { models, layout = 'auto', preset, background, decor, 
   console.log('saved', file);
 }
 
-await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18 });
-// three phones in a row, the middle one facing us, the two others turned towards it like a mirror
-await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, finishes: ['deep-blue', 'silver', 'orange'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight', camera: { preset: 'front' } });
-// a flat lay on the plain studio floor, lit like daylight: soft directional shadows, no grey halo around the paper
-await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#eceff5' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 } });
+await shot('render-hero.png', { models: ['laptop-14', 'phone-pro'], layout: 'row', preset: 'studio-dark', background: night, zoom: 1.18, screens: [{ screen: 'portfolio-web.png' }, { screen: 'oceansight-missions.png' }] });
+// three phones in a row, the middle one facing us, the two others turned towards it like a mirror: F1 PitWall on warm peach
+const peach = { kind: 'gradient', type: 'radial', angle: 0, stops: [{ color: '#ffe6d6', at: 0 }, { color: '#f2a587', at: 1 }] };
+await shot('render-phones.png', { models: ['phone-pro', 'phone-pro', 'phone-pro'], layout: 'row', preset: 'studio-light', background: peach, finishes: ['cherry', 'black', 'cherry'], zoom: 1.15, yaws: [0.52, 0, -0.52], light: 'daylight', camera: { preset: 'front' }, screens: [{ screen: 'f1-home.png' }, { screen: 'f1-standing.png' }, { screen: 'f1-track.png' }] });
+// a flat lay on the plain studio floor, lit like daylight: soft directional shadows, sage green
+await shot('render-print.png', { models: ['flyer', 'business-card', 'postcard'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#c6d5c0' }, light: 'daylight', camera: { preset: 'top' }, ground: { shadowOpacity: 0.22 }, screens: [{ front: 'flyer.png', back: 'card-back.png' }, { front: 'card-front.png', back: 'card-back.png' }, { front: 'postcard.png', back: 'card-back.png' }] });
 // the podium without its arch: the arch caught the phone's shadow right behind it
-await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', decor: { kind: 'podium', podiumFinish: 'paint', color: '#e8d9c8', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Le nouveau site est en ligne' }] });
-await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12, light: 'daylight' });
+await shot('render-social.png', { models: ['phone-pro'], preset: 'podium-arch', decor: { kind: 'podium', podiumFinish: 'paint', color: '#e8d9c8', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Mon nouveau portfolio est en ligne' }], screens: [{ screen: 'portfolio-post.png' }] });
+await shot('render-tablet.png', { models: ['tablet-pro-11', 'phone-pro'], layout: 'row', preset: 'studio-light', background: { kind: 'solid', color: '#e9e4f7' }, zoom: 1.12, light: 'daylight', params: [{ orientation: 'landscape' }], screens: [{ screen: 'drivegear-tablet.png' }, { screen: 'oceansight-profile.png' }] });
 await browser.close();
 
 // the post's images, 1080 × 1350: the hook (the first render with its title), then the renders as they are
