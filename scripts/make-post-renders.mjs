@@ -97,8 +97,8 @@ await shot('render-hero.png', { models: ['laptop-14'], preset: 'studio-dark', ba
 await shot('render-sunset.png', { ...trio, preset: 'studio-dark', background: radial('#5b3a8c', '#140c24'), finishes: ['orange', 'black', 'orange'], light: 'daylight' });
 // Solstice festival: its poster as an Instagram post, forest green with an orange podium
 await shot('render-solstice.png', { models: ['phone-pro'], preset: 'podium-arch', background: { kind: 'solid', color: '#2f4a3b' }, decor: { kind: 'podium', podiumFinish: 'paint', color: '#ff5c35', shape: 'cylinder', arch: false }, params: [{ app: 'post', caption: 'Rendez-vous le 21 juin au Parc des Rives ☀️' }], brand: { name: 'solstice.festival' } });
-// Domaine des Rives: its wine, on warm linen
-await shot('render-domaine.png', { models: ['bottle'], preset: 'studio-light', background: radial('#f4ead8', '#d9c4a3'), light: 'daylight', zoom: 0.85 });
+// the magazine « Le design qui ralentit »: open on its spread, on a warm blush like its pages
+await shot('render-magazine.png', { models: ['magazine'], preset: 'studio-light', background: radial('#f7e6da', '#e2b39b'), light: 'daylight', zoom: 1.18 });
 // norastudio's stationery, a flat lay on its orange
 await shot('render-nora.png', { models: ['business-card', 'envelope'], preset: 'flatlay-marble', decor: { kind: 'sweep' }, background: { kind: 'solid', color: '#ff6a42' }, light: 'daylight', camera: { preset: 'top' }, zoom: 1.3, ground: { shadowOpacity: 0.22 }, params: [{ layout: 'pair' }] });
 }
@@ -118,7 +118,7 @@ p{margin-top:26px;font:400 32px/1.4 J;opacity:.72}
 .b{position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center;align-items:center;gap:12px;font:700 30px G;letter-spacing:-0.025em}
 </style></head><body>${hook ? `<div class="h"><h1>${hook[0]}</h1><p>${hook[1]}</p></div><div class="b">${mark}MockupLab</div>` : ''}</body></html>`;
 const hook = ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.'];
-const order = FICTIF ? [['hero', hook], ['sunset'], ['solstice'], ['domaine'], ['nora']] : [['hero', hook], ['f1'], ['ocean'], ['karting'], ['etoile']];
+const order = FICTIF ? [['hero', hook], ['sunset'], ['solstice'], ['magazine'], ['nora']] : [['hero', hook], ['f1'], ['ocean'], ['karting'], ['etoile']];
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1080, height: 1350 } });
 for (const [i, [name, hook]] of order.entries()) {
