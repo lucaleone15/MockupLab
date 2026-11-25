@@ -117,7 +117,7 @@ h1{font:700 92px/0.98 G;letter-spacing:-0.03em;text-wrap:balance}
 p{margin-top:26px;font:400 32px/1.4 J;opacity:.72}
 .b{position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:center;align-items:center;gap:12px;font:700 30px G;letter-spacing:-0.025em}
 </style></head><body>${hook ? `<div class="h"><h1>${hook[0]}</h1><p>${hook[1]}</p></div><div class="b">${mark}MockupLab</div>` : ''}</body></html>`;
-const hook = ['Fini les trois mêmes mock-ups.', 'Le studio photo de tes designs, gratuit, dans ton navigateur.'];
+const hook = ['Fini les trois mêmes mock-ups.', 'Des mock-ups 3D gratuits, directement dans le navigateur.'];
 const order = FICTIF ? [['hero', hook], ['sunset'], ['solstice'], ['magazine'], ['nora']] : [['hero', hook], ['f1'], ['ocean'], ['karting'], ['etoile']];
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1080, height: 1350 } });
