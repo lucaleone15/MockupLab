@@ -41,8 +41,14 @@ export default defineConfig(({ command, isPreview }) => ({
         navigateFallback: 'index.html',
         // English addresses get the English page (prerendered after the build; prerender.mjs adds it to the
         // precache): from the network when online, else that page
-        navigateFallbackDenylist: [/^\/en(\/|$)/],
+        navigateFallbackDenylist: [/^\/en(\/|$)/, /^\/a-propos\/?$/],
         runtimeCaching: [
+          {
+            // the French about page, the same way
+            urlPattern: ({ request, url }) => request.mode === 'navigate' && /^\/a-propos\/?$/.test(url.pathname),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'mockuplab-pages', networkTimeoutSeconds: 4, precacheFallback: { fallbackURL: 'a-propos.html' } },
+          },
           {
             urlPattern: ({ request, url }) => request.mode === 'navigate' && /^\/en(\/|$)/.test(url.pathname),
             handler: 'NetworkFirst',

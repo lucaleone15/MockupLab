@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DropdownMenu } from 'radix-ui';
-import { Check, Compass, Ellipsis, Keyboard, Languages, RotateCcw, SunMoon } from 'lucide-react';
+import { Check, Compass, Ellipsis, Info, Keyboard, Languages, RotateCcw, SunMoon } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
 import { ResetDialog } from '@/app/ResetDialog';
 import { navigate } from './route';
@@ -74,6 +74,11 @@ export function MoreMenu({ tone }: { tone?: 'light' } = {}) {
             <DropdownMenu.Item className={row} onSelect={() => setReset(true)}>
               <RotateCcw size={15} />
               {t('more.reset')}
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator className="mx-2 my-1 h-px bg-line" />
+            <DropdownMenu.Item className={row} data-testid="open-about" onSelect={() => navigate('about')}>
+              <Info size={15} />
+              {t('more.about')}
             </DropdownMenu.Item>
           </DropdownMenu.Content>
         </DropdownMenu.Portal>

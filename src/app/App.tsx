@@ -11,6 +11,7 @@ import { useSpecular } from '@/ui/useSpecular';
 import { UpdateBanner } from '@/pwa/UpdateBanner';
 import { useUi } from '@/store/ui';
 import { Home } from '@/home/Home';
+import { About } from '@/home/About';
 
 const webgl = hasWebGL2();
 
@@ -59,6 +60,8 @@ export function App() {
       <div className="flex h-full flex-col">
         {screen === 'home' ? (
           <Home />
+        ) : screen === 'about' ? (
+          <About />
         ) : (
           <Suspense fallback={null}>
             <Editor screen={screen} />

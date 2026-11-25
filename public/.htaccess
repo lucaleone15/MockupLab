@@ -9,6 +9,9 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # English addresses → the English page; every other address → the app (French landing, /studio, /rapide…).
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
+# the about page, prerendered in each language
+RewriteRule ^a-propos/?$ /a-propos.html [L]
+RewriteRule ^en/about/?$ /en/about.html [L]
 RewriteRule ^en(/.*)?$ /en/index.html [L]
 RewriteRule ^ /index.html [L]
 

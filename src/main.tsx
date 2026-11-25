@@ -3,23 +3,24 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import './index.css';
 import { App } from './app/App';
 import { useLang } from './i18n';
-import { screenFromLocation } from './shell/route';
+import { isPage, screenFromLocation } from './shell/route';
 import { markProjectReady } from './store/ready';
 
 document.documentElement.lang = useLang.getState().lang;
 
-// The landing shows at once; the editor first restores imported 3D models and the autosaved project.
-const landing = screenFromLocation(location.pathname, location.hash) === 'home';
+// The landing (and the about page) show at once; the editor first restores imported 3D models and the autosaved project.
+const screen = screenFromLocation(location.pathname, location.hash);
+const landing = isPage(screen);
 const container = document.getElementById('root')!;
-/** The built site ships the landing as HTML (scripts/prerender.mjs): React takes it over on the landing (no
- * repaint), and replaces it elsewhere. */
+/** The built site ships the landing and the about page as HTML (scripts/prerender.mjs, data-prerendered names
+ * the screen): React takes the page over when it is the one shown (no repaint), and replaces it otherwise. */
 const render = () => {
   const app = (
     <StrictMode>
       <App />
     </StrictMode>
   );
-  if (container.hasAttribute('data-prerendered') && landing) hydrateRoot(container, app);
+  if (container.getAttribute('data-prerendered') === screen) hydrateRoot(container, app);
   else {
     container.textContent = '';
     createRoot(container).render(app);

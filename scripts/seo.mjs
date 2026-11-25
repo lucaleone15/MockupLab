@@ -20,5 +20,12 @@ export const HEAD = {
   },
 };
 
-export const AUTHOR = { name: 'Luca Leone', url: 'https://luca-leone.ch', sameAs: ['https://www.linkedin.com/in/leone-luca', 'https://github.com/lucaleone15'] };
+export const AUTHOR = {
+  name: 'Luca Leone',
+  url: 'https://luca-leone.ch',
+  sameAs: ['https://www.linkedin.com/in/leone-luca', 'https://github.com/lucaleone15'],
+  jobTitle: { fr: 'Étudiant en ingénierie des médias', en: 'Media engineering student' },
+};
+/** The about page's address in each language (src/shell/route.ts). */
+export const ABOUT_PATH = { fr: '/a-propos', en: '/en/about' };
 export const REPO = 'https://github.com/lucaleone15/MockupLab';

@@ -13,23 +13,30 @@ const BASE = import.meta.env.BASE_URL;
 
 export const SCREEN_PATH: Record<Screen, string> = {
   home: '',
+  about: 'a-propos',
   quick: 'rapide',
   project: 'projet',
   studio: 'studio',
 };
 
-/** Address of a screen in a language (default: the current one), e.g. /studio, /en/studio, /en/. */
+/** Where an English address differs (…/en/about, not …/en/a-propos). */
+const EN_PATH: Partial<Record<Screen, string>> = { about: 'about' };
+
+/** Address of a screen in a language (default: the current one), e.g. /studio, /en/studio, /en/, /a-propos, /en/about. */
 export const urlOf = (screen: Screen, lang: Lang = useLang.getState().lang) =>
-  BASE + (lang === 'en' ? 'en/' : '') + SCREEN_PATH[screen];
+  BASE + (lang === 'en' ? 'en/' + (EN_PATH[screen] ?? SCREEN_PATH[screen]) : SCREEN_PATH[screen]);
 
 /** Screens that can be opened in this version. */
-export const AVAILABLE: Record<Screen, boolean> = { home: true, quick: true, project: true, studio: true };
+export const AVAILABLE: Record<Screen, boolean> = { home: true, about: true, quick: true, project: true, studio: true };
+
+/** Screens shown as a page to read (no editor, no project): the landing and the about page. */
+export const isPage = (screen: Screen) => screen === 'home' || screen === 'about';
 
 /** The modes, main one first: Studio · Rapide · Projet. */
 export const MODE_ORDER: Screen[] = ['studio', 'quick', 'project'];
 
 function screenFromSegment(segment: string): Screen | null {
-  const found = (Object.keys(SCREEN_PATH) as Screen[]).find((s) => SCREEN_PATH[s] === segment);
+  const found = (Object.keys(SCREEN_PATH) as Screen[]).find((s) => SCREEN_PATH[s] === segment || EN_PATH[s] === segment);
   return found && AVAILABLE[found] ? found : null;
 }
 

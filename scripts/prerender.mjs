@@ -2,13 +2,16 @@
 // (title, description, canonical, hreflang, Open Graph, JSON-LD), so search engines and AI crawlers that run no
 // JavaScript read the page, and phones paint it before the app starts. React then replaces it.
 //   dist/index.html    → / (French)        dist/en/index.html → /en/ (English)
+//   dist/a-propos.html → /a-propos         dist/en/about.html → /en/about (the about page, .htaccess serves them)
 // The snapshot is the scroll story as a phone first sees it (the same markup fits every size; the 3D comes in
 // when the app starts). The editor addresses (/studio…) keep the splash instead.
 import { chromium } from 'playwright';
 import { preview } from 'vite';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { AUTHOR, HEAD, REPO, SITE_URL } from './seo.mjs';
+import { ABOUT_PATH, AUTHOR, HEAD, REPO, SITE_URL } from './seo.mjs';
+import { fr } from '../src/i18n/fr.ts';
+import { en } from '../src/i18n/en.ts';
 
 const template = readFileSync('dist/index.html', 'utf8');
 if (template.includes('data-prerendered')) throw new Error('dist/index.html is already prerendered: run `vite build` first');
@@ -38,11 +41,24 @@ async function snapshot(path) {
   });
 }
 
-function headFor(lang, faq) {
-  const h = HEAD[lang];
-  const url = `${SITE_URL}${lang === 'en' ? '/en/' : '/'}`;
+/** The head of a page: the landing (its FAQ as structured data) or the about page. */
+function headFor(lang, faq, kind) {
+  const about = kind === 'about';
+  const dict = lang === 'en' ? en : fr;
+  const h = about ? { ...HEAD[lang], title: dict['about.meta.title'], description: dict['about.meta.description'] } : HEAD[lang];
+  const home = `${SITE_URL}${lang === 'en' ? '/en/' : '/'}`;
+  const url = about ? SITE_URL + ABOUT_PATH[lang] : home;
+  const alternates = about ? { fr: SITE_URL + ABOUT_PATH.fr, en: SITE_URL + ABOUT_PATH.en } : { fr: `${SITE_URL}/`, en: `${SITE_URL}/en/` };
   const image = SITE_URL + h.ogImage;
-  const ld = {
+  const person = { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url, sameAs: AUTHOR.sameAs, jobTitle: AUTHOR.jobTitle[lang], address: { '@type': 'PostalAddress', addressCountry: 'CH' } };
+  const ld = about
+    ? {
+        '@context': 'https://schema.org',
+        '@graph': [
+          { '@type': 'AboutPage', name: h.title, url, description: h.description, inLanguage: lang, mainEntity: person, about: { '@type': 'SoftwareApplication', name: 'MockupLab', url: home } },
+        ],
+      }
+    : {
     '@context': 'https://schema.org',
     '@graph': [
       {
@@ -58,7 +74,8 @@ function headFor(lang, faq) {
         image,
         screenshot: `${SITE_URL}/showcase/hero-still.webp`,
         license: 'https://opensource.org/licenses/MIT',
-        author: { '@type': 'Person', name: AUTHOR.name, url: AUTHOR.url, sameAs: AUTHOR.sameAs },
+        author: person,
+        countryOfOrigin: { '@type': 'Country', name: 'Switzerland' },
       },
       { '@type': 'WebSite', name: 'MockupLab', url, inLanguage: lang },
       {
@@ -70,10 +87,10 @@ function headFor(lang, faq) {
   };
   return [
     `<link rel="canonical" href="${url}">`,
-    `<link rel="alternate" hreflang="fr" href="${SITE_URL}/">`,
-    `<link rel="alternate" hreflang="en" href="${SITE_URL}/en/">`,
-    `<link rel="alternate" hreflang="x-default" href="${SITE_URL}/">`,
-    `<meta property="og:type" content="website">`,
+    `<link rel="alternate" hreflang="fr" href="${alternates.fr}">`,
+    `<link rel="alternate" hreflang="en" href="${alternates.en}">`,
+    `<link rel="alternate" hreflang="x-default" href="${alternates.fr}">`,
+    `<meta property="og:type" content="${about ? 'profile' : 'website'}">`,
     `<meta property="og:site_name" content="MockupLab">`,
     `<meta property="og:locale" content="${h.locale}">`,
     `<meta property="og:url" content="${url}">`,
@@ -92,7 +109,7 @@ function headFor(lang, faq) {
     // the static landing is for phones, crawlers and still motion; editor addresses keep the splash
     // (!important: the splash carries an inline display)
     `<style>[data-splash]{display:none!important}html.app-route #root[data-prerendered]{display:none}html.app-route [data-splash]{display:grid!important;position:fixed;inset:0}</style>`,
-    `<script>if(!/^\\/(en\\/?)?$/.test(location.pathname))document.documentElement.classList.add('app-route')</script>`,
+    `<script>if(!/^\\/((en\\/?)?|a-propos\\/?|en\\/about\\/?)$/.test(location.pathname))document.documentElement.classList.add('app-route')</script>`,
   ].join('\n    ');
 }
 
@@ -103,10 +120,17 @@ const SPLASH = template.slice(rootOpen, rootClose).replace(/<!--[\s\S]*?-->/g, '
 if (!SPLASH.startsWith('<div style="height:100%')) throw new Error('splash not found in dist/index.html');
 const splash = SPLASH.replace('<div style="height:100%', '<div data-splash style="height:100%');
 
-for (const lang of ['fr', 'en']) {
-  const { html, faq } = await snapshot(lang === 'en' ? '/en/' : '/');
-  if (faq.length !== 6) throw new Error(`${lang}: expected 6 FAQ entries, got ${faq.length}`);
-  const h = HEAD[lang];
+const PAGES = [
+  { lang: 'fr', kind: 'home', path: '/', out: 'dist/index.html' },
+  { lang: 'en', kind: 'home', path: '/en/', out: 'dist/en/index.html' },
+  { lang: 'fr', kind: 'about', path: ABOUT_PATH.fr, out: 'dist/a-propos.html' },
+  { lang: 'en', kind: 'about', path: ABOUT_PATH.en, out: 'dist/en/about.html' },
+];
+for (const { lang, kind, path, out } of PAGES) {
+  const { html, faq } = await snapshot(path);
+  if (kind === 'home' && faq.length !== 6) throw new Error(`${lang}: expected 6 FAQ entries, got ${faq.length}`);
+  const dict = lang === 'en' ? en : fr;
+  const h = kind === 'about' ? { title: dict['about.meta.title'], description: dict['about.meta.description'] } : HEAD[lang];
   let page = template
     .replace(/<html lang="[^"]*"/, `<html lang="${lang}"`)
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(h.title)}</title>`)
@@ -115,10 +139,9 @@ for (const lang of ['fr', 'en']) {
     // the static page paints without the app: its code (3D engine included) no longer competes with the
     // first picture and the fonts — the entry script still imports it right after
     .replace(/\s*<link rel="modulepreload"[^>]*>/g, '')
-    .replace('</head>', `  ${headFor(lang, faq)}\n  </head>`)
+    .replace('</head>', `  ${headFor(lang, faq, kind)}\n  </head>`)
     // #root holds the landing exactly as React renders it (hydrated, not repainted); the splash sits beside it
-    .replace(/<div id="root">[\s\S]*<\/div>\s*<\/body>/, `${splash}<div id="root" data-prerendered>${html}</div>\n  </body>`);
-  const out = lang === 'en' ? 'dist/en/index.html' : 'dist/index.html';
+    .replace(/<div id="root">[\s\S]*<\/div>\s*<\/body>/, `${splash}<div id="root" data-prerendered="${kind}">${html}</div>\n  </body>`);
   mkdirSync('dist/en', { recursive: true });
   writeFileSync(out, page);
   console.log(`prerendered ${out} (${Math.round(page.length / 1024)} KB, ${faq.length} FAQ)`);
@@ -137,7 +160,8 @@ if (entry) rmSync(`dist/${entry}`);
 const rev = (f) => createHash('md5').update(readFileSync(f)).digest('hex');
 let sw = readFileSync('dist/sw.js', 'utf8');
 const before = sw;
-sw = sw.replace(/\{url:"index\.html",revision:"[0-9a-f]+"\}/, `{url:"index.html",revision:"${rev('dist/index.html')}"},{url:"en/index.html",revision:"${rev('dist/en/index.html')}"}`);
+const pages = ['index.html', 'en/index.html', 'a-propos.html', 'en/about.html'];
+sw = sw.replace(/\{url:"index\.html",revision:"[0-9a-f]+"\}/, pages.map((f) => `{url:"${f}",revision:"${rev(`dist/${f}`)}"}`).join(','));
 if (sw === before) throw new Error('index.html not found in the service worker precache list');
 writeFileSync('dist/sw.js', sw);
-console.log('service worker precache updated (index.html, en/index.html)');
+console.log(`service worker precache updated (${pages.join(', ')})`);

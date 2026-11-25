@@ -3,7 +3,10 @@ import { create } from 'zustand';
 export type Theme = 'dark' | 'light';
 /** What the user picked: follow the system, or force one theme. */
 export type ThemePref = 'auto' | 'light' | 'dark';
-export type Screen = 'home' | 'quick' | 'project' | 'studio';
+/** The landing, the about page and the three modes. */
+export type Screen = 'home' | 'about' | 'quick' | 'project' | 'studio';
+/** The screens that open the editor. */
+export type Mode = Exclude<Screen, 'home' | 'about'>;
 export type StudioPage = 'devices' | 'settings' | 'decor' | 'light' | 'camera' | 'text' | 'brand';
 
 interface UiState {
@@ -76,6 +79,11 @@ function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
 }
 
+/** The about page's addresses start on it: the prerendered page hydrates (and renders on the server, which reads
+ * the initial state) as itself. The router sets every other screen. */
+const firstScreen = (): Screen =>
+  typeof location !== 'undefined' && /^(a-propos|en\/about)\/?$/.test(location.pathname.slice(import.meta.env.BASE_URL.length)) ? 'about' : 'home';
+
 export const useUi = create<UiState>((set) => ({
   theme: resolve(readPref()),
   themePref: readPref(),
@@ -90,7 +98,7 @@ export const useUi = create<UiState>((set) => ({
     applyTheme(theme);
     set({ themePref, theme });
   },
-  screen: 'home',
+  screen: firstScreen(),
   setScreen: (screen) => set({ screen }),
   studioPage: 'devices',
   setStudioPage: (studioPage) => set({ studioPage }),

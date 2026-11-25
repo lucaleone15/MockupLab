@@ -48,8 +48,28 @@ for (const [lang, file, dict, url] of [
   check(faq?.mainEntity?.length === 6 && faq.mainEntity.every((q) => q.name && q.acceptedAnswer?.text), `${file}: FAQPage with 6 answered questions`);
   check(faq?.mainEntity?.[0]?.name === dict['home.faq.q1'], `${file}: FAQ JSON-LD matches the visible FAQ`);
   check(!/role="dialog"|role="alertdialog"/.test(body), `${file}: no dialog (guide, project name…) frozen in the HTML`);
-  check(/<div id="root" data-prerendered>/.test(body), `${file}: landing marked as prerendered`);
+  check(/<div id="root" data-prerendered="home">/.test(body), `${file}: landing marked as prerendered`);
   check(/\[data-splash\]\{display:none!important\}/.test(html), `${file}: the splash stays hidden on the landing`);
+}
+
+// the about page, in each language
+for (const [lang, file, dict, url, other] of [
+  ['fr', 'a-propos.html', fr, `${SITE_URL}/a-propos`, `${SITE_URL}/en/about`],
+  ['en', 'en/about.html', en, `${SITE_URL}/en/about`, `${SITE_URL}/a-propos`],
+]) {
+  const html = read(file);
+  check(html.length > 0, `${file} exists`);
+  check(attr(html, /<html[^>]*\slang="([^"]+)"/) === lang, `${file}: <html lang="${lang}">`);
+  const body = html.slice(html.indexOf('<body'));
+  const h1 = decode(attr(body, /<h1[^>]*>([\s\S]*?)<\/h1>/)?.replace(/<[^>]+>/g, ''));
+  check(h1 === dict['about.title'], `${file}: prerendered <h1> is the about title (${h1})`);
+  check(decode(attr(html, /<title>([^<]*)<\/title>/)) === dict['about.meta.title'], `${file}: <title> ${dict['about.meta.title']}`);
+  const desc = decode(attr(html, /<meta name="description" content="([^"]*)"/));
+  check(desc === dict['about.meta.description'] && desc.length >= 120 && desc.length <= 170, `${file}: description (${desc?.length} chars)`);
+  check(attr(html, /<link rel="canonical" href="([^"]+)"/) === url, `${file}: canonical ${url}`);
+  check(html.includes(`hreflang="${lang === 'fr' ? 'en' : 'fr'}" href="${other}"`), `${file}: hreflang to ${other}`);
+  check(/"@type":"AboutPage"/.test(html) && /"addressCountry":"CH"/.test(html), `${file}: AboutPage JSON-LD, author in Switzerland`);
+  check(/<div id="root" data-prerendered="about">/.test(body), `${file}: about page marked as prerendered`);
 }
 
 const robots = read('robots.txt');

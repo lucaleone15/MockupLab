@@ -1,18 +1,17 @@
 import { Suspense, lazy, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { FolderOpen, ImagePlus } from 'lucide-react';
+import { ImagePlus } from 'lucide-react';
 import { hasWebGL2 } from '@/app/ErrorBoundary';
 import { useT, type I18nKey } from '@/i18n';
-import { Logo } from '@/shell/Logo';
-import { MoreMenu } from '@/shell/MoreMenu';
+import { SiteHeader } from '@/shell/SiteHeader';
 import { AVAILABLE, MODE_ORDER, navigate } from '@/shell/route';
-import { useLibrary } from '@/library/store';
-import { useUi, type Screen } from '@/store/ui';
+import { useUi, type Mode, type Screen } from '@/store/ui';
 import { cx } from '@/ui/primitives';
 import { SLICES, STORY, useStoryProgress, type StoryChapter } from './useStoryProgress';
 import { WordReveal } from './WordReveal';
 import { startWithFiles } from './start';
 import { IMAGE_OR_PDF } from '@/lib/pdf';
 import { anchorTo } from './labelAnchors';
+import { Credit } from './Credit';
 
 /*
  * The home page, told like an Apple product page. Each chapter is a tall
@@ -28,8 +27,6 @@ const HeroStage = lazy(() => import('./HeroStage'));
 const webgl = hasWebGL2();
 const BASE = import.meta.env.BASE_URL;
 const shot = (name: string) => `${BASE}showcase/${name}`;
-const PORTFOLIO = 'https://luca-leone.ch';
-const LINKEDIN = 'https://www.linkedin.com/in/leone-luca';
 const FAQ = [1, 2, 3, 4, 5, 6] as const;
 
 /** Track heights (vh): the longer the chapter's motion, the longer the scroll. */
@@ -97,13 +94,11 @@ const LEAD: Record<StoryChapter, I18nKey> = {
   clients: 'home.clients.lead',
   modes: 'home.modes.lead',
 };
-const MODE_SHOTS: Record<Screen, string> = { home: '', studio: 'studio-marble.webp', quick: 'studio-podium.webp', project: 'clients-pack.webp' };
+const MODE_SHOTS: Record<Screen, string> = { home: '', about: '', studio: 'studio-marble.webp', quick: 'studio-podium.webp', project: 'clients-pack.webp' };
 /** The modes at work (the « modes » chapter). */
-const MODE_SCREENS: Record<Exclude<Screen, 'home'>, string> = { studio: 'studio-ui.jpg', quick: 'mode-quick.jpg', project: 'mode-project.jpg' };
+const MODE_SCREENS: Record<Mode, string> = { studio: 'studio-ui.jpg', quick: 'mode-quick.jpg', project: 'mode-project.jpg' };
 
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
-/** The empty project autosaved on a first visit is not worth listing. */
-const worth = (m: { name: string; exportCount: number; assets: string[] }) => (m.name && m.name !== 'Untitled') || m.exportCount > 0 || m.assets.length > 0;
 
 function useMedia(query: string) {
   const [on, setOn] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches);
@@ -142,7 +137,7 @@ function Reveal({ children, delay = 0, className, instant = false }: { children:
   );
 }
 
-function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
+export function OpenStudio({ size = 'lg' }: { size?: 'lg' | 'md' }) {
   const { t } = useT();
   return (
     <button
@@ -474,7 +469,6 @@ export function Home() {
   const animated = !still && webgl;
   const { chapter, progress } = useStoryProgress(root, animated);
   const light = animated && LIGHT.has(chapter);
-  const hasProjects = useLibrary((s) => s.list.some(worth));
   const pick = (id: StoryChapter) => {
     const el = root.current;
     const track = el?.querySelector<HTMLElement>(`[data-chapter-id=${id}]`);
@@ -485,22 +479,7 @@ export function Home() {
   return (
     <div ref={root} data-testid="home" data-theme="dark" className="scroll-thin h-full overflow-y-auto overflow-x-hidden bg-black text-white">
       {/* the header floats over the story, in its section's tone */}
-      <div className={cx('sticky top-0 z-30 h-0', light ? 'text-[#1d1d1f]' : 'text-white')} data-theme={light ? 'light' : 'dark'}>
-        <header className="flex h-16 items-center justify-between px-5">
-          <div className="glass-float flex h-11 items-center rounded-full px-4">
-            <Logo asLink={false} tone={light ? undefined : 'light'} />
-          </div>
-          <div className="glass-float flex h-11 items-center gap-1 rounded-full px-1.5">
-            {hasProjects && (
-              <button type="button" onClick={() => useUi.getState().setAllProjectsOpen(true)} className="flex h-8 items-center gap-2 rounded-full px-3 text-[13.5px] font-medium text-fg transition-colors hover:bg-surface-3">
-                <FolderOpen size={16} />
-                {t('home.myProjects')}
-              </button>
-            )}
-            <MoreMenu tone={light ? undefined : 'light'} />
-          </div>
-        </header>
-      </div>
+      <SiteHeader light={light} />
 
       {animated ? (
         <div className="relative">
@@ -553,20 +532,7 @@ export function Home() {
         <Reveal delay={180} className="mt-3 flex flex-wrap items-center justify-center gap-3">
           <OpenStudio size="md" />
         </Reveal>
-        <p data-testid="home-credit" className="mt-16 flex flex-wrap items-center justify-center gap-y-1 text-[13.5px] text-white/45">
-          <span className="whitespace-nowrap">{t('home.credit.by')} <span className="text-white/75">Luca Leone</span></span>
-          {[
-            [PORTFOLIO, t('home.credit.portfolio')],
-            [LINKEDIN, 'LinkedIn'],
-          ].map(([href, label]) => (
-            <span key={href}>
-              <span aria-hidden className="mx-2">·</span>
-              <a href={href} target="_blank" rel="noreferrer" className="underline-offset-4 transition-colors hover:text-white hover:underline">
-                {label}
-              </a>
-            </span>
-          ))}
-        </p>
+        <Credit />
       </section>
     </div>
   );

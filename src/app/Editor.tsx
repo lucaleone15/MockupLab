@@ -6,11 +6,11 @@ import { TOP_BAR, TopBar } from '@/shell/TopBar';
 import { sceneTone } from '@/lib/sceneTone';
 import { useProject } from '@/store/project';
 import { StudioScreen } from '@/studio/StudioScreen';
-import type { Screen } from '@/store/ui';
+import type { Mode } from '@/store/ui';
 import { ErrorBoundary } from './ErrorBoundary';
 
 /** Studio, Rapide and Projet with their top bar: the 3D editor, loaded when one of them is opened. */
-export default function Editor({ screen }: { screen: Exclude<Screen, 'home'> }) {
+export default function Editor({ screen }: { screen: Mode }) {
   const { t } = useT();
   const tone = useProject((s) => sceneTone(s.background));
   return (

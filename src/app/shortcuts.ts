@@ -28,8 +28,9 @@ export const SHORTCUTS: [string, string][] = ([
 
 function onKey(e: KeyboardEvent) {
   if (isEditable(e.target) || e.defaultPrevented) return;
-  // the home page shows no project: only the help shortcut works there
-  if (useUi.getState().screen === 'home' && e.key !== '?') return;
+  // the home and about pages show no project: only the help shortcut works there
+  const page = useUi.getState().screen;
+  if ((page === 'home' || page === 'about') && e.key !== '?') return;
   // an animation preview: only Escape (or space) to stop it
   if (useUi.getState().previewing) {
     if (e.key === 'Escape' || e.key === ' ') {
@@ -84,7 +85,7 @@ function onKey(e: KeyboardEvent) {
 /** Pasted or dropped files go where the screen expects them. */
 function routeFiles(files: File[]) {
   const screen = useUi.getState().screen;
-  if (screen === 'home') void import('@/home/start').then((m) => m.startWithFiles(files));
+  if (screen === 'home' || screen === 'about') void import('@/home/start').then((m) => m.startWithFiles(files));
   else if (screen === 'quick') void import('@/quick/store').then((m) => files[0] && m.quick.setImage(files[0]));
   else if (screen === 'project') void import('@/project/store').then((m) => m.pack.add(files));
   else void importImages(files);
@@ -142,7 +143,7 @@ export function useGlobalInput() {
         return;
       }
       const screen = useUi.getState().screen;
-      if (screen === 'home' || screen === 'quick' || screen === 'project') {
+      if (screen === 'home' || screen === 'about' || screen === 'quick' || screen === 'project') {
         if (e.dataTransfer?.files.length) routeFiles([...e.dataTransfer.files]);
         return;
       }
